@@ -1,10 +1,13 @@
+
 #include "main.h"
 #include "app_common.h"
 #include "dbg_trace.h"
 #include "ble.h"
-#include "p2p_client_app.h"
 #include "stm32_seq.h"
 #include "app_ble.h"
+
+extern "C" {
+#include "ble_hid.h"
 
 typedef enum {
 	HID_NOTIFICATION_RECEIVED_EVT,
@@ -123,7 +126,7 @@ static SVCCTL_EvtAckStatus_t Event_Handler(void *Event)
 		case ACI_ATT_READ_BY_GROUP_TYPE_RESP_VSEVT_CODE:
 		{
 			// Result of discover all primary services
-			aci_att_read_by_group_type_resp_event_rp0 *pr = (void*)blecore_evt->data;
+			aci_att_read_by_group_type_resp_event_rp0 *pr = (aci_att_read_by_group_type_resp_event_rp0*)blecore_evt->data;
 			uint8_t numServ, i, idx;
 			uint16_t uuid;
 
@@ -176,7 +179,7 @@ static SVCCTL_EvtAckStatus_t Event_Handler(void *Event)
 		case ACI_ATT_READ_BY_TYPE_RESP_VSEVT_CODE:
 		{
 			// Triggered after discover characteristics
-			aci_att_read_by_type_resp_event_rp0 *pr = (void*)blecore_evt->data;
+			aci_att_read_by_type_resp_event_rp0 *pr = (aci_att_read_by_type_resp_event_rp0*)blecore_evt->data;
 			uint8_t idx;
 			uint16_t uuid, handle;
 
@@ -255,7 +258,7 @@ static SVCCTL_EvtAckStatus_t Event_Handler(void *Event)
 
 		case ACI_GATT_NOTIFICATION_VSEVT_CODE:
 		{
-			aci_gatt_notification_event_rp0 *pr = (void*)blecore_evt->data;
+			aci_gatt_notification_event_rp0 *pr = (aci_gatt_notification_event_rp0*)blecore_evt->data;
 
 			if (aP2PClientContext.connHandle == pr->Connection_Handle) {
 
@@ -280,7 +283,7 @@ static SVCCTL_EvtAckStatus_t Event_Handler(void *Event)
 
 		case ACI_GATT_PROC_COMPLETE_VSEVT_CODE:
 		{
-			aci_gatt_proc_complete_event_rp0 *pr = (void*)blecore_evt->data;
+			aci_gatt_proc_complete_event_rp0 *pr = (aci_gatt_proc_complete_event_rp0*)blecore_evt->data;
 			APP_DBG_MSG("-- GATT : ACI_GATT_PROC_COMPLETE_VSEVT_CODE \n\n");
 
 			if (aP2PClientContext.connHandle == pr->Connection_Handle) {
@@ -423,4 +426,6 @@ void Update_Service()
 		}
 	}
 	return;
+}
+
 }
