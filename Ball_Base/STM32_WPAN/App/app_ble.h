@@ -1,0 +1,38 @@
+#ifndef APP_BLE_H
+#define APP_BLE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "hci_tl.h"
+
+typedef enum {
+	APP_BLE_IDLE,
+	APP_BLE_FAST_ADV,
+	APP_BLE_LP_ADV,
+	APP_BLE_SCAN,
+	APP_BLE_LP_CONNECTING,
+	APP_BLE_CONNECTED_SERVER,
+	APP_BLE_CONNECTED_CLIENT,
+
+	APP_BLE_DISCOVER_SERVICES,
+	APP_BLE_DISCOVER_CHARACS,
+	APP_BLE_DISCOVERING_CHARACS,
+	APP_BLE_DISCOVER_WRITE_DESC,
+	APP_BLE_DISCOVER_NOTIFICATION_CHAR_DESC,
+	APP_BLE_ENABLE_NOTIFICATION_DESC,
+	APP_BLE_ENABLE_HID_NOTIFICATION_DESC,
+	APP_BLE_DISABLE_NOTIFICATION_DESC
+} APP_BLE_ConnStatus_t;
+
+
+void APP_BLE_Init( void );
+
+APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status( uint16_t Connection_Handle );
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
