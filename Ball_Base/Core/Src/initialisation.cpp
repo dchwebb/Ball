@@ -30,6 +30,4 @@ void InitTimer() {
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
 	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;	// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 
-uint8_t test = 1;
-
 }

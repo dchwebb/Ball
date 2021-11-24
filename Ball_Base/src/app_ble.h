@@ -1,10 +1,4 @@
-#ifndef APP_BLE_H
-#define APP_BLE_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#pragma once
 #include "hci_tl.h"
 
 typedef enum {
@@ -27,12 +21,9 @@ typedef enum {
 } APP_BLE_ConnStatus_t;
 
 
-void APP_BLE_Init( void );
+void APP_BLE_Init(void);
+APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status(uint16_t Connection_Handle);
 
-APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status( uint16_t Connection_Handle );
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+void APP_BLE_Key_Button1_Action();
+void APP_BLE_Key_Button2_Action();
+void APP_BLE_Key_Button3_Action();

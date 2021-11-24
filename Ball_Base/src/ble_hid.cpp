@@ -5,9 +5,9 @@
 #include "ble.h"
 #include "stm32_seq.h"
 #include "app_ble.h"
-
-extern "C" {
 #include "ble_hid.h"
+//extern "C" {
+
 
 typedef enum {
 	HID_NOTIFICATION_RECEIVED_EVT,
@@ -326,7 +326,8 @@ void Gatt_Notification(P2P_Client_App_Notification_evt_t *pNotification)
 		position3D.z = payload[2];
 
 		// Output to PWM - values vary from ~400 - 600
-		int16_t pwmX = Clamp(position3D.x - 410, 0, 205) * 20;
+		//int16_t pwmX = Clamp(position3D.x - 410, 0, 205) * 20;
+		int16_t pwmX = position3D.x;
 		TIM2->CCR1 = pwmX;
 
 		if (GPIOB->ODR & GPIO_ODR_OD8)			GPIOB->ODR &= ~GPIO_ODR_OD8;
@@ -428,4 +429,4 @@ void Update_Service()
 	return;
 }
 
-}
+//}
