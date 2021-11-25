@@ -18,8 +18,8 @@ static void MX_LPUART1_UART_Init(void);
 
 int main(void)
 {
-	InitHAL();
-	MX_APPE_Config();
+	InitHardware();
+
 	SystemClock_Config();
 
 	MX_IPCC_Init();
@@ -39,7 +39,7 @@ int main(void)
 }
 
 
-void SystemClock_Config(void)
+void xSystemClock_Config(void)
 {
 	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};

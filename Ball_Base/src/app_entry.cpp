@@ -19,9 +19,9 @@ PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static TL_CmdPacket_t SystemCmdBuffer;
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t SystemSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255U];
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t BleSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255];
 
-static void Config_HSE(void);
-static void Reset_IPCC();
-static void Reset_BackupDomain();
+//static void Config_HSE(void);
+//static void Reset_IPCC();
+//static void Reset_BackupDomain();
 static void SystemPower_Config();
 static void appe_Tl_Init();
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status);
@@ -29,7 +29,7 @@ static void APPE_SysUserEvtRx(void* pPayload);
 static void Init_Rtc();
 static void Init_Exti();
 
-
+/*
 void MX_APPE_Config()
 {
 	// The OPTVERR flag is wrongly set at power on. It shall be cleared before using any HAL_FLASH_xxx() api
@@ -42,6 +42,7 @@ void MX_APPE_Config()
 	// Configure HSE Tuning
 	Config_HSE();
 }
+*/
 
 void MX_APPE_Init()
 {
@@ -61,41 +62,6 @@ void Init_Exti()
 	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
 	LL_EXTI_DisableIT_0_31(~0);
 	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
-}
-
-
-static void Reset_BackupDomain()
-{
-	if ((LL_RCC_IsActiveFlag_PINRST() != FALSE) && (LL_RCC_IsActiveFlag_SFTRST() == FALSE))	{
-		HAL_PWR_EnableBkUpAccess(); 		// Enable access to the RTC registers
-		HAL_PWR_EnableBkUpAccess();			// Write the value twice to flush the APB-AHB bridge
-
-		__HAL_RCC_BACKUPRESET_FORCE();
-		__HAL_RCC_BACKUPRESET_RELEASE();
-	}
-}
-
-
-static void Reset_IPCC()
-{
-	LL_AHB3_GRP1_EnableClock(LL_AHB3_GRP1_PERIPH_IPCC);
-
-	LL_C1_IPCC_ClearFlag_CHx(IPCC, LL_IPCC_CHANNEL_1 | LL_IPCC_CHANNEL_2 | LL_IPCC_CHANNEL_3 | LL_IPCC_CHANNEL_4 | LL_IPCC_CHANNEL_5 | LL_IPCC_CHANNEL_6);
-	LL_C2_IPCC_ClearFlag_CHx(IPCC, LL_IPCC_CHANNEL_1 | LL_IPCC_CHANNEL_2 | LL_IPCC_CHANNEL_3 | LL_IPCC_CHANNEL_4 | LL_IPCC_CHANNEL_5 | LL_IPCC_CHANNEL_6);
-	LL_C1_IPCC_DisableTransmitChannel(IPCC, LL_IPCC_CHANNEL_1 | LL_IPCC_CHANNEL_2 | LL_IPCC_CHANNEL_3 | LL_IPCC_CHANNEL_4 | LL_IPCC_CHANNEL_5 | LL_IPCC_CHANNEL_6);
-	LL_C2_IPCC_DisableTransmitChannel(IPCC, LL_IPCC_CHANNEL_1 | LL_IPCC_CHANNEL_2 | LL_IPCC_CHANNEL_3 | LL_IPCC_CHANNEL_4 | LL_IPCC_CHANNEL_5 | LL_IPCC_CHANNEL_6);
-	LL_C1_IPCC_DisableReceiveChannel(IPCC, LL_IPCC_CHANNEL_1 | LL_IPCC_CHANNEL_2 | LL_IPCC_CHANNEL_3 | LL_IPCC_CHANNEL_4 | LL_IPCC_CHANNEL_5 | LL_IPCC_CHANNEL_6);
-	LL_C2_IPCC_DisableReceiveChannel(IPCC, LL_IPCC_CHANNEL_1 | LL_IPCC_CHANNEL_2 | LL_IPCC_CHANNEL_3 | LL_IPCC_CHANNEL_4 | LL_IPCC_CHANNEL_5 | LL_IPCC_CHANNEL_6);
-}
-
-
-static void Config_HSE(void)
-{
-	// Read HSE_Tuning from OTP
-	OTP_ID0_t* p_otp = (OTP_ID0_t*) OTP_Read(0);
-	if (p_otp) {
-		LL_RCC_HSE_SetCapacitorTuning(p_otp->hse_tuning);
-	}
 }
 
 
