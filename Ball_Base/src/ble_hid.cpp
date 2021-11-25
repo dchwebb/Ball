@@ -314,6 +314,7 @@ static inline int16_t Clamp(int16_t v, int16_t min, int16_t max)
 	else 				return v;
 }
 
+
 void Gatt_Notification(P2P_Client_App_Notification_evt_t *pNotification)
 {
 	if (pNotification->P2P_Client_Evt_Opcode == BATTERY_NOTIFICATION_RECEIVED_EVT) {

@@ -1,6 +1,6 @@
 //#include "initialisation.h"
 #include "stm32wb55xx.h"
-extern "C"
+#include "stm32wbxx_ll_rcc.h"
 
 void InitTimer() {
 	// TIM2 Channel 1 Output: *PA0, PA5, (PA15)
@@ -29,5 +29,34 @@ void InitTimer() {
 	// Init debug pin PB8
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
 	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;	// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+
+}
+
+
+void InitHAL()
+{
+	FLASH->ACR |= FLASH_ACR_PRFTEN;
+
+	//uint32_t prioritygroup = NVIC_GetPriorityGrouping();
+
+	NVIC_SetPriorityGrouping(0x3);
+	//SCB->AIRCR |= 0x3 << SCB_AIRCR_PRIGROUP_Pos;		// Set NVIC priority grouping to 4
+
+	// Enable SysTick
+	SysTick->LOAD  = 4000 - 1UL;                        // set reload register
+	SysTick->VAL = 0UL;									// Load the SysTick Counter Value
+	NVIC_SetPriority(SysTick_IRQn, 0);
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
+			SysTick_CTRL_TICKINT_Msk  |
+			SysTick_CTRL_ENABLE_Msk;    				// Enable SysTick IRQ and SysTick Timer */
+	extern uint32_t uwTickPrio;
+	uwTickPrio = 0;
+
+	// Enable semaphore clock
+	RCC->AHB3ENR |= RCC_AHB3ENR_HSEMEN;
+	while ((RCC->AHB3ENR & RCC_AHB3ENR_HSEMEN) == 0) {}
+
+	NVIC_SetPriority(HSEM_IRQn, 0);
+	NVIC_EnableIRQ(HSEM_IRQn);
 
 }

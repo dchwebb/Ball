@@ -1,4 +1,3 @@
-//extern "C" {
 #include "ble_hid.h"
 #include "main.h"
 #include "app_common.h"
@@ -11,14 +10,13 @@
 #include "stm32_lpm.h"
 #include "otp.h"
 
-
 typedef struct {
 	uint16_t connectionHandle;			// connection handle of the current active connection; When not in connection, the handle is set to 0xFFFF
 	APP_BLE_ConnStatus_t Device_Connection_Status;
 	uint8_t DeviceServerFound;
 } BleApplicationContext_t;
 
-
+#define BLE_CFG_GAP_APPEARANCE 0
 #define BD_ADDR_SIZE_LOCAL    6
 
 PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
@@ -526,4 +524,3 @@ void SVCCTL_ResumeUserEventFlow()
 	hci_resume_flow();
 }
 
-//}
