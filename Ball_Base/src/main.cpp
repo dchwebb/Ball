@@ -23,8 +23,6 @@ int main(void)
 
 	InitHardware();
 
-	//MX_GPIO_Init();
-	MX_RTC_Init();
 	MX_DMA_Init();
 	MX_LPUART1_UART_Init();
 

@@ -4,6 +4,7 @@
 
 static void InitIPCC();
 static void InitSysTick();
+static void InitRTC();
 
 #define IPCC_ALL_RX_BUF 0x0000003FU /*!< Mask for all RX buffers. */
 #define IPCC_ALL_TX_BUF 0x003F0000U /*!< Mask for all TX buffers. */
@@ -28,6 +29,9 @@ void SystemClock_Config()
 	RCC->CR |= RCC_CR_HSION;						// Turn on high speed internal oscillator
 	while ((RCC->CR & RCC_CR_HSIRDY) == 0);			// Wait till HSI is ready
 
+	RCC->BDCR |= RCC_BDCR_LSEON;					// Turn on low speed external oscillator
+	while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0);		// Wait till LSE is ready
+
 	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 1);	// Increase Flash latency as using clock greater than 18MHz (see manual p.77)
 	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 1);
 
@@ -45,19 +49,6 @@ void SystemClock_Config()
 }
 
 
-static void InitSysTick()
-{
-	// Currently systick increments uwTick at 1 kHz
-	SysTick->LOAD  = 32000 - 1UL;					// set reload register
-	SysTick->VAL = 0UL;								// Load the SysTick Counter Value
-	NVIC_SetPriority(SysTick_IRQn, 0);
-	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
-			SysTick_CTRL_TICKINT_Msk  |
-			SysTick_CTRL_ENABLE_Msk;    			// Enable SysTick IRQ and SysTick Timer
-
-}
-
-
 void InitHardware()
 {
 	NVIC_SetPriorityGrouping(0x3);					// Set NVIC Priority grouping to 4
@@ -65,11 +56,12 @@ void InitHardware()
 
 	// Enable hardware semaphore clock
 	RCC->AHB3ENR |= RCC_AHB3ENR_HSEMEN;
-	while ((RCC->AHB3ENR & RCC_AHB3ENR_HSEMEN) == 0) {}
+	while ((RCC->AHB3ENR & RCC_AHB3ENR_HSEMEN) == 0);
 	NVIC_SetPriority(HSEM_IRQn, 0);
 	NVIC_EnableIRQ(HSEM_IRQn);
 
 	InitIPCC();										// Enable IPCC clock and reset all channels
+	InitRTC();										// Initialise RTC
 }
 
 
@@ -124,3 +116,35 @@ static void InitIPCC()
 	IPCC->C1CR |= (IPCC_CR_RXOIE | IPCC_CR_TXFIE);	// Activate the interrupts
 }
 
+
+static void InitRTC()
+{
+	RCC->BDCR |= RCC_BDCR_RTCEN;					// Enable RTC
+	RCC->BDCR |= RCC_BDCR_RTCSEL_0;					// Set RTC CLock to source to LSE
+	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;			// CPU1 RTC APB clock enable
+	while ((RCC->APB1ENR1 & RCC_APB1ENR1_RTCAPBEN) == 0);
+
+	RTC->WPR = 0xCAU;								// Disable the write protection for RTC registers - see p.919
+	RTC->WPR = 0x53U;
+
+	RTC->ISR = 0xFFFFFFFF;							// Enter the Initialization mode (Just setting the Init Flag does not seem to work)
+	while ((RTC->ISR & RTC_ISR_INITF) == 0);
+
+	RTC->CR |= RTC_CR_WUTE;							// Enable Wake up timer see p918
+	RTC->ISR &= ~RTC_ISR_INIT;						// Exit Initialization mode
+
+	RTC->WPR = 0xFFU;								// Enable the write protection for RTC registers.
+}
+
+
+static void InitSysTick()
+{
+	// Currently systick increments uwTick at 1 kHz
+	SysTick->LOAD  = 32000 - 1UL;					// set reload register
+	SysTick->VAL = 0UL;								// Load the SysTick Counter Value
+	NVIC_SetPriority(SysTick_IRQn, 0);
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
+			SysTick_CTRL_TICKINT_Msk  |
+			SysTick_CTRL_ENABLE_Msk;    			// Enable SysTick IRQ and SysTick Timer
+
+}
