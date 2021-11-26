@@ -2,28 +2,28 @@
 #include "initialisation.h"
 #include "app_entry.h"
 
-IPCC_HandleTypeDef hipcc;
 UART_HandleTypeDef hlpuart1;
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_lpuart1_tx;
 DMA_HandleTypeDef hdma_usart1_tx;
 RTC_HandleTypeDef hrtc;
 
+extern uint32_t SystemCoreClock;
+
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_IPCC_Init(void);
 static void MX_RTC_Init(void);
 static void MX_DMA_Init(void);
 static void MX_LPUART1_UART_Init(void);
 
 int main(void)
 {
+	SystemClock_Config();
+	SystemCoreClockUpdate();		// Update SystemCoreClock (system clock frequency)
+
 	InitHardware();
 
-	SystemClock_Config();
-
-	MX_IPCC_Init();
-	MX_GPIO_Init();
+	//MX_GPIO_Init();
 	MX_RTC_Init();
 	MX_DMA_Init();
 	MX_LPUART1_UART_Init();
@@ -35,70 +35,6 @@ int main(void)
 
 	while (1) {
 		MX_APPE_Process();
-	}
-}
-
-
-void xSystemClock_Config(void)
-{
-	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-	RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
-
-	// Configure LSE Drive Capability
-	HAL_PWR_EnableBkUpAccess();
-	__HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
-
-	// Configure the main internal regulator output voltage
-	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-	// Initializes the RCC Oscillators according to the specified parameters in the RCC_OscInitTypeDef structure.
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSE | RCC_OSCILLATORTYPE_LSE;
-	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-	RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-		Error_Handler();
-	}
-
-	// Configure the SYSCLKSource, HCLK, PCLK1 and PCLK2 clocks dividers
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK4|RCC_CLOCKTYPE_HCLK2
-			|RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-			|RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
-	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-	RCC_ClkInitStruct.AHBCLK2Divider = RCC_SYSCLK_DIV1;
-	RCC_ClkInitStruct.AHBCLK4Divider = RCC_SYSCLK_DIV1;
-
-	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
-		Error_Handler();
-	}
-
-	// Initializes the peripheral clocks
-	PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SMPS|RCC_PERIPHCLK_RFWAKEUP
-			|RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_USART1
-			|RCC_PERIPHCLK_LPUART1;
-	PeriphClkInitStruct.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
-	PeriphClkInitStruct.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
-	PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
-	PeriphClkInitStruct.RFWakeUpClockSelection = RCC_RFWKPCLKSOURCE_LSE;
-	PeriphClkInitStruct.SmpsClockSelection = RCC_SMPSCLKSOURCE_HSI;
-	PeriphClkInitStruct.SmpsDivSelection = RCC_SMPSCLKDIV_RANGE1;
-	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
-		Error_Handler();
-	}
-}
-
-
-static void MX_IPCC_Init(void)
-{
-	hipcc.Instance = IPCC;
-	if (HAL_IPCC_Init(&hipcc) != HAL_OK) {
-		Error_Handler();
 	}
 }
 
