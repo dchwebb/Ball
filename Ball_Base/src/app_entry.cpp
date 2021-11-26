@@ -44,11 +44,11 @@ void MX_APPE_Config()
 }
 */
 
-void MX_APPE_Init()
+void APPE_Init()
 {
-	Init_Exti();
-	Init_Rtc();
-	SystemPower_Config();
+//	Init_Exti();
+//	Init_Rtc();
+//	SystemPower_Config();
 	HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 	// Initialize the TimerServer
 	appe_Tl_Init();								// Initialize all transport layers
 

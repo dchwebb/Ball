@@ -42,20 +42,16 @@ void EXTI4_IRQHandler(void)
 	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
 }
 
-void DMA1_Channel4_IRQHandler(void)
-{
-	HAL_DMA_IRQHandler(&hdma_lpuart1_tx);
-}
 
 void USART1_IRQHandler(void)
 {
 	HAL_UART_IRQHandler(&huart1);
 }
 
-void LPUART1_IRQHandler(void)
-{
-	HAL_UART_IRQHandler(&hlpuart1);
-}
+//void LPUART1_IRQHandler(void)
+//{
+//	HAL_UART_IRQHandler(&hlpuart1);
+//}
 
 void IPCC_C1_RX_IRQHandler(void)
 {

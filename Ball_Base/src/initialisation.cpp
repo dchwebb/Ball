@@ -62,6 +62,33 @@ void InitHardware()
 
 	InitIPCC();										// Enable IPCC clock and reset all channels
 	InitRTC();										// Initialise RTC
+
+	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
+	// see 369 / 1532 for Interrupt list table
+	LL_EXTI_DisableIT_0_31(~0);
+	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
+
+	RCC->CFGR |= RCC_CFGR_STOPWUCK;					// 1: HSI16 oscillator selected as wakeup from stop clock and CSS backup clock
+
+	// These bits select the low-power mode entered when CPU2 enters the deepsleep mode. The
+	// system low-power mode entered depend also on the PWR_CR1.LPMS allowed low-power mode from CPU1.
+	PWR->C2CR1 |= 4 & PWR_C2CR1_LPMS_Msk;			// 1xx: Shutdown mode
+
+	//HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 		// Initialize the TimerServer
+	// Note bugs in this routine appear to result in many values not written to RTC registers - not init properly?
+	// Also need to initialise variables WakeupTimerDivider, AsynchPrescalerUserConfig, SynchPrescalerUserConfig, MaxWakeupTimerSetup
+	// Clear for 5 timers: aTimerContext[loop].TimerIDStatus = TimerID_Free;
+//	EXTI->RTSR1 |= EXTI_IMR1_IM19;					// RTC_EXTI_LINE_WAKEUPTIMER_EVENT
+//	EXTI->IMR1 |= EXTI_IMR1_IM19;					// Enable interrupt
+//
+//	NVIC_SetPriority(RTC_WKUP_IRQn, 3);   			// Set NVIC priority
+//	NVIC_EnableIRQ(RTC_WKUP_IRQn);					// Enable NVIC
+
+	//appe_Tl_Init();									// Initialize all transport layers
+
+	// From now, the application is waiting for the ready event (VS_HCI_C2_Ready) received on the system channel before starting the Stack
+	// This system event is received with APPE_SysUserEvtRx()
+
 }
 
 
@@ -148,3 +175,5 @@ static void InitSysTick()
 			SysTick_CTRL_ENABLE_Msk;    			// Enable SysTick IRQ and SysTick Timer
 
 }
+
+
