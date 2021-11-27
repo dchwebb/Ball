@@ -1,5 +1,4 @@
 #include "initialisation.h"
-#include "stm32wb55xx.h"
 #include "otp.h"
 
 static void InitIPCC();
@@ -193,14 +192,18 @@ static void InitRTC()
 
 static void InitSysTick()
 {
-	// Currently systick increments uwTick at 1 kHz
-	SysTick->LOAD  = 32000 - 1UL;					// set reload register
-	SysTick->VAL = 0UL;								// Load the SysTick Counter Value
+	SysTick_Config(SystemCoreClock / SYSTICK);		// gives 1ms
 	NVIC_SetPriority(SysTick_IRQn, 0);
-	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
-			SysTick_CTRL_TICKINT_Msk  |
-			SysTick_CTRL_ENABLE_Msk;    			// Enable SysTick IRQ and SysTick Timer
+
+	// Currently systick increments uwTick at 1 kHz
+//	SysTick->LOAD  = 32000 - 1UL;					// set reload register
+//	SysTick->VAL = 0UL;								// Load the SysTick Counter Value
+//	NVIC_SetPriority(SysTick_IRQn, 0);
+//	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
+//			SysTick_CTRL_TICKINT_Msk  |
+//			SysTick_CTRL_ENABLE_Msk;    			// Enable SysTick IRQ and SysTick Timer
 
 }
+
 
 

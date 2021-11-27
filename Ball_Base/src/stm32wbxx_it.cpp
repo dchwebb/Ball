@@ -1,5 +1,6 @@
 #include "main.h"
 #include "stm32wbxx_it.h"
+#include "app_ble.h"
 
 //extern IPCC_HandleTypeDef hipcc;
 extern DMA_HandleTypeDef hdma_lpuart1_tx;
@@ -7,7 +8,7 @@ extern DMA_HandleTypeDef hdma_usart1_tx;
 extern UART_HandleTypeDef hlpuart1;
 extern UART_HandleTypeDef huart1;
 
-
+extern "C" {
 void SVC_Handler(void)
 {
 }
@@ -28,25 +29,28 @@ void SysTick_Handler(void)
 
 void EXTI0_IRQHandler(void)
 {
-	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+	EXTI->PR1 = EXTI_PR1_PIF0;
+	APP_BLE_Key_Button2_Action();
 }
-
 
 void EXTI1_IRQHandler(void)
 {
-	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+	EXTI->PR1 = EXTI_PR1_PIF1;
+	APP_BLE_Key_Button3_Action();
+
 }
 
 void EXTI4_IRQHandler(void)
 {
-	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
+	EXTI->PR1 = EXTI_PR1_PIF4;
+	APP_BLE_Key_Button1_Action();
 }
 
 
-void USART1_IRQHandler(void)
-{
-	HAL_UART_IRQHandler(&huart1);
-}
+//void USART1_IRQHandler(void)
+//{
+//	HAL_UART_IRQHandler(&huart1);
+//}
 
 //void LPUART1_IRQHandler(void)
 //{
@@ -90,4 +94,5 @@ void BusFault_Handler(void) {
 }
 void UsageFault_Handler(void) {
 	while (1) {}
+}
 }

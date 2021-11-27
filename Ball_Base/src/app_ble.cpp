@@ -9,6 +9,7 @@
 #include "shci.h"
 #include "stm32_lpm.h"
 #include "otp.h"
+#include "uartHandler.h"
 
 typedef struct {
 	uint16_t connectionHandle;			// connection handle of the current active connection; When not in connection, the handle is set to 0xFFFF
@@ -303,11 +304,13 @@ void APP_BLE_Key_Button1_Action()
 
 void APP_BLE_Key_Button2_Action()
 {
+	uartSendString("Button 2 longer message testing \r\n");
 }
 
 
 void APP_BLE_Key_Button3_Action()
 {
+	printf("Button 3 \r\n");
 }
 
 

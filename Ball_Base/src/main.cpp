@@ -1,8 +1,9 @@
 #include "main.h"
 #include "initialisation.h"
+#include "uartHandler.h"
 #include "app_entry.h"
 
-//UART_HandleTypeDef hlpuart1;
+
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_lpuart1_tx;
 DMA_HandleTypeDef hdma_usart1_tx;
@@ -19,11 +20,11 @@ int main(void)
 	SystemCoreClockUpdate();		// Update SystemCoreClock (system clock frequency)
 
 	InitHardware();
-
+	InitUart();
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
 
-	MX_USART1_UART_Init();
-	InitTimer();
+//	MX_USART1_UART_Init();
+	InitTimer();					// Initialise PWM output
 
 	while (1) {
 		MX_APPE_Process();

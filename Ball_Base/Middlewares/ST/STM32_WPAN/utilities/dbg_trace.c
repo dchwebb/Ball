@@ -225,11 +225,12 @@ void DbgTraceInit( void )
  * @param	...: arguments to be formatted in format string
  * @retval none
  */
+#ifdef DWDISABLE
 size_t _write(int handle, const unsigned char * buf, size_t bufSize)
 {
   return ( DbgTraceWrite(handle, buf, bufSize) );
 }
-
+#endif
 #else
 /**
  * @brief __write: override the _write standard lib function to redirect printf to USART.
@@ -295,7 +296,7 @@ size_t DbgTraceWrite(int handle, const unsigned char * buf, size_t bufSize)
     RESTORE_PRIMASK();
 
     DbgOutputTraces((uint8_t*)buf, bufSize, DbgTrace_TxCpltCallback);
-    while (!DbgTracePeripheralReady);
+//    while (!DbgTracePeripheralReady);
 #endif
     /* CS END */
   }
