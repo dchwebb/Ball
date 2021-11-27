@@ -22,12 +22,12 @@ PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t BleSpareEvtBuffer[sizeof(TL_
 //static void Config_HSE(void);
 //static void Reset_IPCC();
 //static void Reset_BackupDomain();
-static void SystemPower_Config();
-static void appe_Tl_Init();
+//static void SystemPower_Config();
+//static void appe_Tl_Init();
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status);
 static void APPE_SysUserEvtRx(void* pPayload);
-static void Init_Rtc();
-static void Init_Exti();
+//static void Init_Rtc();
+//static void Init_Exti();
 
 /*
 void MX_APPE_Config()
@@ -49,48 +49,11 @@ void APPE_Init()
 //	Init_Exti();
 //	Init_Rtc();
 //	SystemPower_Config();
+
+	// Note bugs in this routine appear to result in many values not written to RTC registers - not init properly?
 	HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 	// Initialize the TimerServer
-	appe_Tl_Init();								// Initialize all transport layers
 
-	// From now, the application is waiting for the ready event (VS_HCI_C2_Ready) received on the system channel before starting the Stack
-	// This system event is received with APPE_SysUserEvtRx()
-}
-
-
-void Init_Exti()
-{
-	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
-	LL_EXTI_DisableIT_0_31(~0);
-	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
-}
-
-
-static void Init_Rtc()
-{
-	LL_RTC_DisableWriteProtection(RTC);
-	LL_RTC_WAKEUP_SetClock(RTC, CFG_RTC_WUCKSEL_DIVIDER);
-	LL_RTC_EnableWriteProtection(RTC);
-}
-
-
-// Configures the system to be ready for low power mode
-static void SystemPower_Config()
-{
-	// Select HSI as system clock source after Wake Up from Stop mode
-	LL_RCC_SetClkAfterWakeFromStop(LL_RCC_STOP_WAKEUPCLOCK_HSI);
-
-	UTIL_LPM_Init();								// Initialize low power manager
-	LL_C2_PWR_SetPowerMode(LL_PWR_MODE_SHUTDOWN);	// Initialize the CPU2 reset value before starting CPU2 with C2BOOT
-
-#if (CFG_USB_INTERFACE_ENABLE != 0)
-	// Enable USB power
-	HAL_PWREx_EnableVddUSB();
-#endif
-}
-
-
-static void appe_Tl_Init()
-{
+	// Initialize transport layers
 	TL_MM_Config_t tl_mm_config;
 	SHCI_TL_HciInitConf_t SHci_Tl_Init_Conf;
 
@@ -110,7 +73,66 @@ static void appe_Tl_Init()
 	TL_MM_Init(&tl_mm_config);
 
 	TL_Enable();
+
+	// From now, the application is waiting for the ready event (VS_HCI_C2_Ready) received on the system channel before starting the Stack
+	// This system event is received with APPE_SysUserEvtRx()
 }
+
+
+//void Init_Exti()
+//{
+//	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
+//	LL_EXTI_DisableIT_0_31(~0);
+//	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
+//}
+//
+//
+//static void Init_Rtc()
+//{
+//	LL_RTC_DisableWriteProtection(RTC);
+//	LL_RTC_WAKEUP_SetClock(RTC, CFG_RTC_WUCKSEL_DIVIDER);
+//	LL_RTC_EnableWriteProtection(RTC);
+//}
+
+
+//// Configures the system to be ready for low power mode
+//static void SystemPower_Config()
+//{
+//	// Select HSI as system clock source after Wake Up from Stop mode
+//	LL_RCC_SetClkAfterWakeFromStop(LL_RCC_STOP_WAKEUPCLOCK_HSI);
+//
+//	UTIL_LPM_Init();								// Initialize low power manager
+//	LL_C2_PWR_SetPowerMode(LL_PWR_MODE_SHUTDOWN);	// Initialize the CPU2 reset value before starting CPU2 with C2BOOT
+//
+//#if (CFG_USB_INTERFACE_ENABLE != 0)
+//	// Enable USB power
+//	HAL_PWREx_EnableVddUSB();
+//#endif
+//}
+
+
+//static void appe_Tl_Init()
+//{
+//	TL_MM_Config_t tl_mm_config;
+//	SHCI_TL_HciInitConf_t SHci_Tl_Init_Conf;
+//
+//	TL_Init();	// Reference table initialization
+//
+//	// System channel initialization
+//	UTIL_SEQ_RegTask(1 << CFG_TASK_SYSTEM_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, shci_user_evt_proc);
+//	SHci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&SystemCmdBuffer;
+//	SHci_Tl_Init_Conf.StatusNotCallBack = APPE_SysStatusNot;
+//	shci_init(APPE_SysUserEvtRx, (void*) &SHci_Tl_Init_Conf);
+//
+//	// Memory Manager channel initialization
+//	tl_mm_config.p_BleSpareEvtBuffer = BleSpareEvtBuffer;
+//	tl_mm_config.p_SystemSpareEvtBuffer = SystemSpareEvtBuffer;
+//	tl_mm_config.p_AsynchEvtPool = EvtPool;
+//	tl_mm_config.AsynchEvtPoolSize = POOL_SIZE;
+//	TL_MM_Init(&tl_mm_config);
+//
+//	TL_Enable();
+//}
 
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status)
 {

@@ -11,8 +11,6 @@ RTC_HandleTypeDef hrtc;
 extern uint32_t SystemCoreClock;
 
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 
 
 int main(void)
@@ -22,11 +20,8 @@ int main(void)
 
 	InitHardware();
 
-	//MX_DMA_Init();
-	//MX_LPUART1_UART_Init();
+	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
 
-	APPE_Init();
-	MX_GPIO_Init();
 	MX_USART1_UART_Init();
 	InitTimer();
 
@@ -42,11 +37,6 @@ void MX_USART1_UART_Init(void)
 	// DMA controller clock enable
 	__HAL_RCC_DMAMUX1_CLK_ENABLE();
 	__HAL_RCC_DMA2_CLK_ENABLE();
-//	__HAL_RCC_DMA1_CLK_ENABLE();
-
-//	// DMA1_Channel4_IRQn interrupt configuration
-//	HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 15, 0);
-//	HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 
 	// DMA2_Channel4_IRQn interrupt configuration
 	HAL_NVIC_SetPriority(DMA2_Channel4_IRQn, 15, 0);
@@ -82,66 +72,6 @@ void MX_USART1_UART_Init(void)
 }
 
 
-
-//static void MX_DMA_Init(void)
-//{
-//	// DMA controller clock enable
-//	__HAL_RCC_DMAMUX1_CLK_ENABLE();
-//	__HAL_RCC_DMA2_CLK_ENABLE();
-////	__HAL_RCC_DMA1_CLK_ENABLE();
-//
-////	// DMA1_Channel4_IRQn interrupt configuration
-////	HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 15, 0);
-////	HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
-//
-//	// DMA2_Channel4_IRQn interrupt configuration
-//	HAL_NVIC_SetPriority(DMA2_Channel4_IRQn, 15, 0);
-//	HAL_NVIC_EnableIRQ(DMA2_Channel4_IRQn);
-//}
-
-
-static void MX_GPIO_Init(void)
-{
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-	// GPIO Ports Clock Enable
-	__HAL_RCC_GPIOC_CLK_ENABLE();
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-	__HAL_RCC_GPIOA_CLK_ENABLE();
-	__HAL_RCC_GPIOD_CLK_ENABLE();
-
-	// Configure GPIO pin Output Level
-	HAL_GPIO_WritePin(GPIOB, LED_GREEN_Pin|LED_RED_Pin|LED_BLUE_Pin, GPIO_PIN_RESET);
-
-	// Configure GPIO pin : BUTTON_SW1_Pin
-	GPIO_InitStruct.Pin = BUTTON_SW1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	HAL_GPIO_Init(BUTTON_SW1_GPIO_Port, &GPIO_InitStruct);
-
-	// Configure GPIO pins : LED_GREEN_Pin LED_RED_Pin LED_BLUE_Pin
-	GPIO_InitStruct.Pin = LED_GREEN_Pin|LED_RED_Pin|LED_BLUE_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	// Configure GPIO pins : BUTTON_SW2_Pin BUTTON_SW3_Pin
-	GPIO_InitStruct.Pin = BUTTON_SW2_Pin|BUTTON_SW3_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-	// EXTI interrupt init
-	HAL_NVIC_SetPriority(EXTI0_IRQn, 3, 0);
-	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-
-	HAL_NVIC_SetPriority(EXTI1_IRQn, 3, 0);
-	HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
-	HAL_NVIC_SetPriority(EXTI4_IRQn, 3, 0);
-	HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-}
 
 
 void Error_Handler()

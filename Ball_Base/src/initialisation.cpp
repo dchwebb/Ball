@@ -5,6 +5,7 @@
 static void InitIPCC();
 static void InitSysTick();
 static void InitRTC();
+static void InitGPIO();
 
 #define IPCC_ALL_RX_BUF 0x0000003FU /*!< Mask for all RX buffers. */
 #define IPCC_ALL_TX_BUF 0x003F0000U /*!< Mask for all TX buffers. */
@@ -74,26 +75,55 @@ void InitHardware()
 	// system low-power mode entered depend also on the PWR_CR1.LPMS allowed low-power mode from CPU1.
 	PWR->C2CR1 |= 4 & PWR_C2CR1_LPMS_Msk;			// 1xx: Shutdown mode
 
-	//HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 		// Initialize the TimerServer
-	// Note bugs in this routine appear to result in many values not written to RTC registers - not init properly?
-	// Also need to initialise variables WakeupTimerDivider, AsynchPrescalerUserConfig, SynchPrescalerUserConfig, MaxWakeupTimerSetup
-	// Clear for 5 timers: aTimerContext[loop].TimerIDStatus = TimerID_Free;
-//	EXTI->RTSR1 |= EXTI_IMR1_IM19;					// RTC_EXTI_LINE_WAKEUPTIMER_EVENT
-//	EXTI->IMR1 |= EXTI_IMR1_IM19;					// Enable interrupt
-//
-//	NVIC_SetPriority(RTC_WKUP_IRQn, 3);   			// Set NVIC priority
-//	NVIC_EnableIRQ(RTC_WKUP_IRQn);					// Enable NVIC
+	InitGPIO();
+}
 
-	//appe_Tl_Init();									// Initialize all transport layers
 
-	// From now, the application is waiting for the ready event (VS_HCI_C2_Ready) received on the system channel before starting the Stack
-	// This system event is received with APPE_SysUserEvtRx()
+static void InitGPIO()
+{
+	// GPIO Ports Clock Enable
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN;
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIODEN;
+
+	// Configure GPIO pin : PC4 BUTTON_SW1_Pin FIXME GPIO C not available on WB35
+	GPIOC->MODER &= ~GPIO_MODER_MODE4_Msk;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+	GPIOC->PUPDR |= GPIO_PUPDR_PUPD4_0;				// Activate pull up
+	SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI4_PC;	// Enable external interrupt
+	EXTI->IMR1 |= EXTI_IMR1_IM4;					// 1: Wakeup with interrupt request from Line x is unmasked
+	EXTI->FTSR1 |= EXTI_FTSR1_FT4;					// Enable falling edge trigger
+
+	// Configure GPIO pins :  PD0 BUTTON_SW2_Pin; PD1 BUTTON_SW3_Pin FIXME GPIO D not available on WB35
+	GPIOD->MODER &= ~(GPIO_MODER_MODE0_Msk | GPIO_MODER_MODE1_Msk);				// 00: Input mode
+	GPIOD->PUPDR |= (GPIO_PUPDR_PUPD0_0 | GPIO_PUPDR_PUPD1_0);					// Activate pull up
+	SYSCFG->EXTICR[0] |= (SYSCFG_EXTICR1_EXTI0_PD | SYSCFG_EXTICR1_EXTI1_PD);	// Enable external interrupt
+	EXTI->IMR1 |= (EXTI_IMR1_IM0 | EXTI_IMR1_IM1);								// 1: Wakeup with interrupt request from Line x is unmasked
+	EXTI->FTSR1 |= (EXTI_FTSR1_FT0 | EXTI_FTSR1_FT1);							// Enable falling edge trigger
+
+	// Configure LED pins : PB0 LED_GREEN_Pin;  PB1 LED_RED_Pin; PB5 LED_BLUE_Pin
+	GPIOB->MODER &= ~(GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1 | GPIO_MODER_MODE5_1);
+
+	// EXTI interrupt init
+	NVIC_SetPriority(EXTI0_IRQn, 3);
+	NVIC_EnableIRQ(EXTI0_IRQn);
+
+	NVIC_SetPriority(EXTI1_IRQn, 3);
+	NVIC_EnableIRQ(EXTI1_IRQn);
+
+	NVIC_SetPriority(EXTI4_IRQn, 3);
+	NVIC_EnableIRQ(EXTI4_IRQn);
+
+	// Init debug pin PB8
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 
 }
 
 
 // Used for PWM output
-void InitTimer() {
+void InitTimer()
+{
 	// TIM2 Channel 1 Output: *PA0, PA5, (PA15)
 	// Clock should be 32MHz
 
@@ -117,9 +147,6 @@ void InitTimer() {
 	TIM2->CR1 |= TIM_CR1_CEN;						// Enable counter
 
 
-	// Init debug pin PB8
-	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
-	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 }
 
 
