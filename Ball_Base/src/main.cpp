@@ -9,14 +9,14 @@ extern uint32_t SystemCoreClock;
 
 int main(void)
 {
-	SystemClock_Config();
-	SystemCoreClockUpdate();		// Update SystemCoreClock (system clock frequency)
+	SystemClock_Config();			// Set system clocks
+	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
 
-	InitHardware();
+	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
 	InitUart();						// Debugging via STLink UART
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
 
-	InitTimer();					// Initialise PWM output
+	InitPWMTimer();					// Initialise PWM output
 
 	while (1) {
 		MX_APPE_Process();

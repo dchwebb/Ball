@@ -3,6 +3,6 @@
 
 #define SYSTICK 1000						// 1ms
 
-void InitTimer();
+void InitPWMTimer();
 void InitHardware();
 void SystemClock_Config();
