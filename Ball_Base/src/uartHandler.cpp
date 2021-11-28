@@ -33,9 +33,6 @@ void InitUart() {
 
 	USART1->CR1 |= USART_CR1_UE;					// USART Enable
 
-	// configure PC13 user button on nucleo board
-	GPIOC->MODER &= ~GPIO_MODER_MODE13_Msk;
-
 }
 
 

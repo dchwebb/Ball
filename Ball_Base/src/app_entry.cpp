@@ -151,7 +151,7 @@ static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status)
  */
 static void APPE_SysUserEvtRx(void* pPayload)
 {
-	UNUSED(pPayload);
+	//UNUSED(pPayload);
 	// Traces channel initialization
 	APPD_EnableCPU2();
 
@@ -167,12 +167,12 @@ void MX_APPE_Process(void)
 }
 
 
-void UTIL_SEQ_Idle()
-{
-#if (CFG_LPM_SUPPORTED == 1)
-	UTIL_LPM_EnterLowPower();
-#endif
-}
+//void UTIL_SEQ_Idle()
+//{
+//#if (CFG_LPM_SUPPORTED == 1)
+//	UTIL_LPM_EnterLowPower();
+//#endif
+//}
 
 
 // This function is called by the scheduler each time an event is pending.

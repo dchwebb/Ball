@@ -5,3 +5,4 @@
 
 void InitTimer();
 void InitHardware();
+void SystemClock_Config();

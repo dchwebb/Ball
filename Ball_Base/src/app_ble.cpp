@@ -49,6 +49,7 @@ static void Ble_Hci_Gap_Gatt_Init();
 static const uint8_t* BleGetBdAddress();
 static void Scan_Request();
 static void Connect_Request();
+static void DisconnectRequest();
 
 
 void APP_BLE_Init()
@@ -102,6 +103,7 @@ void APP_BLE_Init()
 	// From here, all initialization are BLE application specific
 	UTIL_SEQ_RegTask(1 << CFG_TASK_START_SCAN_ID, UTIL_SEQ_RFU, Scan_Request);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_CONN_DEV_1_ID, UTIL_SEQ_RFU, Connect_Request);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, UTIL_SEQ_RFU, DisconnectRequest);
 
 	// Initialization of the BLE App Context
 	BleApplicationContext.Device_Connection_Status = APP_BLE_IDLE;
@@ -109,8 +111,8 @@ void APP_BLE_Init()
 	// Radio mask Activity
 	aci_hal_set_radio_activity_mask(0x0020);			// Connection event master
 
-	// Initialize P2P Client Application
-	P2PC_APP_Init();
+	// Initialize HID Client Application
+	HID_APP_Init();
 
 	return;
 }
@@ -180,7 +182,7 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 				APP_DBG_MSG("* BLE: Disconnection event with server\r\n");
 				handleNotification.P2P_Evt_Opcode = PEER_DISCON_HANDLE_EVT;
 				handleNotification.ConnectionHandle = BleApplicationContext.connectionHandle;
-				P2PC_APP_Notification(&handleNotification);
+				HIDConnectionNotification(&handleNotification);
 			}
 		}
 		break;
@@ -202,7 +204,7 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 					APP_DBG_MSG("* BLE: Connection event with server\r\n");
 					handleNotification.P2P_Evt_Opcode = PEER_CONN_HANDLE_EVT;
 					handleNotification.ConnectionHandle = BleApplicationContext.connectionHandle;
-					P2PC_APP_Notification(&handleNotification);
+					HIDConnectionNotification(&handleNotification);
 
 					result = aci_gatt_disc_all_primary_services(BleApplicationContext.connectionHandle);
 					if (result == BLE_STATUS_SUCCESS) {
@@ -295,10 +297,12 @@ APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status(uint16_t Connection_Ha
 
 void APP_BLE_Key_Button1_Action()
 {
-	if (P2P_Client_APP_Get_State() != APP_BLE_CONNECTED_CLIENT)	{
+	if (HID_Client_APP_Get_State() != APP_BLE_CONNECTED_CLIENT)	{
 		UTIL_SEQ_SetTask(1 << CFG_TASK_START_SCAN_ID, CFG_SCH_PRIO_0);
 	} else {
-		P2PC_APP_SW1_Button_Action();
+		UTIL_SEQ_SetTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
+
+		//HID_APP_SW1_Button_Action();
 	}
 }
 
@@ -426,6 +430,12 @@ static void Connect_Request()
 		}
 	}
 	return;
+}
+
+
+static void DisconnectRequest()
+{
+	aci_gap_terminate(BleApplicationContext.connectionHandle, 0x16);			// 0x16: Connection Terminated by Local Host
 }
 
 

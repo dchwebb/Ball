@@ -3,16 +3,9 @@
 #include "uartHandler.h"
 #include "app_entry.h"
 
-
-UART_HandleTypeDef huart1;
-DMA_HandleTypeDef hdma_lpuart1_tx;
-DMA_HandleTypeDef hdma_usart1_tx;
 RTC_HandleTypeDef hrtc;
 
 extern uint32_t SystemCoreClock;
-
-void SystemClock_Config(void);
-
 
 int main(void)
 {
@@ -20,10 +13,9 @@ int main(void)
 	SystemCoreClockUpdate();		// Update SystemCoreClock (system clock frequency)
 
 	InitHardware();
-	InitUart();
+	InitUart();						// Debugging via STLink UART
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
 
-//	MX_USART1_UART_Init();
 	InitTimer();					// Initialise PWM output
 
 	while (1) {
@@ -31,8 +23,15 @@ int main(void)
 	}
 }
 
+void Error_Handler()
+{
+	__disable_irq();
+	while (1)
+	{
+	}
+}
 
-
+/*
 void MX_USART1_UART_Init(void)
 {
 	// DMA controller clock enable
@@ -71,14 +70,8 @@ void MX_USART1_UART_Init(void)
 		Error_Handler();
 	}
 }
+*/
 
 
 
 
-void Error_Handler()
-{
-	__disable_irq();
-	while (1)
-	{
-	}
-}
