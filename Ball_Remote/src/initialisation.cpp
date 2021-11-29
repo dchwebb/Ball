@@ -62,8 +62,9 @@ void InitHardware()
 	while ((RCC->AHB3ENR & RCC_AHB3ENR_HSEMEN) == 0);
 	NVIC_SetPriority(HSEM_IRQn, 0);
 	NVIC_EnableIRQ(HSEM_IRQn);
-/*
+
 	InitIPCC();										// Enable IPCC clock and reset all channels
+	/*
 	InitRTC();										// Initialise RTC
 
 	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
@@ -178,7 +179,7 @@ static void InitIPCC()
 static void InitRTC()
 {
 	RCC->BDCR |= RCC_BDCR_RTCEN;					// Enable RTC
-	RCC->BDCR |= RCC_BDCR_RTCSEL_0;					// Set RTC CLock to source to LSE
+	RCC->BDCR |= RCC_BDCR_RTCSEL_0;					// Set RTC Clock to source to LSE
 	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;			// CPU1 RTC APB clock enable
 	while ((RCC->APB1ENR1 & RCC_APB1ENR1_RTCAPBEN) == 0);
 

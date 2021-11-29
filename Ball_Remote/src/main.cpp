@@ -44,16 +44,18 @@ int main(void)
 	HAL_Init();
 	HALSystemClock_Config();
 */
-	InitHardware();
 	SystemClock_Config();
+	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
+	InitHardware();
 
-	MX_APPE_Config();		// Config code for STM32_WPAN (HSE Tuning must be done before system clock configuration)
-	MX_IPCC_Init();			// Inter-processor communication controller (IPCC)
+
+	//MX_APPE_Config();		// Config code for STM32_WPAN (HSE Tuning must be done before system clock configuration)
+	//MX_IPCC_Init();			// Inter-processor communication controller (IPCC)
 	MX_APPE_Init();			// Note that the App Entry must be run before GPIO Init or it clears EXTI interrupts
 
 	MX_GPIO_Init();
 	MX_USART1_UART_Init();
-	MX_USB_PCD_Init();
+
 	MX_RTC_Init();
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, 0, Button1_Task);
