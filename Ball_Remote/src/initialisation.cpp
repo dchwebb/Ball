@@ -23,6 +23,8 @@ void SystemClock_Config()
 
 	PWR->CR1 |= PWR_CR1_DBP; 						// Disable backup domain write protection: Enable access to the RTC registers
 
+	RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_0;			// PLL source is MSI
+
 	RCC->CR |= RCC_CR_HSEON;						// Turn on external oscillator
 	while ((RCC->CR & RCC_CR_HSERDY) == 0);			// Wait till HSE is ready
 
@@ -42,10 +44,11 @@ void SystemClock_Config()
 	SysTick->VAL = 0;								// Load the SysTick Counter Value
 
 	// Peripheral clocks already set to default: RTC, USART, LPUSART
-	RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				//  RF system wakeup clock source selection: 01: LSE oscillator clock
+	RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				// RF system wakeup clock source selection: 01: LSE oscillator clock
 	RCC->SMPSCR |= RCC_SMPSCR_SMPSDIV_0;			// SMPS prescaler - FIXME not planning to use (see p214)
 	RCC->SMPSCR &= ~RCC_SMPSCR_SMPSSEL_Msk;			// 00: HSI16 selected as SMPS step-down converter clock
 
+	RCC->CR |= RCC_CR_MSIPLLEN;						// Multispeed internal RC oscillator - used for USB?
 }
 
 
@@ -59,7 +62,7 @@ void InitHardware()
 	while ((RCC->AHB3ENR & RCC_AHB3ENR_HSEMEN) == 0);
 	NVIC_SetPriority(HSEM_IRQn, 0);
 	NVIC_EnableIRQ(HSEM_IRQn);
-
+/*
 	InitIPCC();										// Enable IPCC clock and reset all channels
 	InitRTC();										// Initialise RTC
 
@@ -75,6 +78,8 @@ void InitHardware()
 	PWR->C2CR1 |= 4 & PWR_C2CR1_LPMS_Msk;			// 1xx: Shutdown mode
 
 	InitGPIO();
+*/
+
 }
 
 
