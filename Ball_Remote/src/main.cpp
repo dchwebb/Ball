@@ -5,19 +5,21 @@
 #include "bas.h"
 #include "initialisation.h"
 #include "app_entry.h"
+#include "uartHandler.h"
 
-IPCC_HandleTypeDef hipcc;
+//IPCC_HandleTypeDef hipcc;
 RTC_HandleTypeDef hrtc;
 UART_HandleTypeDef huart1;
-PCD_HandleTypeDef hpcd_USB_FS;
 
-void HALSystemClock_Config(void);
+
+//void HALSystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART1_UART_Init(void);
-static void MX_USB_PCD_Init(void);
-static void MX_RTC_Init(void);
-static void MX_IPCC_Init(void);
+//static void MX_USART1_UART_Init(void);
+//static void MX_USB_PCD_Init(void);
+//static void MX_RTC_Init(void);
+//static void MX_IPCC_Init(void);
 
+/*
 int __io_putchar(int ch) {
 	HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
 	return ch;
@@ -26,6 +28,7 @@ int __io_putchar(int ch) {
 hw_status_t HW_UART_Transmit_DMA(hw_uart_id_t hw_uart_id, uint8_t *p_data, uint16_t size, void (*Callback)(void)) {
 	return (hw_status_t)HAL_UART_Transmit(&huart1, p_data, size, 0x100);
 }
+*/
 
 void Button1_Task(void) {
 	HIDS_MPlayer_Notification(0x55);
@@ -41,36 +44,24 @@ void Button2_Task(void) {
 
 int main(void)
 {
-	/*
-	HAL_Init();
-	HALSystemClock_Config();
-*/
-	SystemClock_Config();
+	SystemClock_Config();			// Set system clocks
 	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
-	InitHardware();
 
+	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
+	InitUart();						// Debugging via STLink UART
+	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
 
-	//MX_APPE_Config();		// Config code for STM32_WPAN (HSE Tuning must be done before system clock configuration)
-	//MX_IPCC_Init();			// Inter-processor communication controller (IPCC)
-	//MX_APPE_Init();			// Note that the App Entry must be run before GPIO Init or it clears EXTI interrupts
-
-	APPE_Init();
-
-	MX_GPIO_Init();
-	//MX_USART1_UART_Init();
-
-	//MX_RTC_Init();
+	//MX_GPIO_Init();
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, 0, Button1_Task);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW2_BUTTON_PUSHED_ID, 0, Button2_Task);
 
 	while (1) {
 		MX_APPE_Process();
-
 	}
 }
 
-
+/*
 void HALSystemClock_Config(void)
 {
 	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -220,16 +211,16 @@ static void MX_GPIO_Init(void)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-	/* GPIO Ports Clock Enable */
+	// GPIO Ports Clock Enable
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 
-	/*Configure GPIO pin Output Level */
+	//Configure GPIO pin Output Level
 	HAL_GPIO_WritePin(GPIOB, LD2_Pin|LD3_Pin|LD1_Pin, GPIO_PIN_RESET);
 
-	/*Configure GPIO pin : BUTTON_SW1_Pin */
+	//Configure GPIO pin : BUTTON_SW1_Pin
 	GPIO_InitStruct.Pin = BUTTON_SW1_Pin;		// PC4
 	GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
@@ -240,57 +231,32 @@ static void MX_GPIO_Init(void)
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(BUTTON_SW2_GPIO_Port, &GPIO_InitStruct);
 
-	/*Configure GPIO pins : LD2_Pin LD3_Pin LD1_Pin */
+	//Configure GPIO pins : LD2_Pin LD3_Pin LD1_Pin
 	GPIO_InitStruct.Pin = LD2_Pin|LD3_Pin|LD1_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-	/*Configure GPIO pins : BUTTON_SW2_Pin BUTTON_SW3_Pin */
+	//Configure GPIO pins : BUTTON_SW2_Pin BUTTON_SW3_Pin
 	//GPIO_InitStruct.Pin = BUTTON_SW2_Pin|BUTTON_SW3_Pin;
 	GPIO_InitStruct.Pin = BUTTON_SW3_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-	/* EXTI interrupt init*/
+	// EXTI interrupt init
 	HAL_NVIC_SetPriority(EXTI4_IRQn, 3, 0);
 	HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 	HAL_NVIC_SetPriority(EXTI0_IRQn, 3, 0);
 	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 }
+*/
 
-
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void)
+void Error_Handler()
 {
-	/* USER CODE BEGIN Error_Handler_Debug */
-	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
 	while (1) {
 	}
-	/* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
-/**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-	/* USER CODE BEGIN 6 */
-	/* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	/* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
-
