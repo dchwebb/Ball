@@ -1,7 +1,7 @@
 #include "main.h"
 #include "stm32_seq.h"
 #include "ble_types.h"
-#include "hids.h"
+#include "hids_app.h"
 #include "bas.h"
 #include "initialisation.h"
 #include "app_entry.h"
@@ -31,9 +31,8 @@ hw_status_t HW_UART_Transmit_DMA(hw_uart_id_t hw_uart_id, uint8_t *p_data, uint1
 */
 
 void Button1_Task(void) {
-	HIDS_MPlayer_Notification(0x55);
 	printf("Button 1 pressed\r\n");
-	HIDS_Movement_Notification(5, 0);
+	HIDS_Joystick_Notification(5, 0, 0);
 }
 void Button2_Task(void) {
 	printf("Button 2 pressed\r\n");
