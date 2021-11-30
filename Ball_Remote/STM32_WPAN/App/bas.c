@@ -18,7 +18,7 @@ typedef struct {
 
 PLACE_IN_SECTION("BLE_APP_CONTEXT") BAS_APP_Context_t BAS_App_Context;
 
-void BAS_Init(void)
+void BAS_Init()
 {
 	uint16_t uuid;
 	tBleStatus hciCmdResult = BLE_STATUS_SUCCESS;
@@ -48,7 +48,7 @@ void BAS_Init(void)
 	return;
 }
 
-void BAS_App_Init(void)
+void BAS_App_Init()
 {
 	UTIL_SEQ_RegTask(1 << CFG_TASK_BAS_LEVEL, UTIL_SEQ_RFU, BAS_App_Send_Notification);
 	//UTIL_SEQ_RegTask(1 << CFG_TASK_NOTIFY_TEMPERATURE, 0, Custom_Mjchar_n_Send_Notification);
@@ -80,8 +80,8 @@ tBleStatus BAS_Update_Char(uint16_t CharOpcode, uint8_t *pPayload)
 	if (CharOpcode == BATTERY_LEVEL_CHAR_UUID) {
 		result = aci_gatt_update_char_value(BAS_Context.SvcHdle,
 				BAS_Context.BatteryLevelHandle,
-				0, /* charValOffset */
-				2, /* charValueLen */
+				0, // charValOffset
+				2, // charValueLen
 				(uint8_t *)  pPayload);
 	}
 
@@ -115,7 +115,7 @@ static SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event)
 	hci_event_pckt *event_pckt;
 	evt_blecore_aci *blecore_evt;
 	aci_gatt_attribute_modified_event_rp0 *attribute_modified;
-	aci_gatt_write_permit_req_event_rp0   *write_perm_req;
+	//aci_gatt_write_permit_req_event_rp0   *write_perm_req;
 	aci_gatt_read_permit_req_event_rp0    *read_req;
 	BAS_Notification_evt_t     Notification;
 
@@ -171,7 +171,7 @@ static SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event)
 		break;
 	}
 
-	return(return_value);
+	return (return_value);
 }
 
 

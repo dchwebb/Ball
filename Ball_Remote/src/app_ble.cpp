@@ -10,7 +10,8 @@
 #include "stm32_lpm.h"
 #include "otp.h"
 #include "dis_app.h"
-#include "custom_app.h"
+#include "hids_app.h"
+
 
 // security parameters structure
 typedef struct _tSecurityParams {

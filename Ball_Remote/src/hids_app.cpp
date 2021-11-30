@@ -4,7 +4,6 @@
 static SVCCTL_EvtAckStatus_t HIDS_Event_Handler(void *Event);
 
 
-
 typedef struct
 {
 	uint16_t SvcHdle;				 	// Service handle
@@ -67,9 +66,9 @@ PLACE_IN_SECTION("BLE_APP_CONTEXT") uint8_t protocolModeData;		// 0 = boot mode;
 #define HID_INFO_FLAG_NORMALLY_CONNECTABLE_MSK  0x02
 
 typedef struct {
-	uint16_t          bcdHID;         // 16-bit unsigned integer representing version number of base USB HID Specification implemented by HID Device
-	uint8_t           bcountryCode;   // Identifies which country the hardware is localized for. Most hardware is not localized and thus this value would be zero (0).
-	uint8_t           flags;          // See http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.hid_information.xml
+	uint16_t bcdHID;         // 16-bit unsigned integer representing version number of base USB HID Specification implemented by HID Device
+	uint8_t  bcountryCode;   // Identifies which country the hardware is localized for. Most hardware is not localized and thus this value would be zero (0).
+	uint8_t  flags;          // See http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.hid_information.xml
 } HID_Information_t;
 
 PLACE_IN_SECTION("BLE_APP_CONTEXT") HID_Information_t HID_Information;
@@ -203,22 +202,15 @@ static const uint16_t MPlayerReport = 0x0103;
 
 void HIDS_Init(void)
 {
-
 	uint16_t uuid;
 	tBleStatus hciCmdResult = BLE_STATUS_SUCCESS;
 
 	// Register the event handler to the BLE controller
 	SVCCTL_RegisterSvcHandler(HIDS_Event_Handler);
 
-
-	// try deleting service update characteristic
-//	hciCmdResult = aci_gatt_del_char(1, 3);
-//	hciCmdResult = aci_gatt_del_char(1, 4);
-//	hciCmdResult = aci_gatt_del_service(1);
-
 	uuid = HUMAN_INTERFACE_DEVICE_SERVICE_UUID;
 	hciCmdResult = aci_gatt_add_service(UUID_TYPE_16,
-			(Service_UUID_t *) &uuid,
+			(Service_UUID_t*) &uuid,
 			PRIMARY_SERVICE,
 			24,		// Max_Attribute_Records
 			&(HIDS_Context.SvcHdle));
@@ -226,7 +218,7 @@ void HIDS_Init(void)
 	uuid = HID_CONTROL_POINT_CHAR_UUID;
 	hciCmdResult = aci_gatt_add_char(HIDS_Context.SvcHdle,
 			UUID_TYPE_16,
-			(Char_UUID_t *) &uuid,
+			(Char_UUID_t*) &uuid,
 			2,							// Char value length
 			CHAR_PROP_WRITE_WITHOUT_RESP,
 			ATTR_PERMISSION_NONE,
@@ -239,7 +231,7 @@ void HIDS_Init(void)
 	uuid = HID_INFORMATION_CHAR_UUID;
 	hciCmdResult = aci_gatt_add_char(HIDS_Context.SvcHdle,
 			UUID_TYPE_16,
-			(Char_UUID_t *) &uuid,
+			(Char_UUID_t*) &uuid,
 			4,
 			CHAR_PROP_READ,
 			ATTR_PERMISSION_NONE,
@@ -257,8 +249,8 @@ void HIDS_Init(void)
 			CHAR_PROP_READ | CHAR_PROP_WRITE | CHAR_PROP_NOTIFY,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_ATTRIBUTE_WRITE | GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-			10, 						// encryKeySize
-			CHAR_VALUE_LEN_VARIABLE, 	// isVariable
+			10, 							// encryKeySize
+			CHAR_VALUE_LEN_VARIABLE, 		// isVariable
 			&(HIDS_Context.BootMouseInputHandle));
 
 	uuid = REPORT_MAP_CHAR_UUID;
@@ -269,19 +261,19 @@ void HIDS_Init(void)
 			CHAR_PROP_READ,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-			10, // encryKeySize
+			10, 							// encryKeySize
 			CHAR_VALUE_LEN_VARIABLE,
 			&(HIDS_Context.ReportMapHandle));
 
 	uuid = REPORT_CHAR_UUID;
 	hciCmdResult = aci_gatt_add_char(HIDS_Context.SvcHdle,
 			UUID_TYPE_16,
-			(Char_UUID_t *) &uuid,
+			(Char_UUID_t*)&uuid,
 			3,
 			CHAR_PROP_READ | CHAR_PROP_WRITE | CHAR_PROP_NOTIFY,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_ATTRIBUTE_WRITE | GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP | GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-			10, // encryKeySize
+			10, 							// encryKeySize
 			CHAR_VALUE_LEN_CONSTANT,
 			&(HIDS_Context.ReportButtonsHandle));
 
@@ -290,10 +282,10 @@ void HIDS_Init(void)
 	hciCmdResult = aci_gatt_add_char_desc(HIDS_Context.SvcHdle,
 			HIDS_Context.ReportButtonsHandle,
 			UUID_TYPE_16,
-			(Char_Desc_Uuid_t *)&uuid,
+			(Char_Desc_Uuid_t*)&uuid,
 			2,
 			2,
-			(void *)&ButtonsReport,		// Char_Desc_Value
+			(uint8_t*)&ButtonsReport,		// Char_Desc_Value
 			ATTR_PERMISSION_NONE,
 			ATTR_ACCESS_READ_ONLY,
 			GATT_DONT_NOTIFY_EVENTS,
@@ -309,7 +301,7 @@ void HIDS_Init(void)
 			CHAR_PROP_READ | CHAR_PROP_WRITE | CHAR_PROP_NOTIFY,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_ATTRIBUTE_WRITE | GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-			10, // encryKeySize
+			10, 							// encryKeySize
 			CHAR_VALUE_LEN_CONSTANT,
 			&(HIDS_Context.ReportMovementHandle));
 
@@ -318,10 +310,10 @@ void HIDS_Init(void)
 	hciCmdResult = aci_gatt_add_char_desc(HIDS_Context.SvcHdle,
 			HIDS_Context.ReportMovementHandle,
 			UUID_TYPE_16,
-			(Char_Desc_Uuid_t *)&uuid,
+			(Char_Desc_Uuid_t*)&uuid,
 			2,
 			2,
-			(void *)&MovementReport,		// Char_Desc_Value
+			(uint8_t*)&MovementReport,		// Char_Desc_Value
 			ATTR_PERMISSION_NONE,
 			ATTR_ACCESS_READ_ONLY,
 			GATT_DONT_NOTIFY_EVENTS,
@@ -338,7 +330,7 @@ void HIDS_Init(void)
 			CHAR_PROP_READ | CHAR_PROP_WRITE | CHAR_PROP_NOTIFY,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_ATTRIBUTE_WRITE | GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-			10, // encryKeySize
+			10, 							// encryKeySize
 			CHAR_VALUE_LEN_CONSTANT,
 			&(HIDS_Context.ReportMPlayerHandle));
 
@@ -346,10 +338,10 @@ void HIDS_Init(void)
 	hciCmdResult = aci_gatt_add_char_desc(HIDS_Context.SvcHdle,
 			HIDS_Context.ReportMPlayerHandle,
 			UUID_TYPE_16,
-			(Char_Desc_Uuid_t *)&uuid,
+			(Char_Desc_Uuid_t*)&uuid,
 			2,
 			2,
-			(void *)&MPlayerReport,		// Char_Desc_Value
+			(uint8_t*)&MPlayerReport,		// Char_Desc_Value
 			ATTR_PERMISSION_NONE,
 			ATTR_ACCESS_READ_ONLY,
 			GATT_DONT_NOTIFY_EVENTS,
@@ -366,61 +358,53 @@ void HIDS_Init(void)
 			CHAR_PROP_READ | CHAR_PROP_WRITE_WITHOUT_RESP,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_ATTRIBUTE_WRITE | GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-			10, // encryKeySize
+			10, 							// encryKeySize
 			CHAR_VALUE_LEN_CONSTANT,
 			&(HIDS_Context.ProtocolModeHandle));
 
-	return;
 }
 
 
 
-void HIDS_App_Init(void)
+void HIDS_App_Init()
 {
-	//UTIL_SEQ_RegTask(1 << CFG_TASK_BAS_LEVEL, UTIL_SEQ_RFU, BAS_App_Send_Notification);
-
 	// Initialise notification info
 	HIDS_App_Context.HIDS_MPlayer_Notification_Status = 0;
 	HIDS_App_Context.HIDS_Movement_Notification_Status = 0;
 
 	// Initialize Report Map
-	HIDS_Update_Char(ReportMap, 0, 0, (uint8_t *)&rep_map_data);
+	HIDS_Update_Char(ReportMap, 0, 0, (uint8_t*)&rep_map_data);
 
 	// initialise boot mouse report
 	Boot_Mouse_Report.buttons = 0;
 	Boot_Mouse_Report.x_displacement = 0;
 	Boot_Mouse_Report.y_displacement = 0;
-
-	HIDS_Update_Char(BootMouseInput, 0, 0, (uint8_t *)&Boot_Mouse_Report);
+	HIDS_Update_Char(BootMouseInput, 0, 0, (uint8_t*)&Boot_Mouse_Report);
 
 	// Initialise the HID Information data
 	HID_Information.bcdHID = 0x0101;			// Binary coded decimal HID version
 	HID_Information.bcountryCode = 0x0;			// Country code
 	HID_Information.flags =  HID_INFO_FLAG_REMOTE_WAKE_MSK | HID_INFO_FLAG_NORMALLY_CONNECTABLE_MSK;
-
-	HIDS_Update_Char(HidInformation, 0, 0, (uint8_t *)&HID_Information);
+	HIDS_Update_Char(HidInformation, 0, 0, (uint8_t*)&HID_Information);
 
 	// Initialise the mouse movement report
 	Mouse_Movement_Report.x = 0;
 	Mouse_Movement_Report.y = 0;
-
-	HIDS_Update_Char(ReportMovement, 0, 0, (uint8_t *)&Mouse_Movement_Report);
+	HIDS_Update_Char(ReportMovement, 0, 0, (uint8_t*)&Mouse_Movement_Report);
 
 	// Initialise the mouse media player report
 	Mouse_MPlayer_Report.mediaData = 0x0;
-
-	HIDS_Update_Char(ReportMPlayer, 0, 0, (uint8_t *)&Mouse_MPlayer_Report);
+	HIDS_Update_Char(ReportMPlayer, 0, 0, (uint8_t*)&Mouse_MPlayer_Report);
 
 	// Initialise the mouse buttons report
 	Mouse_Buttons_Report.buttons = 0x0;
 	Mouse_Buttons_Report.wheel = 0x0;
 	Mouse_Buttons_Report.ACPan = 0x0;
+	HIDS_Update_Char(ReportButtons, 0, 0, (uint8_t*)&Mouse_Buttons_Report);
 
-	HIDS_Update_Char(ReportButtons, 0, 0, (uint8_t *)&Mouse_Buttons_Report);
-
+	// Initialise protocol mode (for selecting between boot mouse and regular)
 	protocolModeData = 0x01;
-
-	HIDS_Update_Char(ProtocolMode, 0, 0, (uint8_t *)&protocolModeData);
+	HIDS_Update_Char(ProtocolMode, 0, 0, (uint8_t*)&protocolModeData);
 
 	return;
 }
@@ -436,51 +420,52 @@ tBleStatus HIDS_Update_Char(characteristics_t characteristic, uint8_t Report_Ind
 				HIDS_Context.ReportMapHandle,
 				0, 						// charValOffset
 				sizeof rep_map_data,	// charValueLen
-				(uint8_t *)  pPayload);
+				pPayload);
 	}
 	if (characteristic == BootMouseInput) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.BootMouseInputHandle,
 				0, 							// charValOffset
 				sizeof Boot_Mouse_Report,	// charValueLen
-				(uint8_t *)  pPayload);
+				pPayload);
 	}
 	if (characteristic == HidInformation) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.HidInformationHandle,
 				0, 							// charValOffset
 				sizeof HID_Information,		// charValueLen
-				(uint8_t *)  pPayload);
+				pPayload);
 	}
 	if (characteristic == ReportMovement) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.ReportMovementHandle,
 				0, 							// charValOffset
 				sizeof Mouse_Movement_Report,		// charValueLen
-				(uint8_t *)  pPayload);
+				pPayload);
 	}
 	if (characteristic == ReportMPlayer) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.ReportMPlayerHandle,
 				0, 							// charValOffset
 				sizeof Mouse_MPlayer_Report,		// charValueLen
-				(uint8_t *)  pPayload);
+				 pPayload);
 	}
 	if (characteristic == ReportButtons) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.ReportButtonsHandle,
 				0, 							// charValOffset
 				sizeof Mouse_Buttons_Report,		// charValueLen
-				(uint8_t *)  pPayload);
+				pPayload);
 	}
 	if (characteristic == ProtocolMode) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.ProtocolModeHandle,
 				0, 							// charValOffset
 				sizeof protocolModeData,		// charValueLen
-				(uint8_t *)  pPayload);
+				pPayload);
 	}	return result;
 }
+
 
 void HIDS_Buttons_Notification(uint8_t buttons, uint8_t wheel, uint8_t ACPan)
 {
@@ -489,12 +474,13 @@ void HIDS_Buttons_Notification(uint8_t buttons, uint8_t wheel, uint8_t ACPan)
 	Mouse_Buttons_Report.ACPan = ACPan;
 
 	if (HIDS_App_Context.HIDS_Buttons_Notification_Status) {
-		HIDS_Update_Char(ReportButtons, 0, 0, (uint8_t *)&Mouse_Buttons_Report);
+		HIDS_Update_Char(ReportButtons, 0, 0, (uint8_t*)&Mouse_Buttons_Report);
 	} else {
 		APP_DBG_MSG("-- HIDS APPLICATION : CAN'T INFORM CLIENT -  NOTIFICATION DISABLED\n ");
 	}
 	return;
 }
+
 
 void HIDS_Movement_Notification(uint16_t x, uint16_t y)
 {
@@ -502,7 +488,7 @@ void HIDS_Movement_Notification(uint16_t x, uint16_t y)
 	Mouse_Movement_Report.y = y;
 
 	if (HIDS_App_Context.HIDS_Movement_Notification_Status) {
-		HIDS_Update_Char(ReportMovement, 0, 0, (uint8_t *)&Mouse_Movement_Report);
+		HIDS_Update_Char(ReportMovement, 0, 0, (uint8_t*)&Mouse_Movement_Report);
 	} else {
 		APP_DBG_MSG("-- HIDS APPLICATION : CAN'T INFORM CLIENT -  NOTIFICATION DISABLED\n ");
 	}
@@ -515,7 +501,7 @@ void HIDS_MPlayer_Notification(uint8_t mediaData)
 	Mouse_MPlayer_Report.mediaData = mediaData;
 
 	if (HIDS_App_Context.HIDS_MPlayer_Notification_Status) {
-		HIDS_Update_Char(ReportMPlayer, 0, 0, (uint8_t *)&Mouse_MPlayer_Report);
+		HIDS_Update_Char(ReportMPlayer, 0, 0, (uint8_t*)&Mouse_MPlayer_Report);
 	} else {
 		APP_DBG_MSG("-- HIDS APPLICATION : CAN'T INFORM CLIENT -  NOTIFICATION DISABLED\n ");
 	}
@@ -693,7 +679,7 @@ static SVCCTL_EvtAckStatus_t HIDS_Event_Handler(void *Event)
 		break;
 	}
 
-	return(return_value);
+	return return_value;
 }
 
 

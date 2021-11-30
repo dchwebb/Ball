@@ -9,11 +9,11 @@
 
 //IPCC_HandleTypeDef hipcc;
 RTC_HandleTypeDef hrtc;
-UART_HandleTypeDef huart1;
+//UART_HandleTypeDef huart1;
 
 
 //void HALSystemClock_Config(void);
-static void MX_GPIO_Init(void);
+//static void MX_GPIO_Init(void);
 //static void MX_USART1_UART_Init(void);
 //static void MX_USB_PCD_Init(void);
 //static void MX_RTC_Init(void);
