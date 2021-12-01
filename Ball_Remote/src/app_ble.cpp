@@ -11,6 +11,7 @@
 #include "otp.h"
 #include "dis_app.h"
 #include "hids_app.h"
+#include "bas_app.h"
 
 
 // security parameters structure
@@ -49,8 +50,8 @@ typedef struct {
 } BleApplicationContext_t;
 
 
-#define FAST_ADV_TIMEOUT               (30*1000*1000/CFG_TS_TICK_VAL) // < 30s
-#define INITIAL_ADV_TIMEOUT            (60*1000*1000/CFG_TS_TICK_VAL) // < 60s
+#define FAST_ADV_TIMEOUT               (30 * 1000 * 1000 / CFG_TS_TICK_VAL) 	// 30s
+#define INITIAL_ADV_TIMEOUT            (60 * 1000 * 1000 / CFG_TS_TICK_VAL) 	// 60s
 #define BD_ADDR_SIZE_LOCAL    6
 
 PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
@@ -68,11 +69,10 @@ static uint8_t bd_addr_udn[BD_ADDR_SIZE_LOCAL];
 static const uint8_t BLE_CFG_IR_VALUE[16] = CFG_BLE_IRK;	// Identity root key used to derive LTK and CSRK
 static const uint8_t BLE_CFG_ER_VALUE[16] = CFG_BLE_ERK;	// Encryption root key used to derive LTK and CSRK
 
-/**
- * These are the two tags used to manage a power failure during OTA
- * The MagicKeywordAdress shall be mapped @0x140 from start of the binary image
- * The MagicKeywordvalue is checked in the ble_ota application
- */
+
+// These are the two tags used to manage a power failure during OTA
+// The MagicKeywordAdress shall be mapped @0x140 from start of the binary image
+// The MagicKeywordvalue is checked in the ble_ota application
 PLACE_IN_SECTION("TAG_OTA_END") const uint32_t MagicKeywordValue = 0x94448A29 ;
 PLACE_IN_SECTION("TAG_OTA_START") const uint32_t MagicKeywordAddress = (uint32_t)&MagicKeywordValue;
 
@@ -140,29 +140,23 @@ void APP_BLE_Init( void )
 			CFG_BLE_MAX_TX_POWER}
 	};
 
-	Ble_Tl_Init( );		// Initialize Ble Transport Layer
+	Ble_Tl_Init( );														// Initialize Ble Transport Layer
 	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP_BLE, UTIL_LPM_DISABLE);		// Do not allow standby in the application
 
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
 
-	// Starts the BLE Stack on CPU2
-	if (SHCI_C2_BLE_Init(&ble_init_cmd_packet) != SHCI_Success) {
+	if (SHCI_C2_BLE_Init(&ble_init_cmd_packet) != SHCI_Success) {		// Starts the BLE Stack on CPU2
 		Error_Handler();
 	}
 
-	Ble_Hci_Gap_Gatt_Init();	// Initialization of HCI & GATT & GAP layer
-	SVCCTL_Init();	// Initialization of the BLE Services
+	Ble_Hci_Gap_Gatt_Init();											// Initialization of HCI & GATT & GAP layer
+	SVCCTL_Init();														// Initialization of the BLE Services
 
-	// Initialization of the BLE App Context
-	BleApplicationContext.Device_Connection_Status = APP_BLE_IDLE;
+	BleApplicationContext.Device_Connection_Status = APP_BLE_IDLE;		// Initialization of the BLE App Context
 	BleApplicationContext.BleApplicationContext_legacy.connectionHandle = 0xFFFF;
 
-	// From here, all initialization are BLE application specific
 	UTIL_SEQ_RegTask(1 << CFG_TASK_ADV_UPDATE_ID, UTIL_SEQ_RFU, Adv_Update);
-
-	DISAPP_Init();		// Initialize DIS Application
-
 	UTIL_SEQ_RegTask(1 << CFG_TASK_ADV_CANCEL_ID, UTIL_SEQ_RFU, Adv_Cancel);
 
 	// Initialization of ADV - Ad Manufacturer Element - Support OTA Bit Mask
@@ -175,11 +169,9 @@ void APP_BLE_Init( void )
 	mutex = 1;
 #endif
 
-	// Initialize Battery Service
-	BAS_App_Init();
-
-	// Initialise HID Service
-	HIDS_App_Init();
+	DISAPP_Init();														// Initialize DIS Application
+	BAS_App_Init();														// Initialize Battery Service
+	HIDS_App_Init();													// Initialise HID Service
 
 	// Create timer to handle the connection state machine
 	HW_TS_Create(CFG_TIM_PROC_ID_ISR, &(BleApplicationContext.Advertising_mgr_timer_Id), hw_ts_SingleShot, Adv_Mgr);
@@ -192,12 +184,10 @@ void APP_BLE_Init( void )
 
 	Add_Advertisment_Service_UUID(HEALTH_THERMOMETER_SERVICE_UUID);
 
-	// Initialize intervals for reconnection without intervals update
-	AdvIntervalMin = CFG_FAST_CONN_ADV_INTERVAL_MIN;
+	AdvIntervalMin = CFG_FAST_CONN_ADV_INTERVAL_MIN;					// Initialize intervals for reconnection without intervals update
 	AdvIntervalMax = CFG_FAST_CONN_ADV_INTERVAL_MAX;
 
-	// Start to Advertise to be connected by a Client
-	Adv_Request(APP_BLE_FAST_ADV);
+	Adv_Request(APP_BLE_FAST_ADV);										// Start to Advertise to be connected by a Client
 
 	return;
 }
@@ -474,6 +464,7 @@ static void Ble_Hci_Gap_Gatt_Init(void){
 }
 
 
+// Start to Advertise to be connected by a Client
 static void Adv_Request(APP_BLE_ConnStatus_t New_Status)
 {
 	tBleStatus ret = BLE_STATUS_INVALID_PARAMS;
@@ -490,7 +481,7 @@ static void Adv_Request(APP_BLE_ConnStatus_t New_Status)
 	// Stop the timer, it will be restarted for a new shot; It does not hurt if the timer was not running
 	HW_TS_Stop(BleApplicationContext.Advertising_mgr_timer_Id);
 
-	APP_DBG_MSG("First index in %d state \n", BleApplicationContext.Device_Connection_Status);
+	APP_DBG_MSG("BLE - Current connection status: %d\n", BleApplicationContext.Device_Connection_Status);
 
 	if ((New_Status == APP_BLE_LP_ADV)
 			&& ((BleApplicationContext.Device_Connection_Status == APP_BLE_FAST_ADV)

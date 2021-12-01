@@ -2,12 +2,8 @@
 
 typedef enum  {
 	ReportMap,
-//	BootMouseInput,
 	HidInformation,
 	ReportJoystick,
-//	ReportMPlayer,
-//	ReportButtons,
-//	ProtocolMode
 } characteristics_t;
 
 typedef enum
@@ -36,12 +32,10 @@ typedef struct {
 } HIDS_Notification_evt_t;
 
 
-
-
-//void HIDS_Init(void);
-tBleStatus HIDS_Update_Char(characteristics_t characteristic, uint8_t Report_Index, uint8_t report_size, uint8_t *pPayload);
-void HIDS_Joystick_Notification(uint16_t x, uint16_t y, uint16_t z);
-extern "C" {
+extern "C" {		// Declare with C linkage or will be overridden by weak declaration in svc_ctl.c
 void HIDS_Init();
 }
+
+tBleStatus HIDS_Update_Char(characteristics_t characteristic);
+void HIDS_Joystick_Notification(uint16_t x, uint16_t y, uint16_t z);
 void HIDS_App_Init();

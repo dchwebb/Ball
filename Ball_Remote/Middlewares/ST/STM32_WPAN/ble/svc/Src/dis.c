@@ -129,15 +129,10 @@ void DIS_Init(void)
                                       1,
                                       &(DIS_Context.DeviceInformationSvcHdle));
 
-  if (hciCmdResult == BLE_STATUS_SUCCESS)
-  {
-    BLE_DBG_DIS_MSG ("Device Information Service (DIS) is added Successfully %04X\n", 
-                 DIS_Context.DeviceInformationSvcHdle);
-  }
-  else
-  {
-    BLE_DBG_DIS_MSG ("FAILED to add Device Information Service (DIS), Error: %02X !!\n", 
-                 hciCmdResult);
+  if (hciCmdResult == BLE_STATUS_SUCCESS) {
+    BLE_DBG_DIS_MSG ("- DIS: Registered Device Information Service handle: %X\n", DIS_Context.DeviceInformationSvcHdle);
+  } else {
+    BLE_DBG_DIS_MSG ("FAILED to add Device Information Service (DIS), Error: %02X\n", hciCmdResult);
   }
 
 #if (BLE_CFG_DIS_MANUFACTURER_NAME_STRING != 0)
@@ -156,15 +151,10 @@ void DIS_Init(void)
                                    CHAR_VALUE_LEN_VARIABLE, /* isVariable */
                                    &(DIS_Context.ManufacturerNameStringCharHdle));
 
-  if (hciCmdResult == BLE_STATUS_SUCCESS)
-  {
-    BLE_DBG_DIS_MSG ("Manufacturer Name Characteristic Added Successfully  %04X \n", 
-                 DIS_Context.ManufacturerNameStringCharHdle);
-  }
-  else
-  {
-    BLE_DBG_DIS_MSG ("FAILED to add Manufacturer Name Characteristic, Error: %02X !!\n", 
-                hciCmdResult);
+  if (hciCmdResult == BLE_STATUS_SUCCESS) {
+    BLE_DBG_DIS_MSG ("- DIS: Registered Manufacturer Name Characteristic handle: %X \n", DIS_Context.ManufacturerNameStringCharHdle);
+  } else {
+    BLE_DBG_DIS_MSG ("FAILED to add Manufacturer Name Characteristic, Error: %02X !!\n", hciCmdResult);
   }
 
 #endif

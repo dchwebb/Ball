@@ -13,18 +13,11 @@ typedef struct
 	uint16_t HidInformationHandle;
 	uint16_t HidControlPointHdle;
 	uint16_t ReportMapHandle;
-//	uint16_t ProtocolModeHandle;
+	bool JoystickNotifications;
 } HIDS_Context_t;
 
 PLACE_IN_SECTION("BLE_DRIVER_CONTEXT") static HIDS_Context_t HIDS_Context;
 
-typedef struct {
-	uint8_t   HIDS_Movement_Notification_Status;
-	uint8_t   HIDS_MPlayer_Notification_Status;
-	uint8_t HIDS_Buttons_Notification_Status;
-} HIDS_APP_Context_t;
-
-PLACE_IN_SECTION("BLE_APP_CONTEXT") HIDS_APP_Context_t HIDS_App_Context;
 
 typedef struct {
 	uint16_t x;
@@ -37,7 +30,6 @@ PLACE_IN_SECTION("BLE_APP_CONTEXT") JoystickReport_t joystickReport;
 // First Byte: Input Report (0x01) | Second Byte: Report ID (0x1 ... 0x03)
 static const uint16_t JoystickReportID  = 0x0101;
 
-//PLACE_IN_SECTION("BLE_APP_CONTEXT") uint8_t protocolModeData;		// 0 = boot mode; 1 = report mode
 
 #define HID_INFO_FLAG_REMOTE_WAKE_MSK           0x01
 #define HID_INFO_FLAG_NORMALLY_CONNECTABLE_MSK  0x02
@@ -86,13 +78,15 @@ void HIDS_Init()
 	hciCmdResult = aci_gatt_add_service(UUID_TYPE_16,
 			(Service_UUID_t*) &uuid,
 			PRIMARY_SERVICE,
-			24,		// Max_Attribute_Records
+			12,							// Max_Attribute_Records
 			&(HIDS_Context.SvcHdle));
+	APP_DBG_MSG("- HIDS: Registered HID Service handle: 0x%X\n", HIDS_Context.SvcHdle);
 
+	// To inform the device that the host is entering or leaving suspend state
 	uuid = HID_CONTROL_POINT_CHAR_UUID;
 	hciCmdResult = aci_gatt_add_char(HIDS_Context.SvcHdle,
 			UUID_TYPE_16,
-			(Char_UUID_t*) &uuid,
+			(Char_UUID_t*)&uuid,
 			2,							// Char value length
 			CHAR_PROP_WRITE_WITHOUT_RESP,
 			ATTR_PERMISSION_NONE,
@@ -100,45 +94,49 @@ void HIDS_Init()
 			10, 						// encryKeySize
 			CHAR_VALUE_LEN_CONSTANT, 	// isVariable
 			&(HIDS_Context.HidControlPointHdle));
-
+	APP_DBG_MSG("- HIDS: Registered Control Point handle: 0x%X\n", HIDS_Context.HidControlPointHdle);
 
 	uuid = HID_INFORMATION_CHAR_UUID;
 	hciCmdResult = aci_gatt_add_char(HIDS_Context.SvcHdle,
 			UUID_TYPE_16,
-			(Char_UUID_t*) &uuid,
-			4,
+			(Char_UUID_t*)&uuid,
+			sizeof(HID_Information),
 			CHAR_PROP_READ,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
 			10, 						// encryKeySize
 			CHAR_VALUE_LEN_CONSTANT, 	// isVariable
 			&(HIDS_Context.HidInformationHandle));
+	APP_DBG_MSG("- HIDS: Registered HID Information characteristic handle: 0x%X\n", HIDS_Context.HidInformationHandle);
+
 
 	uuid = REPORT_MAP_CHAR_UUID;
 	hciCmdResult = aci_gatt_add_char(HIDS_Context.SvcHdle,
 			UUID_TYPE_16,
-			(Char_UUID_t *) &uuid,
-			sizeof rep_map_data,
+			(Char_UUID_t*)&uuid,
+			sizeof(rep_map_data),
 			CHAR_PROP_READ,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
 			10, 							// encryKeySize
 			CHAR_VALUE_LEN_VARIABLE,
 			&(HIDS_Context.ReportMapHandle));
+	APP_DBG_MSG("- HIDS: Registered Report Map characteristic handle: 0x%X\n", HIDS_Context.ReportMapHandle);
 
 	uuid = REPORT_CHAR_UUID;
 	hciCmdResult = aci_gatt_add_char(HIDS_Context.SvcHdle,
 			UUID_TYPE_16,
 			(Char_UUID_t*)&uuid,
-			sizeof joystickReport,
+			sizeof(joystickReport),
 			CHAR_PROP_READ | CHAR_PROP_WRITE | CHAR_PROP_NOTIFY,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_ATTRIBUTE_WRITE | GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP | GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
 			10, 							// encryKeySize
 			CHAR_VALUE_LEN_CONSTANT,
 			&(HIDS_Context.ReportJoystickHandle));
+	APP_DBG_MSG("- HIDS: Registered Report characteristic handle: 0x%X\n", HIDS_Context.ReportJoystickHandle);
 
-	// Add char descriptor for each report?
+	// Add char descriptor for each report
 	uuid = REPORT_REFERENCE_DESCRIPTOR_UUID;
 	hciCmdResult = aci_gatt_add_char_desc(HIDS_Context.SvcHdle,
 			HIDS_Context.ReportJoystickHandle,
@@ -153,19 +151,11 @@ void HIDS_Init()
 			10,
 			CHAR_VALUE_LEN_CONSTANT,
 			&HIDS_Context.ReportJoystickRefDescHandle);
+	APP_DBG_MSG("- HIDS: Registered Report Reference Descriptor handle: 0x%X\n", HIDS_Context.ReportJoystickRefDescHandle);
 
-//	uuid = PROTOCOL_MODE_CHAR_UUID;
-//	hciCmdResult = aci_gatt_add_char(HIDS_Context.SvcHdle,
-//			UUID_TYPE_16,
-//			(Char_UUID_t *) &uuid,
-//			1,
-//			CHAR_PROP_READ | CHAR_PROP_WRITE_WITHOUT_RESP,
-//			ATTR_PERMISSION_NONE,
-//			GATT_NOTIFY_ATTRIBUTE_WRITE | GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
-//			10, 							// encryKeySize
-//			CHAR_VALUE_LEN_CONSTANT,
-//			&(HIDS_Context.ProtocolModeHandle));
-
+	if (hciCmdResult != BLE_STATUS_SUCCESS) {
+		APP_DBG_MSG("-- HIDS APPLICATION : Error registering characteristics: 0x%X\n", hciCmdResult);
+	}
 }
 
 
@@ -173,67 +163,52 @@ void HIDS_Init()
 void HIDS_App_Init()
 {
 	// Initialise notification info
-	HIDS_App_Context.HIDS_MPlayer_Notification_Status = 0;
-	HIDS_App_Context.HIDS_Movement_Notification_Status = 0;
+	HIDS_Context.JoystickNotifications = false;
 
 	// Initialize Report Map
-	HIDS_Update_Char(ReportMap, 0, 0, (uint8_t*)&rep_map_data);
+	HIDS_Update_Char(ReportMap);
 
 	// Initialise the HID Information data
 	HID_Information.bcdHID = 0x0101;			// Binary coded decimal HID version
 	HID_Information.bcountryCode = 0x0;			// Country code
 	HID_Information.flags =  HID_INFO_FLAG_REMOTE_WAKE_MSK | HID_INFO_FLAG_NORMALLY_CONNECTABLE_MSK;
-	HIDS_Update_Char(HidInformation, 0, 0, (uint8_t*)&HID_Information);
+	HIDS_Update_Char(HidInformation);
 
 	// Initialise the mouse movement report
 	joystickReport.x = 0;
 	joystickReport.y = 0;
 	joystickReport.z = 0;
-	HIDS_Update_Char(ReportJoystick, 0, 0, (uint8_t*)&joystickReport);
-
-	// Initialise protocol mode (for selecting between boot mouse and regular)
-//	protocolModeData = 0x01;
-//	HIDS_Update_Char(ProtocolMode, 0, 0, (uint8_t*)&protocolModeData);
-
-	return;
+	HIDS_Update_Char(ReportJoystick);
 }
 
 
 
-tBleStatus HIDS_Update_Char(characteristics_t characteristic, uint8_t Report_Index, uint8_t report_size, uint8_t *pPayload)
+tBleStatus HIDS_Update_Char(characteristics_t characteristic)
 {
 	tBleStatus result = BLE_STATUS_INVALID_PARAMS;
 
 	if (characteristic == ReportMap) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.ReportMapHandle,
-				0, 						// charValOffset
-				sizeof rep_map_data,	// charValueLen
-				pPayload);
+				0, 							// charValOffset
+				sizeof(rep_map_data),		// charValueLen
+				(uint8_t*)&rep_map_data);
 	}
 	if (characteristic == HidInformation) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.HidInformationHandle,
 				0, 							// charValOffset
-				sizeof HID_Information,		// charValueLen
-				pPayload);
+				sizeof(HID_Information),		// charValueLen
+				(uint8_t*)&HID_Information);
 	}
 	if (characteristic == ReportJoystick) {
 		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
 				HIDS_Context.ReportJoystickHandle,
 				0, 							// charValOffset
-				sizeof joystickReport,		// charValueLen
-				pPayload);
+				sizeof(joystickReport),		// charValueLen
+				(uint8_t*)&joystickReport);
 	}
-//
-//	if (characteristic == ProtocolMode) {
-//		result = aci_gatt_update_char_value(HIDS_Context.SvcHdle,
-//				HIDS_Context.ProtocolModeHandle,
-//				0, 							// charValOffset
-//				sizeof protocolModeData,		// charValueLen
-//				pPayload);
-//	}
-//
+
 	return result;
 }
 
@@ -245,12 +220,11 @@ void HIDS_Joystick_Notification(uint16_t x, uint16_t y, uint16_t z)
 	joystickReport.y = y;
 	joystickReport.z = z;
 
-	if (HIDS_App_Context.HIDS_Movement_Notification_Status) {
-		HIDS_Update_Char(ReportJoystick, 0, 0, (uint8_t*)&joystickReport);
+	if (HIDS_Context.JoystickNotifications) {
+		HIDS_Update_Char(ReportJoystick);
 	} else {
 		APP_DBG_MSG("-- HIDS APPLICATION : CAN'T INFORM CLIENT -  NOTIFICATION DISABLED\n ");
 	}
-	return;
 }
 
 
@@ -314,10 +288,10 @@ static SVCCTL_EvtAckStatus_t HIDS_Event_Handler(void *Event)
 				return_value = SVCCTL_EvtAckFlowEnable;
 
 				if (attribute_modified->Attr_Data[0] == 1) {
-					HIDS_App_Context.HIDS_Movement_Notification_Status = 1;
+					HIDS_Context.JoystickNotifications = true;
 					HIDS_Joystick_Notification(0, 0, 0);
 				} else {
-  					HIDS_App_Context.HIDS_Movement_Notification_Status = 0;
+					HIDS_Context.JoystickNotifications = false;
 				}
 			}
 
@@ -354,10 +328,6 @@ static SVCCTL_EvtAckStatus_t HIDS_Event_Handler(void *Event)
 				return_value = SVCCTL_EvtAckFlowEnable;
 				aci_gatt_allow_read(read_req->Connection_Handle);
 			}
-//			if (read_req->Attribute_Handle == (HIDS_Context.ProtocolModeHandle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET)) {
-//				return_value = SVCCTL_EvtAckFlowEnable;
-//				aci_gatt_allow_read(read_req->Connection_Handle);
-//			}
 			break;
 
 		case ACI_ATT_EXEC_WRITE_RESP_VSEVT_CODE:
