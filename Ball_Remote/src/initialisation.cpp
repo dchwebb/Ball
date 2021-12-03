@@ -79,6 +79,7 @@ void InitHardware()
 	PWR->C2CR1 |= 4 & PWR_C2CR1_LPMS_Msk;			// 1xx: Shutdown mode
 
 	InitGPIO();
+	InitI2C();
 }
 
 
@@ -117,10 +118,11 @@ static void InitGPIO()
 	NVIC_SetPriority(EXTI4_IRQn, 3);
 	NVIC_EnableIRQ(EXTI4_IRQn);
 
+	/*
 	// Init debug pin PB8
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
 	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
-
+*/
 }
 
 
@@ -210,4 +212,60 @@ static void InitSysTick()
 }
 
 
+void InitI2C()
+{
+	//	Enable GPIO and I2C clocks
+	RCC->APB1ENR1 |= RCC_APB1ENR1_I2C1EN;			// I2C1 Peripheral Clocks Enable
+	RCC->CCIPR &= ~RCC_CCIPR_I2C1SEL;				// 00: PCLK ; 01: System clock; 10: HSI16 clock
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;			// GPIO port clock
+
+/*
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
+
+	// Initialize I2C DMA peripheral
+	DMA1_Stream0->CR &= ~DMA_SxCR_EN;
+	DMA1_Stream0->CR &= ~DMA_SxCR_CIRC;				// Disable Circular mode to keep refilling buffer
+	DMA1_Stream0->CR |= DMA_SxCR_MINC;				// Memory in increment mode
+	DMA1_Stream0->CR &= ~DMA_SxCR_PSIZE_0;			// Peripheral size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
+	DMA1_Stream0->CR &= ~DMA_SxCR_MSIZE_0;			// Memory size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
+	DMA1_Stream0->CR |= DMA_SxCR_PL_0;				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
+	DMA1_Stream0->CR |= DMA_SxCR_DIR_0;				// data transfer direction: 00: peripheral-to-memory; 01: memory-to-peripheral; 10: memory-to-memory				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
+
+	DMA1_Stream0->FCR &= ~DMA_SxFCR_FTH;			// Disable FIFO Threshold selection
+	DMA1->LIFCR = 0x3F << DMA_LIFCR_CFEIF0_Pos;		// clear all five interrupts for this stream
+
+	DMAMUX1_Channel0->CCR |= 34; 					// DMA request MUX input 34 = i2c1_tx_dma (See p.695)
+	DMAMUX1_ChannelStatus->CFR |= DMAMUX_CFR_CSOF0; // Channel 0 Clear synchronization overrun event flag
+*/
+
+	// PB8: I2C1_SCL [alternate function AF4]
+	GPIOB->OTYPER |= GPIO_OTYPER_OT8;				// Set pin output to Open Drain
+	GPIOB->MODER &= ~GPIO_MODER_MODE8_0;			// 10: Alternate function mode
+	GPIOB->AFR[1] |= 4 << GPIO_AFRH_AFSEL8_Pos;		// Alternate Function 4 (I2C1)
+
+	// PB9: I2C1_SDA [alternate function AF4]
+	GPIOB->OTYPER |= GPIO_OTYPER_OT9;				// Set pin output to Open Drain
+	GPIOB->MODER &= ~GPIO_MODER_MODE9_0;			// 10: Alternate function mode
+	GPIOB->AFR[1] |= 4 << GPIO_AFRH_AFSEL9_Pos;		// Alternate Function 4 (I2C1)
+
+	//I2C1->CR1 |= I2C_CR1_ANFOFF;					// Analog noise filter - on by default
+	//I2C1->CR1 |= I2C_CR1_DNF;						// Digital noise filter
+
+	// Timings taken from HAL for 100kHz:
+	// Timing calculations: I2C frequency: 1 / ((SCLL + 1) + (SCLH + 1)) * (PRESC + 1) * 1/I2CCLK)
+	// [eg 1 / ((256 + 237) * 8 * 1/32MHz) = 100kHz] (Will actually be slightly slower as there are also sync times to be accounted for)
+	I2C1->TIMINGR |= 0x7 << I2C_TIMINGR_PRESC_Pos;	// Timing prescaler
+	I2C1->TIMINGR |= 0x2 << I2C_TIMINGR_SDADEL_Pos;	// Data Hold Time
+	I2C1->TIMINGR |= 0x4 << I2C_TIMINGR_SCLDEL_Pos;	// Data Setup Time
+	I2C1->TIMINGR |= 0x13 << I2C_TIMINGR_SCLL_Pos;	// SCLL low period
+	I2C1->TIMINGR |= 0x0F << I2C_TIMINGR_SCLH_Pos;	// SCLH high period
+
+	I2C1->CR1 &= ~I2C_CR1_NOSTRETCH;				// Clock stretching disable: Must be cleared in master mode
+//	I2C1->CR1 |= I2C_CR1_TXDMAEN;					// Enable DMA transmission
+
+	NVIC_SetPriority(I2C1_EV_IRQn, 4);				// Lower is higher priority
+	NVIC_EnableIRQ(I2C1_EV_IRQn);
+
+	I2C1->CR1 |= I2C_CR1_PE;						// Peripheral enable
+}
 

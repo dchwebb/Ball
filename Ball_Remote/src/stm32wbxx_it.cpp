@@ -2,6 +2,7 @@
 #include "stm32wbxx_it.h"
 #include "app_common.h"
 #include "stm32_seq.h"
+#include "compassHandler.h"
 
 extern "C" {
 void SysTick_Handler() {
@@ -11,18 +12,17 @@ void SysTick_Handler() {
 void EXTI4_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF4;
 	UTIL_SEQ_SetTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
-//	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
 }
 
 void EXTI0_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF0;
 	UTIL_SEQ_SetTask(1 << CFG_TASK_SW2_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
-	//HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
 }
 
 void EXTI1_IRQHandler(void) {
 	EXTI->PR1 = EXTI_PR1_PIF1;
 	printf("Button 3 ...\r\n");
+	I2CSendData();
 }
 
 void HSEM_IRQHandler() {

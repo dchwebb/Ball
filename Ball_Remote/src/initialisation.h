@@ -6,3 +6,4 @@
 void InitPWMTimer();
 void InitHardware();
 void SystemClock_Config();
+void InitI2C();
