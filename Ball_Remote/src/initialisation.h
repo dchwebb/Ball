@@ -1,5 +1,5 @@
 #pragma once
-#include "stm32wb55xx.h"
+#include "stm32wbxx.h"
 
 #define SYSTICK 1000						// 1ms
 

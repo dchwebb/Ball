@@ -219,24 +219,24 @@ void InitI2C()
 	RCC->CCIPR &= ~RCC_CCIPR_I2C1SEL;				// 00: PCLK ; 01: System clock; 10: HSI16 clock
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;			// GPIO port clock
 
-/*
+
 	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
 
 	// Initialize I2C DMA peripheral
-	DMA1_Stream0->CR &= ~DMA_SxCR_EN;
-	DMA1_Stream0->CR &= ~DMA_SxCR_CIRC;				// Disable Circular mode to keep refilling buffer
-	DMA1_Stream0->CR |= DMA_SxCR_MINC;				// Memory in increment mode
-	DMA1_Stream0->CR &= ~DMA_SxCR_PSIZE_0;			// Peripheral size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
-	DMA1_Stream0->CR &= ~DMA_SxCR_MSIZE_0;			// Memory size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
-	DMA1_Stream0->CR |= DMA_SxCR_PL_0;				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
-	DMA1_Stream0->CR |= DMA_SxCR_DIR_0;				// data transfer direction: 00: peripheral-to-memory; 01: memory-to-peripheral; 10: memory-to-memory				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
+	DMA1_Channel1->CCR &= ~DMA_CCR_EN;
+	DMA1_Channel1->CCR &= ~DMA_CCR_CIRC;				// Disable Circular mode to keep refilling buffer
+	DMA1_Channel1->CCR |= DMA_CCR_MINC;				// Memory in increment mode
+	DMA1_Channel1->CCR &= ~DMA_CCR_PSIZE_0;			// Peripheral size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
+	DMA1_Channel1->CCR &= ~DMA_CCR_MSIZE_0;			// Memory size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
+	DMA1_Channel1->CCR |= DMA_CCR_PL_0;				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
+	DMA1_Channel1->CCR |= DMA_CCR_DIR;				// data transfer direction: 00: peripheral-to-memory; 01: memory-to-peripheral; 10: memory-to-memory				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
 
-	DMA1_Stream0->FCR &= ~DMA_SxFCR_FTH;			// Disable FIFO Threshold selection
-	DMA1->LIFCR = 0x3F << DMA_LIFCR_CFEIF0_Pos;		// clear all five interrupts for this stream
+	//DMA1_Channel1->IFCR &= ~DMA_IFCR_FTH;			// Disable FIFO Threshold selection
+	DMA1->IFCR |= 0xF << DMA_IFCR_CGIF1_Pos;		// clear all five interrupts for this stream
 
-	DMAMUX1_Channel0->CCR |= 34; 					// DMA request MUX input 34 = i2c1_tx_dma (See p.695)
+	DMAMUX1_Channel0->CCR |= 10; 					// DMA request MUX input 10 = I2C1_RX (See p.348)
 	DMAMUX1_ChannelStatus->CFR |= DMAMUX_CFR_CSOF0; // Channel 0 Clear synchronization overrun event flag
-*/
+
 
 	// PB8: I2C1_SCL [alternate function AF4]
 	GPIOB->OTYPER |= GPIO_OTYPER_OT8;				// Set pin output to Open Drain
