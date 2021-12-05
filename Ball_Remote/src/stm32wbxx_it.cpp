@@ -19,10 +19,15 @@ void EXTI0_IRQHandler() {
 	UTIL_SEQ_SetTask(1 << CFG_TASK_SW2_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
 }
 
-void EXTI1_IRQHandler(void) {
+void EXTI1_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF1;
 	printf("Button 3 ...\r\n");
 	I2CSendData();
+}
+
+void I2C1_EV_IRQHandler() {
+	I2C1->CR2 |= I2C_CR2_STOP;			// Clear the Transfer complete interrupt (STOP bit cleared when next START issued)
+	I2CPrintBuffer();
 }
 
 void HSEM_IRQHandler() {

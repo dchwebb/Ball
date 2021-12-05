@@ -218,18 +218,17 @@ void InitI2C()
 	RCC->APB1ENR1 |= RCC_APB1ENR1_I2C1EN;			// I2C1 Peripheral Clocks Enable
 	RCC->CCIPR &= ~RCC_CCIPR_I2C1SEL;				// 00: PCLK ; 01: System clock; 10: HSI16 clock
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;			// GPIO port clock
-
-
-	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;			// DMA Mux Clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;				// DMA 1 Clock
 
 	// Initialize I2C DMA peripheral
 	DMA1_Channel1->CCR &= ~DMA_CCR_EN;
-	DMA1_Channel1->CCR &= ~DMA_CCR_CIRC;				// Disable Circular mode to keep refilling buffer
+	DMA1_Channel1->CCR &= ~DMA_CCR_CIRC;			// Disable Circular mode to keep refilling buffer
 	DMA1_Channel1->CCR |= DMA_CCR_MINC;				// Memory in increment mode
 	DMA1_Channel1->CCR &= ~DMA_CCR_PSIZE_0;			// Peripheral size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
 	DMA1_Channel1->CCR &= ~DMA_CCR_MSIZE_0;			// Memory size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
 	DMA1_Channel1->CCR |= DMA_CCR_PL_0;				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
-	DMA1_Channel1->CCR |= DMA_CCR_DIR;				// data transfer direction: 00: peripheral-to-memory; 01: memory-to-peripheral; 10: memory-to-memory				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
+	DMA1_Channel1->CCR &= ~DMA_CCR_DIR;				// data transfer direction: 00: peripheral-to-memory; 01: memory-to-peripheral; 10: memory-to-memory				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
 
 	//DMA1_Channel1->IFCR &= ~DMA_IFCR_FTH;			// Disable FIFO Threshold selection
 	DMA1->IFCR |= 0xF << DMA_IFCR_CGIF1_Pos;		// clear all five interrupts for this stream
@@ -247,9 +246,6 @@ void InitI2C()
 	GPIOB->OTYPER |= GPIO_OTYPER_OT9;				// Set pin output to Open Drain
 	GPIOB->MODER &= ~GPIO_MODER_MODE9_0;			// 10: Alternate function mode
 	GPIOB->AFR[1] |= 4 << GPIO_AFRH_AFSEL9_Pos;		// Alternate Function 4 (I2C1)
-
-	//I2C1->CR1 |= I2C_CR1_ANFOFF;					// Analog noise filter - on by default
-	//I2C1->CR1 |= I2C_CR1_DNF;						// Digital noise filter
 
 	// Timings taken from HAL for 100kHz:
 	// Timing calculations: I2C frequency: 1 / ((SCLL + 1) + (SCLH + 1)) * (PRESC + 1) * 1/I2CCLK)
