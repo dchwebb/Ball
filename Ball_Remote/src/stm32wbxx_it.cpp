@@ -6,7 +6,8 @@
 
 extern "C" {
 void SysTick_Handler() {
-	HAL_IncTick();
+	uwTick++;
+	//HAL_IncTick();
 }
 
 void EXTI4_IRQHandler() {
@@ -21,13 +22,17 @@ void EXTI0_IRQHandler() {
 
 void EXTI1_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF1;
-	printf("Button 3 ...\r\n");
-	I2CSendData();
+	extern bool compassCapture;
+	compassCapture = !compassCapture;
+	if (compassCapture) {
+		printf("Starting capture ...\r\n");
+		I2CStartRead();
+	}
 }
 
 void I2C1_EV_IRQHandler() {
 	I2C1->CR2 |= I2C_CR2_STOP;			// Clear the Transfer complete interrupt (STOP bit cleared when next START issued)
-	I2CPrintBuffer();
+	I2CProcessResults();
 }
 
 void HSEM_IRQHandler() {

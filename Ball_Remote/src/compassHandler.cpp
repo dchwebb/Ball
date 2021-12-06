@@ -1,7 +1,18 @@
 #include "compassHandler.h"
 #include <stdio.h>
 
-volatile uint8_t i2cBuffer[6];
+// Fixme - the I2C register address should cycle from 3 to 8 for sequential reads from the compass registers;
+// However there seems to be an issue as currently configured where after reading 6 registers the pointer jumps an extra place
+// Botch fix is to read 11 times - this will then wrap to the next start point without having to reset registers
+#define I2CCOUNT 11
+volatile int8_t i2cBuffer[I2CCOUNT];
+struct  {
+	int16_t x;
+	int16_t y;
+	int16_t z;
+} compassData;
+
+bool compassCapture = false;
 
 void I2CSetup()
 {
@@ -11,32 +22,41 @@ void I2CSetup()
 	I2CWriteAddr(0x83);								// MSB = 1 to indicate multiple reads; 0x03 = First manget read address: OUT_X_H_M
 
 	// Configure for repeated reads
+	I2C1->CR2 |= I2C_CR2_STOP;						// Clear interrupts - will be reset when next START is issued
 	I2C1->CR2 |= I2C_CR2_RD_WRN;					// 0: Write transfer; 1*: Read transfer
 	I2C1->CR1 |= I2C_CR1_RXDMAEN;					// Enable DMA transmission
 	I2C1->CR1 |= I2C_CR1_TCIE;						// Activate Transfer complete interrupt
+	MODIFY_REG(I2C1->CR2, I2C_CR2_NBYTES_Msk, I2CCOUNT << I2C_CR2_NBYTES_Pos);		// I2C Read count in bytes
 
 	DMA1_Channel1->CMAR = (uint32_t)&i2cBuffer[0];
 	DMA1_Channel1->CPAR = (uint32_t)&(I2C1->RXDR);
-	DMA1_Channel1->CCR |= DMA_CCR_CIRC;
-	DMA1_Channel1->CNDTR = 6;
+	DMA1_Channel1->CCR |= DMA_CCR_CIRC;				// Avoids having to continually alter the data count
+	DMA1_Channel1->CNDTR = I2CCOUNT;				// DMA Read count in bytes
+	DMA1_Channel1->CCR |= DMA_CCR_EN;				// Enable peripheral
 }
 
 
-void I2CSendData()
+void I2CStartRead()
 {
-	MODIFY_REG(I2C1->CR2, I2C_CR2_NBYTES_Msk, 6 << I2C_CR2_NBYTES_Pos);		// Read 6 bytes
-	//DMA1_Channel1->CCR &= ~DMA_CCR_EN;				// Must be disabled before writing data count register
-	//DMA1_Channel1->CNDTR = 6;
-	DMA1_Channel1->CCR |= DMA_CCR_EN;
-
 	I2C1->CR2 |= I2C_CR2_START;
 }
 
 
-void I2CPrintBuffer()
+void I2CProcessResults()
 {
-	for (uint8_t i = 0; i < 6; ++i) {
-		printf("Read data %d: 0x%X\r\n", i, i2cBuffer[i]);		// Read data from OUT_X_H_M
+	static uint32_t lastPrint = 0;
+
+	compassData.x = (i2cBuffer[0] << 8) | i2cBuffer[1];
+	compassData.y = (i2cBuffer[2] << 8) | i2cBuffer[3];
+	compassData.z = (i2cBuffer[4] << 8) | i2cBuffer[5];
+
+	if (uwTick - lastPrint > 200) {
+		printf("x: %d y: %d z: %d\r\n", compassData.x, compassData.y, compassData.z);
+		lastPrint = uwTick;
+	}
+
+	if (compassCapture) {
+		I2CStartRead();
 	}
 }
 
