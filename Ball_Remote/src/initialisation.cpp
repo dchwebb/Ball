@@ -230,12 +230,10 @@ void InitI2C()
 	DMA1_Channel1->CCR |= DMA_CCR_PL_0;				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
 	DMA1_Channel1->CCR &= ~DMA_CCR_DIR;				// data transfer direction: 00: peripheral-to-memory; 01: memory-to-peripheral; 10: memory-to-memory				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
 
-	//DMA1_Channel1->IFCR &= ~DMA_IFCR_FTH;			// Disable FIFO Threshold selection
 	DMA1->IFCR |= 0xF << DMA_IFCR_CGIF1_Pos;		// clear all five interrupts for this stream
 
 	DMAMUX1_Channel0->CCR |= 10; 					// DMA request MUX input 10 = I2C1_RX (See p.348)
 	DMAMUX1_ChannelStatus->CFR |= DMAMUX_CFR_CSOF0; // Channel 0 Clear synchronization overrun event flag
-
 
 	// PB8: I2C1_SCL [alternate function AF4]
 	GPIOB->OTYPER |= GPIO_OTYPER_OT8;				// Set pin output to Open Drain
@@ -257,9 +255,8 @@ void InitI2C()
 	I2C1->TIMINGR |= 0x0F << I2C_TIMINGR_SCLH_Pos;	// SCLH high period
 
 	I2C1->CR1 &= ~I2C_CR1_NOSTRETCH;				// Clock stretching disable: Must be cleared in master mode
-//	I2C1->CR1 |= I2C_CR1_TXDMAEN;					// Enable DMA transmission
 
-	NVIC_SetPriority(I2C1_EV_IRQn, 4);				// Lower is higher priority
+	NVIC_SetPriority(I2C1_EV_IRQn, 4);				// Enable I2C interrupts: Lower is higher priority
 	NVIC_EnableIRQ(I2C1_EV_IRQn);
 
 	I2C1->CR1 |= I2C_CR1_PE;						// Peripheral enable
