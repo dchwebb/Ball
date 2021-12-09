@@ -316,8 +316,12 @@ void Gatt_Notification(HID_Client_App_Notification_evt_t *pNotification)
 		// Output to PWM - values vary from ~400 - 600
 		//int16_t pwmX = Clamp(position3D.x - 410, 0, 205) * 20;
 		int16_t pwmX = position3D.x;
+		int16_t pwmY = position3D.y;
+		int16_t pwmZ = position3D.z;
+
 		TIM2->CCR1 = pwmX;
-		TIM2->CCR2 = 4095 - pwmX;
+		TIM2->CCR2 = pwmY;
+		TIM2->CCR3 = pwmZ;
 
 		if (GPIOB->ODR & GPIO_ODR_OD8)			GPIOB->ODR &= ~GPIO_ODR_OD8;
 		else                                    GPIOB->ODR |=  GPIO_ODR_OD8;
