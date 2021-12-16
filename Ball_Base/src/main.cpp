@@ -1,9 +1,11 @@
 #include "main.h"
-#include "initialisation.h"
+//#include "initialisation.h"
 #include "uartHandler.h"
 #include "app_entry.h"
+#include "USB.h"
 
 RTC_HandleTypeDef hrtc;
+USBHandler usb;
 
 extern uint32_t SystemCoreClock;
 
@@ -14,12 +16,13 @@ int main(void)
 
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
 	InitUart();						// Debugging via STLink UART
-	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
+	usb.InitUSB();
+//	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
 
-	InitPWMTimer();					// Initialise PWM output
+//	InitPWMTimer();					// Initialise PWM output
 
 	while (1) {
-		MX_APPE_Process();
+//		MX_APPE_Process();
 	}
 }
 

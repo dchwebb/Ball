@@ -77,7 +77,34 @@ void InitHardware()
 	InitGPIO();
 }
 
+#if USEDONGLE
+static void InitGPIO()
+{
+	// GPIO Ports Clock Enable
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
 
+	// Configure GPIO pin : PA10 BUTTON_SW1_Pin
+	GPIOA->MODER &= ~GPIO_MODER_MODE10_Msk;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+	GPIOA->PUPDR |= GPIO_PUPDR_PUPD10_0;			// Activate pull up
+	SYSCFG->EXTICR[2] |= SYSCFG_EXTICR3_EXTI10_PA;	// Enable external interrupt
+	EXTI->IMR1 |= EXTI_IMR1_IM10;					// 1: Wakeup with interrupt request from Line x is unmasked
+	EXTI->FTSR1 |= EXTI_FTSR1_FT10;					// Enable falling edge trigger
+
+	// Configure LED pins : PB0 LED_GREEN_Pin;  PB1 LED_RED_Pin; PA4 LED_BLUE_Pin
+	GPIOB->MODER &= ~(GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1);
+	GPIOA->MODER &= ~GPIO_MODER_MODE4_1;
+
+	// EXTI interrupt init
+	NVIC_SetPriority(EXTI15_10_IRQn, 3);
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+	// Init debug pin PB8
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+
+}
+#else
 static void InitGPIO()
 {
 	// GPIO Ports Clock Enable
@@ -118,11 +145,11 @@ static void InitGPIO()
 	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 
 }
-
+#endif
 
 void InitPWMTimer()
 {
-	// TIM2: Channel 1 Output: *PA0, PA5, (PA15); Channel 2: *PA1, PB3; Channel 3: PA2, PB10; Channel 4: PA3, PB11
+	// TIM2: Channel 1 Output: *PA0, PA5, (PA15); Channel 2: *PA1, PB3; Channel 3: *PA2, PB10; Channel 4: PA3, PB11
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
 	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
 
@@ -148,8 +175,6 @@ void InitPWMTimer()
 	TIM2->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E);		// Capture mode enabled / OC1 signal is output on the corresponding output pin
 	TIM2->EGR |= TIM_EGR_UG;						// 1: Re-initialize the counter and generates an update of the registers
 	TIM2->CR1 |= TIM_CR1_CEN;						// Enable counter
-
-
 }
 
 
