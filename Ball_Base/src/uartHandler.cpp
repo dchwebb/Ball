@@ -44,12 +44,12 @@ std::string HexToString(const uint32_t& v, const bool& spaces) {
 	char buf[20];
 	if (spaces) {
 		if (v != 0) {
-			sprintf(buf, "%02luX %02luX %02luX %02luX", v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >> 24) & 0xFF);
+			sprintf(buf, "%X %X %X %X", v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >> 24) & 0xFF);
 		} else {
 			sprintf(buf, " ");
 		}
 	} else {
-		sprintf(buf, "%luX", v);
+		sprintf(buf, "%X", v);
 	}
 	return std::string(buf);
 

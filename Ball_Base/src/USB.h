@@ -27,7 +27,8 @@ typedef struct {
 	volatile uint16_t reserved;
 } USB_EPR_TypeDef;
 
-#define  USB_PMA  ((USB_PMA_TypeDef*) USB_PMAADDR)
+#define USB_PMA_ADDR 0x40006C00			// this in incorrect for WB55 in header
+#define  USB_PMA  ((USB_PMA_TypeDef*) USB_PMA_ADDR)
 #define  USB_EPR  ((USB_EPR_TypeDef*)(&USB->EP0R))
 
 // Bit definition for USB_COUNT0_RX register
