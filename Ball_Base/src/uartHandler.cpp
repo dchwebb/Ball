@@ -44,17 +44,17 @@ std::string HexToString(const uint32_t& v, const bool& spaces) {
 	char buf[20];
 	if (spaces) {
 		if (v != 0) {
-			sprintf(buf, "%X %X %X %X", v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >> 24) & 0xFF);
+			sprintf(buf, "%X %X %X %X", (unsigned int)(v & 0xFF), (unsigned int)(v >> 8) & 0xFF, (unsigned int)(v >> 16) & 0xFF, (unsigned int)(v >> 24) & 0xFF);
 		} else {
 			sprintf(buf, " ");
 		}
 	} else {
-		sprintf(buf, "%X", v);
+		sprintf(buf, "%X", (unsigned int&)v);
 	}
 	return std::string(buf);
 
 }
-
+uint32_t t;
 std::string HexByte(const uint16_t& v) {
 	char buf[50];
 	sprintf(buf, "%X", v);

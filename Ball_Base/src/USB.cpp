@@ -32,7 +32,7 @@ inline void SetRxStatus(uint8_t ep, uint16_t status)		// Set endpoint receive st
 void USBHandler::ReadPMA(uint16_t pma, uint16_t bytes)
 {
 	// It looks like there is an error in the WB55 register map header - PMA address given as 0x40006018; should be 0x40006c00 (p.70)
-	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMAADDR + 0xC00 + pma);		// Eg 0x40006018 **wb55 0x40006c18
+	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMA_ADDR + pma);		// Eg 0x40006018 **wb55 0x40006c18
 
 	for (int i = 0; i < (bytes + 1) / 2; i++) {
 		reinterpret_cast<volatile uint16_t*>(rxBuff)[i] = *pmaBuff++;				// pma buffer can only be read in 16 bit words
@@ -48,7 +48,7 @@ void USBHandler::ReadPMA(uint16_t pma, uint16_t bytes)
 
 void USBHandler::WritePMA(uint16_t pma, uint16_t bytes)
 {
-	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMAADDR + 0xC00 + pma);
+	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMA_ADDR + pma);
 
 	for (int i = 0; i < (bytes + 1) / 2; i++) {
 		pmaBuff[i] = reinterpret_cast<const uint16_t*>(txBuff)[i];

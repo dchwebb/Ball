@@ -28,8 +28,8 @@ typedef struct {
 } USB_EPR_TypeDef;
 
 #define USB_PMA_ADDR 0x40006C00			// this in incorrect for WB55 in header
-#define  USB_PMA  ((USB_PMA_TypeDef*) USB_PMA_ADDR)
-#define  USB_EPR  ((USB_EPR_TypeDef*)(&USB->EP0R))
+#define USB_PMA  ((USB_PMA_TypeDef*) USB_PMA_ADDR)
+#define USB_EPR  ((USB_EPR_TypeDef*)(&USB->EP0R))
 
 // Bit definition for USB_COUNT0_RX register
 #define USB_COUNT0_RX_COUNT0_RX_Pos              (0U)
@@ -70,8 +70,8 @@ public:
 
 private:
 	static constexpr const char* manufacturerString = "Mountjoy Modular";
-	static constexpr const char* productString      = "Mountjoy Ampelope";
-	static constexpr const char* cdcString          = "Mountjoy Ampelope CDC";
+	static constexpr const char* productString      = "Mountjoy Ball Base";
+	static constexpr const char* cdcString          = "Mountjoy Ball Remote CDC";
 
 	enum EndPoint {CDC_In = 0x81, CDC_Out = 0x1, CDC_Cmd = 0x82};
 	enum EndPointType {Control = 0, Isochronous = 1, Bulk = 2, Interrupt = 3};
