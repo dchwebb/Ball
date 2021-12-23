@@ -27,11 +27,20 @@ struct AdvertisingReport {
 	uint16_t appearance;
 	uint16_t serviceClasses;
 	uint8_t flags;
-	uint32_t manufactData;
+	uint8_t manufactData[16];
+	uint8_t manufactLen;
 	std::string shortName;
 
 	std::string formatAddress() {
-		return HexByte(address[5]) +HexByte(address[4]);
+		return HexByte(address[5]) + HexByte(address[4]) + HexByte(address[3]) + HexByte(address[2]) + HexByte(address[1]) + HexByte(address[0]);
+	}
+
+	void clear() {
+		appearance = 0;
+		serviceClasses = 0;
+		flags = 0;
+		manufactLen = 0;
+		shortName.clear();
 	}
 };
 
@@ -42,3 +51,4 @@ void APP_BLE_Scan_and_Connect();
 void APP_BLE_Key_Button2_Action();
 void APP_BLE_Key_Button3_Action();
 void APP_BLE_ScanInfo();
+void PrintAdvData();

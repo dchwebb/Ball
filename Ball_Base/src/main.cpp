@@ -11,10 +11,11 @@ SerialHandler serial(usb);
 extern uint32_t SystemCoreClock;
 
 extern "C" {
-// To enable UART for printf commands
+// To enable USB for printf commands
 size_t _write(int handle, const unsigned char* buf, size_t bufSize)
 {
 	return usb.SendString(buf, bufSize);
+	//return usb.SendData(buf, bufSize, USBHandler::CDC_In);
 }
 }
 

@@ -88,7 +88,9 @@ bool SerialHandler::Command()
 
 	} else if (ComCmd.compare("scan\n") == 0) {					// List ble devices
 		APP_BLE_ScanInfo();
-		usb->SendString("Scanning ...\r\n");
+
+	} else if (ComCmd.compare("p\n") == 0) {					// List ble devices
+		PrintAdvData();
 
 	} else {
 		usb->SendString("Unrecognised command: " + ComCmd + "Type 'help' for supported commands\r\n");

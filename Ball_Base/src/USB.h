@@ -58,9 +58,11 @@ typedef struct {
 
 class USBHandler {
 public:
+	enum EndPoint {CDC_In = 0x81, CDC_Out = 0x1, CDC_Cmd = 0x82};
+
 	void USBInterruptHandler();
 	void InitUSB();
-	void SendData(const uint8_t *data, uint16_t len, uint8_t endpoint);
+	size_t SendData(const uint8_t* data, uint16_t len, uint8_t endpoint);
 	void SendString(const char* s);
 	void SendString(const std::string& s);
 	size_t SendString(const unsigned char* s, size_t len);
@@ -74,7 +76,6 @@ private:
 	static constexpr const char* productString      = "Mountjoy Ball Base";
 	static constexpr const char* cdcString          = "Mountjoy Ball Remote CDC";
 
-	enum EndPoint {CDC_In = 0x81, CDC_Out = 0x1, CDC_Cmd = 0x82};
 	enum EndPointType {Control = 0, Isochronous = 1, Bulk = 2, Interrupt = 3};
 	enum Descriptor {DeviceDescriptor = 0x1, ConfigurationDescriptor = 0x2, StringDescriptor = 0x3, InterfaceDescriptor = 0x4, EndpointDescriptor = 0x5, DeviceQualifierDescriptor = 0x6, IadDescriptor = 0xb, BosDescriptor = 0xF};
 	enum RequestRecipient {RequestRecipientDevice = 0x0, RequestRecipientInterface = 0x1, RequestRecipientEndpoint = 0x2};

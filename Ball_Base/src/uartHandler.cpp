@@ -52,12 +52,26 @@ std::string HexToString(const uint32_t& v, const bool& spaces) {
 		sprintf(buf, "%X", (unsigned int&)v);
 	}
 	return std::string(buf);
+}
+
+
+std::string HexToString(const uint8_t* v, uint32_t len, const bool& spaces) {
+	char buf[50];
+	uint32_t pos = 0, cnt = 0;
+	len = std::min(50ul, len);
+	while (len > 0) {
+		pos += sprintf(&buf[pos], (spaces ? "%02X ": "%02X"), v[cnt++]);
+		len--;
+	}
+
+	return std::string(buf, pos);
 
 }
 
+
 std::string HexByte(const uint16_t& v) {
 	char buf[50];
-	sprintf(buf, "%X", v);
+	sprintf(buf, "%02X", v);
 	return std::string(buf);
 
 }

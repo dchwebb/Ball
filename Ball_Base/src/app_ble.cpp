@@ -11,6 +11,7 @@
 #include "otp.h"
 #include "uartHandler.h"
 #include "usb.h"
+#include <bitset>
 
 extern USBHandler usb;
 
@@ -40,7 +41,7 @@ static const uint8_t M_bd_addr[BD_ADDR_SIZE_LOCAL] = {
 
 static uint8_t bd_addr_udn[BD_ADDR_SIZE_LOCAL];
 
-static const uint8_t BLE_CFG_IR_VALUE[16] = CFG_BLE_IRK;		//  Identity root key used to derive LTK and CSRK
+static const uint8_t BLE_CFG_IR_VALUE[16] = CFG_BLE_IRK;		// Identity root key used to derive LTK and CSRK
 static const uint8_t BLE_CFG_ER_VALUE[16] = CFG_BLE_ERK;		// Encryption root key used to derive LTK and CSRK
 tBDAddr remoteConnectAddress;
 P2PC_APP_ConnHandle_Not_evt_t handleNotification;
@@ -58,7 +59,7 @@ static const uint8_t* BleGetBdAddress();
 static void Scan_Request();
 static void Connect_Request();
 static void DisconnectRequest();
-static void PrintAdvData();
+//static void PrintAdvData();
 
 void APP_BLE_Init()
 {
@@ -152,11 +153,6 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 						if (BleAppContext.action == bleAction::ScanConnect && BleAppContext.DeviceServerFound && BleAppContext.Device_Connection_Status != APP_BLE_CONNECTED_CLIENT) {
 							UTIL_SEQ_SetTask(1 << CFG_TASK_CONN_DEV_1_ID, CFG_SCH_PRIO_0);
 						}
-						if (BleAppContext.action == bleAction::ScanInfo) {
-							PrintAdvData();
-						}
-
-
 					}
 				}
 				break;
@@ -234,7 +230,11 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 					hci_le_advertising_report_event_rp0* le_advertising_event = (hci_le_advertising_report_event_rp0*) meta_evt->data;
 					uint8_t event_type = le_advertising_event->Advertising_Report[0].Event_Type;
 					uint8_t event_data_size = le_advertising_event->Advertising_Report[0].Length_Data;
+					adReport.clear();
 					memcpy(adReport.address, le_advertising_event->Advertising_Report[0].Address, 6);
+
+					///std::unique_ptr<AdvertisingReport> ar = std::make_unique<AdvertisingReport>();
+					//ar->flags = 0;
 
 					// When decoding advertising report the data and RSSI values must be read by using offsets
 					// RSSI = (int8_t)*(uint8_t*) (adv_report_data + le_advertising_event->Advertising_Report[0].Length_Data);
@@ -278,13 +278,18 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 									break;
 
 								case AD_TYPE_MANUFACTURER_SPECIFIC_DATA:
-									adReport.manufactData = *(uint32_t*)&adv_report_data[k + 2];
+									//adReport.manufactData = *(uint32_t*)&adv_report_data[k + 2];
+									adReport.manufactLen = std::min((unsigned int)adlength, sizeof adReport.manufactData);
+									memcpy(adReport.manufactData, &adv_report_data[k + 2], adReport.manufactLen);
 									break;
 
 								default:
 									break;
 							}
 							k += adlength + 1;
+						}
+						if (BleAppContext.action == bleAction::ScanInfo) {
+							PrintAdvData();
 						}
 					}
 				}
@@ -307,12 +312,14 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 
 void PrintAdvData()
 {
-	usb.SendString("Address: " + adReport.formatAddress() +
-			"\r\nFlags: " + std::to_string(adReport.flags) +
-			"\r\nName: " + adReport.shortName +
-			"\r\nAppearance: " + HexByte(adReport.appearance) +
-			"\r\nService class: " + HexByte(adReport.serviceClasses) +
-			"\r\nManufact data: " + HexByte(adReport.manufactData) +
+	std::bitset<8> bsf = adReport.flags;
+	usb.SendString("* BLE: Found device:"
+			"\r\n  Address: " + adReport.formatAddress() +
+			"\r\n  Flags: " + std::bitset<8>(adReport.flags).to_string() +
+			"\r\n  Name: " + adReport.shortName +
+			"\r\n  Appearance: " + HexByte(adReport.appearance) +
+			"\r\n  Service class: " + HexByte(adReport.serviceClasses) +
+			"\r\n  Manufacturer data: " + HexToString(adReport.manufactData, adReport.manufactLen, true) +
 			"\r\n");
 }
 

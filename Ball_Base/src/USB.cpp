@@ -486,15 +486,16 @@ bool USBHandler::ReadInterrupts(uint32_t interrupt)
 }
 
 
-void USBHandler::SendData(const uint8_t* data, uint16_t len, uint8_t endpoint)
+size_t USBHandler::SendData(const uint8_t* data, uint16_t len, uint8_t endpoint)
 {
-	if (devState == DeviceState::Configured) {
-		if (!transmitting) {
-			transmitting = true;
-			txBuff = (uint8_t*)data;
-			txBuffSize = len;
-			EPStartXfer(Direction::in, endpoint, len);
-		}
+	if (devState == DeviceState::Configured && !transmitting) {
+		transmitting = true;
+		txBuff = (uint8_t*)data;
+		txBuffSize = len;
+		EPStartXfer(Direction::in, endpoint, len);
+		return len;
+	} else {
+		return 0;
 	}
 }
 
@@ -505,8 +506,7 @@ size_t USBHandler::SendString(const unsigned char* s, size_t len)
 	while (transmitting && counter < 10000) {
 		++counter;
 	}
-	SendData((uint8_t*)s, len, CDC_In);
-	return len;
+	return SendData((uint8_t*)s, len, CDC_In);
 }
 
 void USBHandler::SendString(const char* s)
