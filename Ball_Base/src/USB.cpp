@@ -499,6 +499,16 @@ void USBHandler::SendData(const uint8_t* data, uint16_t len, uint8_t endpoint)
 }
 
 
+size_t USBHandler::SendString(const unsigned char* s, size_t len)
+{
+	uint16_t counter = 0;
+	while (transmitting && counter < 10000) {
+		++counter;
+	}
+	SendData((uint8_t*)s, len, CDC_In);
+	return len;
+}
+
 void USBHandler::SendString(const char* s)
 {
 	uint16_t counter = 0;
@@ -509,7 +519,7 @@ void USBHandler::SendString(const char* s)
 }
 
 
-void USBHandler::SendString(std::string s)
+void USBHandler::SendString(const std::string& s)
 {
 	SendString(s.c_str());
 }

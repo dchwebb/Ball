@@ -1,5 +1,7 @@
 #pragma once
 #include "hci_tl.h"
+#include <string>
+#include "uartHandler.h"
 
 typedef enum {
 	APP_BLE_IDLE,
@@ -20,10 +22,23 @@ typedef enum {
 	APP_BLE_DISABLE_NOTIFICATION_DESC
 } APP_BLE_ConnStatus_t;
 
+struct AdvertisingReport {
+	uint8_t address[6];
+	uint16_t appearance;
+	uint16_t serviceClasses;
+	uint8_t flags;
+	uint32_t manufactData;
+	std::string shortName;
+
+	std::string formatAddress() {
+		return HexByte(address[5]) +HexByte(address[4]);
+	}
+};
 
 void APP_BLE_Init(void);
 APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status(uint16_t Connection_Handle);
 
-void APP_BLE_Key_Button1_Action();
+void APP_BLE_Scan_and_Connect();
 void APP_BLE_Key_Button2_Action();
 void APP_BLE_Key_Button3_Action();
+void APP_BLE_ScanInfo();

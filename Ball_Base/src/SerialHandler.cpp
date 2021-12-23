@@ -1,5 +1,5 @@
 #include "SerialHandler.h"
-
+#include "app_ble.h"
 #include <stdio.h>
 #include <cmath>		// for cordic test
 
@@ -66,11 +66,9 @@ bool SerialHandler::Command()
 
 	} else if (ComCmd.compare("help\n") == 0) {
 
-		usb->SendString("Mountjoy Ampelope\r\n"
+		usb->SendString("Mountjoy Ball Base\r\n"
 				"\r\nSupported commands:\r\n"
 				"info        -  Show diagnostic information\r\n"
-				"l/s         -  Long or Short envelope times\r\n"
-				"lfo         -  Tremolo LFO on/off\r\n"
 				"\r\n"
 #if (USB_DEBUG)
 				"usbdebug    -  Start USB debugging\r\n"
@@ -84,26 +82,13 @@ bool SerialHandler::Command()
 		usb->SendString("Press link button to dump output\r\n");
 #endif
 
-	} else if (ComCmd.compare("lfo\n") == 0) {				// LFO on/off
-//		envelope.tremolo = !envelope.tremolo;
-//		usb->SendString("LFO " + std::string(envelope.tremolo ? "on" : "off") + "\r\n");
+	} else if (ComCmd.compare("connect\n") == 0) {				// Connect to HID device
+		APP_BLE_Scan_and_Connect();
+		usb->SendString("Connecting ...\r\n");
 
-	} else if (ComCmd.compare("l\n") == 0) {				// Long envelope times
-		//envelope.longTimes = true;
-
-	} else if (ComCmd.compare("s\n") == 0) {				// Short envelope times
-		//envelope.longTimes = false;
-
-/*	} else if (ComCmd.compare(0, 9, "mdlength:") == 0) {		// Modulated Delay length
-		uint16_t val = ParseInt(ComCmd, ':', 1, 65535);
-		if (val > 0) {
-			delay.modOffsetMax = val;
-			delay.modOffset[left] = delay.modOffsetMax / 2;
-			delay.modOffset[right] = delay.modOffsetMax / 2;
-			config.SaveConfig();
-		}
-		usb->SendString("Modulated delay length set to: " + std::to_string(delay.modOffsetMax) + "\r\n");
-*/
+	} else if (ComCmd.compare("scan\n") == 0) {					// List ble devices
+		APP_BLE_ScanInfo();
+		usb->SendString("Scanning ...\r\n");
 
 	} else {
 		usb->SendString("Unrecognised command: " + ComCmd + "Type 'help' for supported commands\r\n");

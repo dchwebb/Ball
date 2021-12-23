@@ -25,7 +25,7 @@ void USB_LP_IRQHandler() {
 #if USEDONGLE
 void EXTI15_10_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF10;
-	APP_BLE_Key_Button1_Action();
+	APP_BLE_Scan_and_Connect();
 }
 #else
 void EXTI0_IRQHandler() {
@@ -41,7 +41,7 @@ void EXTI1_IRQHandler() {
 
 void EXTI4_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF4;
-	APP_BLE_Key_Button1_Action();
+	APP_BLE_Scan_and_Connect();
 }
 #endif
 

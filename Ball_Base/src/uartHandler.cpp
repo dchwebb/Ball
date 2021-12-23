@@ -54,7 +54,7 @@ std::string HexToString(const uint32_t& v, const bool& spaces) {
 	return std::string(buf);
 
 }
-uint32_t t;
+
 std::string HexByte(const uint16_t& v) {
 	char buf[50];
 	sprintf(buf, "%X", v);
@@ -108,9 +108,9 @@ void USART1_IRQHandler() {
 	}
 }
 
-// To enable UART for printf commands
-size_t _write(int handle, const unsigned char* buf, size_t bufSize)
-{
-	return uartSendString(buf, bufSize);
-}
+//// To enable UART for printf commands
+//size_t _write(int handle, const unsigned char* buf, size_t bufSize)
+//{
+//	return uartSendString(buf, bufSize);
+//}
 }

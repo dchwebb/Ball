@@ -10,6 +10,14 @@ USBHandler usb;
 SerialHandler serial(usb);
 extern uint32_t SystemCoreClock;
 
+extern "C" {
+// To enable UART for printf commands
+size_t _write(int handle, const unsigned char* buf, size_t bufSize)
+{
+	return usb.SendString(buf, bufSize);
+}
+}
+
 int main(void)
 {
 	SystemClock_Config();			// Set system clocks

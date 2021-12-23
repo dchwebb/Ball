@@ -10,11 +10,18 @@
 #include "stm32_lpm.h"
 #include "otp.h"
 #include "uartHandler.h"
+#include "usb.h"
+
+extern USBHandler usb;
+
+enum struct bleAction {ScanConnect, ScanInfo};
+
 
 typedef struct {
 	uint16_t connectionHandle;			// connection handle of the current active connection; When not in connection, the handle is set to 0xFFFF
 	APP_BLE_ConnStatus_t Device_Connection_Status;
-	uint8_t DeviceServerFound;
+	bool DeviceServerFound = false;
+	bleAction action;
 } BleApplicationContext_t;
 
 #define BLE_CFG_GAP_APPEARANCE 0
@@ -35,11 +42,12 @@ static uint8_t bd_addr_udn[BD_ADDR_SIZE_LOCAL];
 
 static const uint8_t BLE_CFG_IR_VALUE[16] = CFG_BLE_IRK;		//  Identity root key used to derive LTK and CSRK
 static const uint8_t BLE_CFG_ER_VALUE[16] = CFG_BLE_ERK;		// Encryption root key used to derive LTK and CSRK
-tBDAddr SERVER_REMOTE_BDADDR;
+tBDAddr remoteConnectAddress;
 P2PC_APP_ConnHandle_Not_evt_t handleNotification;
 
-PLACE_IN_SECTION("BLE_APP_CONTEXT") static BleApplicationContext_t BleApplicationContext;
+PLACE_IN_SECTION("BLE_APP_CONTEXT") static BleApplicationContext_t BleAppContext;
 
+AdvertisingReport adReport;
 
 // Private function prototypes
 static void BLE_UserEvtRx(void* pPayload);
@@ -50,7 +58,7 @@ static const uint8_t* BleGetBdAddress();
 static void Scan_Request();
 static void Connect_Request();
 static void DisconnectRequest();
-
+static void PrintAdvData();
 
 void APP_BLE_Init()
 {
@@ -106,7 +114,7 @@ void APP_BLE_Init()
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, UTIL_SEQ_RFU, DisconnectRequest);
 
 	// Initialization of the BLE App Context
-	BleApplicationContext.Device_Connection_Status = APP_BLE_IDLE;
+	BleAppContext.Device_Connection_Status = APP_BLE_IDLE;
 
 	// Radio mask Activity
 	aci_hal_set_radio_activity_mask(0x0020);			// Connection event master
@@ -114,8 +122,8 @@ void APP_BLE_Init()
 	// Initialize HID Client Application
 	HID_APP_Init();
 
-	return;
 }
+
 
 SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 {
@@ -141,9 +149,14 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 
 						APP_DBG_MSG("* BLE: GAP General discovery procedure completed\r\n");
 						// if a device found, connect to it, device 1 being chosen first if both found
-						if (BleApplicationContext.DeviceServerFound == 0x01 && BleApplicationContext.Device_Connection_Status != APP_BLE_CONNECTED_CLIENT) {
+						if (BleAppContext.action == bleAction::ScanConnect && BleAppContext.DeviceServerFound && BleAppContext.Device_Connection_Status != APP_BLE_CONNECTED_CLIENT) {
 							UTIL_SEQ_SetTask(1 << CFG_TASK_CONN_DEV_1_ID, CFG_SCH_PRIO_0);
 						}
+						if (BleAppContext.action == bleAction::ScanInfo) {
+							PrintAdvData();
+						}
+
+
 					}
 				}
 				break;
@@ -153,7 +166,7 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 					aci_l2cap_connection_update_req_event_rp0 *pr = (aci_l2cap_connection_update_req_event_rp0*) blecore_evt->data;
 					aci_hal_set_radio_activity_mask(0x0000);
 
-					result = aci_l2cap_connection_parameter_update_resp(BleApplicationContext.connectionHandle,
+					result = aci_l2cap_connection_parameter_update_resp(BleAppContext.connectionHandle,
 							pr->Interval_Min,
 							pr->Interval_Max,
 							pr->Slave_Latency,
@@ -176,12 +189,12 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 		case HCI_DISCONNECTION_COMPLETE_EVT_CODE:
 		{
 			hci_disconnection_complete_event_rp0* cc = (hci_disconnection_complete_event_rp0*) event_pckt->data;
-			if (cc->Connection_Handle == BleApplicationContext.connectionHandle) {
-				BleApplicationContext.connectionHandle = 0;
-				BleApplicationContext.Device_Connection_Status = APP_BLE_IDLE;
+			if (cc->Connection_Handle == BleAppContext.connectionHandle) {
+				BleAppContext.connectionHandle = 0;
+				BleAppContext.Device_Connection_Status = APP_BLE_IDLE;
 				APP_DBG_MSG("* BLE: Disconnection event with server\r\n");
 				handleNotification.P2P_Evt_Opcode = PEER_DISCON_HANDLE_EVT;
-				handleNotification.ConnectionHandle = BleApplicationContext.connectionHandle;
+				handleNotification.ConnectionHandle = BleAppContext.connectionHandle;
 				HIDConnectionNotification(&handleNotification);
 			}
 		}
@@ -197,16 +210,16 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 				{
 					// The connection is done
 					hci_le_connection_complete_event_rp0* connection_complete_event = (hci_le_connection_complete_event_rp0*) meta_evt->data;
-					BleApplicationContext.connectionHandle = connection_complete_event->Connection_Handle;
-					BleApplicationContext.Device_Connection_Status = APP_BLE_CONNECTED_CLIENT;
+					BleAppContext.connectionHandle = connection_complete_event->Connection_Handle;
+					BleAppContext.Device_Connection_Status = APP_BLE_CONNECTED_CLIENT;
 
 					// connection with client
 					APP_DBG_MSG("* BLE: Connection event with server\r\n");
 					handleNotification.P2P_Evt_Opcode = PEER_CONN_HANDLE_EVT;
-					handleNotification.ConnectionHandle = BleApplicationContext.connectionHandle;
+					handleNotification.ConnectionHandle = BleAppContext.connectionHandle;
 					HIDConnectionNotification(&handleNotification);
 
-					result = aci_gatt_disc_all_primary_services(BleApplicationContext.connectionHandle);
+					result = aci_gatt_disc_all_primary_services(BleAppContext.connectionHandle);
 					if (result == BLE_STATUS_SUCCESS) {
 						APP_DBG_MSG("* BLE: Start Searching Primary Services\r\n");
 					} else {
@@ -221,6 +234,7 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 					hci_le_advertising_report_event_rp0* le_advertising_event = (hci_le_advertising_report_event_rp0*) meta_evt->data;
 					uint8_t event_type = le_advertising_event->Advertising_Report[0].Event_Type;
 					uint8_t event_data_size = le_advertising_event->Advertising_Report[0].Length_Data;
+					memcpy(adReport.address, le_advertising_event->Advertising_Report[0].Address, 6);
 
 					// When decoding advertising report the data and RSSI values must be read by using offsets
 					// RSSI = (int8_t)*(uint8_t*) (adv_report_data + le_advertising_event->Advertising_Report[0].Length_Data);
@@ -236,30 +250,35 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 							switch (adtype)
 							{
 								case AD_TYPE_FLAGS:
+									adReport.flags = adv_report_data[k + 2];
+									break;
+
+								case AD_TYPE_16_BIT_SERV_UUID_CMPLT_LIST:
+									adReport.serviceClasses = *(uint16_t*)&adv_report_data[k + 2];
+									if (BleAppContext.action == bleAction::ScanConnect && adReport.serviceClasses == 0x1812) {	// FIXME whitelist etc
+										APP_DBG_MSG("* BLE: Server detected - HID Device\r\n");
+										BleAppContext.DeviceServerFound = true;
+										memcpy(&remoteConnectAddress, le_advertising_event->Advertising_Report[0].Address, 6);
+										aci_gap_terminate_gap_proc(0x2);		// If connecting terminate scan
+									}
+									break;
+
+								case AD_TYPE_SHORTENED_LOCAL_NAME:
+									adReport.shortName = std::string ((char*)&adv_report_data[k + 2], adlength - 1);
 									break;
 
 								case AD_TYPE_TX_POWER_LEVEL:
 									break;
 
-								case AD_TYPE_MANUFACTURER_SPECIFIC_DATA:
-									break;
-
 								case AD_TYPE_SERVICE_DATA:
 									break;
 
-								case AD_TYPE_16_BIT_SERV_UUID_CMPLT_LIST:
+								case AD_TYPE_APPEARANCE:
+									adReport.appearance = *(uint16_t*)&adv_report_data[k + 2];
+									break;
 
-									if (adlength == 3 && (*(uint16_t*)&adv_report_data[k + 2]) == 0x1812) {
-										APP_DBG_MSG("* BLE: Server detected - HID Device\r\n");
-										BleApplicationContext.DeviceServerFound = 0x01;
-										SERVER_REMOTE_BDADDR[0] = le_advertising_event->Advertising_Report[0].Address[0];
-										SERVER_REMOTE_BDADDR[1] = le_advertising_event->Advertising_Report[0].Address[1];
-										SERVER_REMOTE_BDADDR[2] = le_advertising_event->Advertising_Report[0].Address[2];
-										SERVER_REMOTE_BDADDR[3] = le_advertising_event->Advertising_Report[0].Address[3];
-										SERVER_REMOTE_BDADDR[4] = le_advertising_event->Advertising_Report[0].Address[4];
-										SERVER_REMOTE_BDADDR[5] = le_advertising_event->Advertising_Report[0].Address[5];
-										aci_gap_terminate_gap_proc(0x2);		// Terminate scan
-									}
+								case AD_TYPE_MANUFACTURER_SPECIFIC_DATA:
+									adReport.manufactData = *(uint32_t*)&adv_report_data[k + 2];
 									break;
 
 								default:
@@ -286,18 +305,38 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 }
 
 
+void PrintAdvData()
+{
+	usb.SendString("Address: " + adReport.formatAddress() +
+			"\r\nFlags: " + std::to_string(adReport.flags) +
+			"\r\nName: " + adReport.shortName +
+			"\r\nAppearance: " + HexByte(adReport.appearance) +
+			"\r\nService class: " + HexByte(adReport.serviceClasses) +
+			"\r\nManufact data: " + HexByte(adReport.manufactData) +
+			"\r\n");
+}
+
+
 APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status(uint16_t Connection_Handle)
 {
-	if (BleApplicationContext.connectionHandle == Connection_Handle) {
-		return BleApplicationContext.Device_Connection_Status;
+	if (BleAppContext.connectionHandle == Connection_Handle) {
+		return BleAppContext.Device_Connection_Status;
 	}
 	return APP_BLE_IDLE;
 }
 
-
-void APP_BLE_Key_Button1_Action()
+void APP_BLE_ScanInfo()
 {
 	if (HID_Client_APP_Get_State() != APP_BLE_CONNECTED_CLIENT)	{
+		BleAppContext.action = bleAction::ScanInfo;
+		UTIL_SEQ_SetTask(1 << CFG_TASK_START_SCAN_ID, CFG_SCH_PRIO_0);
+	}
+}
+
+void APP_BLE_Scan_and_Connect()
+{
+	if (HID_Client_APP_Get_State() != APP_BLE_CONNECTED_CLIENT)	{
+		BleAppContext.action = bleAction::ScanConnect;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_START_SCAN_ID, CFG_SCH_PRIO_0);
 	} else {
 		UTIL_SEQ_SetTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
@@ -396,7 +435,8 @@ static void Ble_Hci_Gap_Gatt_Init()
 
 static void Scan_Request()
 {
-	if (BleApplicationContext.Device_Connection_Status != APP_BLE_CONNECTED_CLIENT) {
+	if (BleAppContext.Device_Connection_Status != APP_BLE_CONNECTED_CLIENT) {
+		BleAppContext.DeviceServerFound = false;
 		tBleStatus result = aci_gap_start_general_discovery_proc(SCAN_P, SCAN_L, PUBLIC_ADDR, 1);
 		if (result == BLE_STATUS_SUCCESS) {
 			APP_DBG_MSG("* BLE: Start general discovery\r\n");
@@ -411,10 +451,10 @@ static void Connect_Request()
 {
 	APP_DBG_MSG("* BLE: Create connection to server\r\n");
 
-	if (BleApplicationContext.Device_Connection_Status != APP_BLE_CONNECTED_CLIENT) {
+	if (BleAppContext.Device_Connection_Status != APP_BLE_CONNECTED_CLIENT) {
 		tBleStatus result = aci_gap_create_connection(SCAN_P,
 				SCAN_L,
-				RANDOM_ADDR, SERVER_REMOTE_BDADDR,
+				RANDOM_ADDR, remoteConnectAddress,
 				PUBLIC_ADDR,
 				CONN_P1,
 				CONN_P2,
@@ -424,9 +464,9 @@ static void Connect_Request()
 				CONN_L2);
 
 		if (result == BLE_STATUS_SUCCESS) {
-			BleApplicationContext.Device_Connection_Status = APP_BLE_LP_CONNECTING;
+			BleAppContext.Device_Connection_Status = APP_BLE_LP_CONNECTING;
 		} else {
-			BleApplicationContext.Device_Connection_Status = APP_BLE_IDLE;
+			BleAppContext.Device_Connection_Status = APP_BLE_IDLE;
 		}
 	}
 	return;
@@ -435,7 +475,7 @@ static void Connect_Request()
 
 static void DisconnectRequest()
 {
-	aci_gap_terminate(BleApplicationContext.connectionHandle, 0x16);			// 0x16: Connection Terminated by Local Host
+	aci_gap_terminate(BleAppContext.connectionHandle, 0x16);			// 0x16: Connection Terminated by Local Host
 }
 
 
