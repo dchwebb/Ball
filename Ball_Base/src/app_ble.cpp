@@ -30,6 +30,7 @@ typedef struct {
 
 PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
 
+
 static const uint8_t M_bd_addr[BD_ADDR_SIZE_LOCAL] = {
 		(uint8_t)((CFG_ADV_BD_ADDRESS & 0x0000000000FF)),
 		(uint8_t)((CFG_ADV_BD_ADDRESS & 0x00000000FF00) >> 8),
@@ -46,9 +47,8 @@ static const uint8_t BLE_CFG_ER_VALUE[16] = CFG_BLE_ERK;		// Encryption root key
 tBDAddr remoteConnectAddress;
 P2PC_APP_ConnHandle_Not_evt_t handleNotification;
 
-PLACE_IN_SECTION("BLE_APP_CONTEXT") static BleApplicationContext_t BleAppContext;
-
-AdvertisingReport adReport;
+//PLACE_IN_SECTION("BLE_APP_CONTEXT") static BleApplicationContext_t BleAppContext;
+static BleApplicationContext_t BleAppContext;
 
 // Private function prototypes
 static void BLE_UserEvtRx(void* pPayload);
@@ -230,11 +230,10 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 					hci_le_advertising_report_event_rp0* le_advertising_event = (hci_le_advertising_report_event_rp0*) meta_evt->data;
 					uint8_t event_type = le_advertising_event->Advertising_Report[0].Event_Type;
 					uint8_t event_data_size = le_advertising_event->Advertising_Report[0].Length_Data;
-					adReport.clear();
-					memcpy(adReport.address, le_advertising_event->Advertising_Report[0].Address, 6);
 
-					///std::unique_ptr<AdvertisingReport> ar = std::make_unique<AdvertisingReport>();
-					//ar->flags = 0;
+					std::unique_ptr<AdvertisingReport> ar = std::make_unique<AdvertisingReport>();
+
+					memcpy(ar->address, le_advertising_event->Advertising_Report[0].Address, 6);
 
 					// When decoding advertising report the data and RSSI values must be read by using offsets
 					// RSSI = (int8_t)*(uint8_t*) (adv_report_data + le_advertising_event->Advertising_Report[0].Length_Data);
@@ -250,12 +249,12 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 							switch (adtype)
 							{
 								case AD_TYPE_FLAGS:
-									adReport.flags = adv_report_data[k + 2];
+									ar->flags = adv_report_data[k + 2];
 									break;
 
 								case AD_TYPE_16_BIT_SERV_UUID_CMPLT_LIST:
-									adReport.serviceClasses = *(uint16_t*)&adv_report_data[k + 2];
-									if (BleAppContext.action == bleAction::ScanConnect && adReport.serviceClasses == 0x1812) {	// FIXME whitelist etc
+									ar->serviceClasses = *(uint16_t*)&adv_report_data[k + 2];
+									if (BleAppContext.action == bleAction::ScanConnect && ar->serviceClasses == 0x1812) {	// FIXME whitelist etc
 										APP_DBG_MSG("* BLE: Server detected - HID Device\r\n");
 										BleAppContext.DeviceServerFound = true;
 										memcpy(&remoteConnectAddress, le_advertising_event->Advertising_Report[0].Address, 6);
@@ -264,7 +263,7 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 									break;
 
 								case AD_TYPE_SHORTENED_LOCAL_NAME:
-									adReport.shortName = std::string ((char*)&adv_report_data[k + 2], adlength - 1);
+									ar->shortName = std::string ((char*)&adv_report_data[k + 2], adlength - 1);
 									break;
 
 								case AD_TYPE_TX_POWER_LEVEL:
@@ -274,13 +273,12 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 									break;
 
 								case AD_TYPE_APPEARANCE:
-									adReport.appearance = *(uint16_t*)&adv_report_data[k + 2];
+									ar->appearance = *(uint16_t*)&adv_report_data[k + 2];
 									break;
 
 								case AD_TYPE_MANUFACTURER_SPECIFIC_DATA:
-									//adReport.manufactData = *(uint32_t*)&adv_report_data[k + 2];
-									adReport.manufactLen = std::min((unsigned int)adlength, sizeof adReport.manufactData);
-									memcpy(adReport.manufactData, &adv_report_data[k + 2], adReport.manufactLen);
+									ar->manufactLen = std::min((unsigned int)adlength, sizeof ar->manufactData);
+									memcpy(ar->manufactData, &adv_report_data[k + 2], ar->manufactLen);
 									break;
 
 								default:
@@ -289,7 +287,7 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 							k += adlength + 1;
 						}
 						if (BleAppContext.action == bleAction::ScanInfo) {
-							PrintAdvData();
+							PrintAdvData(std::move(ar));
 						}
 					}
 				}
@@ -310,16 +308,15 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 }
 
 
-void PrintAdvData()
+void PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
 {
-	std::bitset<8> bsf = adReport.flags;
 	usb.SendString("* BLE: Found device:"
-			"\r\n  Address: " + adReport.formatAddress() +
-			"\r\n  Flags: " + std::bitset<8>(adReport.flags).to_string() +
-			"\r\n  Name: " + adReport.shortName +
-			"\r\n  Appearance: " + HexByte(adReport.appearance) +
-			"\r\n  Service class: " + HexByte(adReport.serviceClasses) +
-			"\r\n  Manufacturer data: " + HexToString(adReport.manufactData, adReport.manufactLen, true) +
+			"\r\n  Address: " + ar->formatAddress() +
+			"\r\n  Flags: " + std::bitset<8>(ar->flags).to_string() +
+			"\r\n  Name: " + ar->shortName +
+			"\r\n  Appearance: " + HexByte(ar->appearance) +
+			"\r\n  Service class: " + HexByte(ar->serviceClasses));
+			usb.SendString("\r\n  Manufacturer data: " + HexToString(ar->manufactData, ar->manufactLen, true) +
 			"\r\n");
 }
 

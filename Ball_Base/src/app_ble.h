@@ -51,4 +51,4 @@ void APP_BLE_Scan_and_Connect();
 void APP_BLE_Key_Button2_Action();
 void APP_BLE_Key_Button3_Action();
 void APP_BLE_ScanInfo();
-void PrintAdvData();
+void PrintAdvData(std::unique_ptr<AdvertisingReport> ar);

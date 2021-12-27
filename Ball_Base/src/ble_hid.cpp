@@ -42,9 +42,11 @@ typedef struct {
 		(uint16_t)((uint16_t)(*((uint8_t *)ptr))) |   \
 		(uint16_t)((((uint16_t)(*((uint8_t *)ptr + 1))) << 8))
 
-PLACE_IN_SECTION("BLE_APP_CONTEXT") static HID_ClientContext_t HIDClientContext;
+static HID_ClientContext_t HIDClientContext;
+//PLACE_IN_SECTION("BLE_APP_CONTEXT") static HID_ClientContext_t HIDClientContext;
 
-PLACE_IN_SECTION("BLE_APP_CONTEXT") Position3D_t position3D;
+Position3D_t position3D;
+//PLACE_IN_SECTION("BLE_APP_CONTEXT") Position3D_t position3D;
 
 static void Gatt_Notification(HID_Client_App_Notification_evt_t *pNotification);
 static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
