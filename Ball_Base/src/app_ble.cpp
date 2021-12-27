@@ -316,7 +316,7 @@ void PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
 			"\r\n  Name: " + ar->shortName +
 			"\r\n  Appearance: " + HexByte(ar->appearance) +
 			"\r\n  Service class: " + HexByte(ar->serviceClasses));
-			usb.SendString("\r\n  Manufacturer data: " + HexToString(ar->manufactData, ar->manufactLen, true) +
+	usb.SendString("\r\n  Manufacturer data: " + HexToString(ar->manufactData, ar->manufactLen, true) +
 			"\r\n");
 }
 
