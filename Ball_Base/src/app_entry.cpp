@@ -11,6 +11,7 @@
 #include "otp.h"
 
 extern RTC_HandleTypeDef hrtc;
+extern BleApplication bleApp;
 
 #define POOL_SIZE (CFG_TLBLE_EVT_QUEUE_LENGTH * 4U * DIVC((sizeof(TL_PacketHeader_t) + TL_BLE_EVENT_FRAME_SIZE), 4U))
 
@@ -159,7 +160,7 @@ static void APPE_SysUserEvtRx(void* pPayload)
 	// Traces channel initialization
 	APPD_EnableCPU2();
 
-	APP_BLE_Init();
+	bleApp.Init();
 	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);
 	return;
 }

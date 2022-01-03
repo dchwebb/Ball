@@ -34,14 +34,19 @@ struct AdvertisingReport {
 	std::string formatAddress() {
 		return HexByte(address[5]) + HexByte(address[4]) + HexByte(address[3]) + HexByte(address[2]) + HexByte(address[1]) + HexByte(address[0]);
 	}
+};
 
-	void clear() {
-		appearance = 0;
-		serviceClasses = 0;
-		flags = 0;
-		manufactLen = 0;
-		shortName.clear();
-	}
+enum struct bleAction {ScanConnect, ScanInfo};
+
+
+struct BleApplication {
+public:
+	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
+	APP_BLE_ConnStatus_t Device_Connection_Status;
+	bool DeviceServerFound = false;
+	bleAction action;
+
+	void Init();
 };
 
 void APP_BLE_Init(void);
@@ -52,3 +57,5 @@ void APP_BLE_Key_Button2_Action();
 void APP_BLE_Key_Button3_Action();
 void APP_BLE_ScanInfo();
 void PrintAdvData(std::unique_ptr<AdvertisingReport> ar);
+
+extern BleApplication bleApp;

@@ -4,10 +4,12 @@
 #include "app_entry.h"
 #include "USB.h"
 #include "SerialHandler.h"
-
+#include "app_ble.h"
 RTC_HandleTypeDef hrtc;
 USBHandler usb;
 SerialHandler serial(usb);
+BleApplication bleApp;
+
 extern uint32_t SystemCoreClock;
 
 extern "C" {
