@@ -83,14 +83,14 @@ bool SerialHandler::Command()
 #endif
 
 	} else if (ComCmd.compare("connect\n") == 0) {				// Connect to HID device
-		APP_BLE_Scan_and_Connect();
+		bleApp.ScanAndConnect();
 		usb->SendString("Connecting ...\r\n");
 
 	} else if (ComCmd.compare("scan\n") == 0) {					// List ble devices
-		APP_BLE_ScanInfo();
+		bleApp.ScanInfo();
 
-	} else if (ComCmd.compare("p\n") == 0) {					// List ble devices
-		//PrintAdvData();
+	} else if (ComCmd.compare("disconnect\n") == 0) {					// Disconnect
+		bleApp.DisconnectRequest();
 
 	} else {
 		usb->SendString("Unrecognised command: " + ComCmd + "Type 'help' for supported commands\r\n");

@@ -41,7 +41,7 @@ void EXTI1_IRQHandler() {
 
 void EXTI4_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF4;
-	APP_BLE_Scan_and_Connect();
+	bleApp.ScanAndConnect();
 }
 #endif
 

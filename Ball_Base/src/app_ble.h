@@ -41,21 +41,33 @@ enum struct bleAction {ScanConnect, ScanInfo};
 
 struct BleApplication {
 public:
+	enum class ConnectionStatus {Idle, ClientConnected, Connecting};
+
 	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
-	APP_BLE_ConnStatus_t Device_Connection_Status;
+	ConnectionStatus Device_Connection_Status;
 	bool DeviceServerFound = false;
 	bleAction action;
 
 	void Init();
+	ConnectionStatus GetClientConnectionStatus(uint16_t connHandle);
+	void ScanAndConnect();
+	void ScanInfo();
+	static void DisconnectRequest();
+
+private:
+	static void ScanRequest();
+	static void ConnectRequest();
+
+
 };
 
-void APP_BLE_Init(void);
-APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status(uint16_t Connection_Handle);
+//void APP_BLE_Init(void);
+//APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status(uint16_t Connection_Handle);
 
-void APP_BLE_Scan_and_Connect();
+
 void APP_BLE_Key_Button2_Action();
 void APP_BLE_Key_Button3_Action();
-void APP_BLE_ScanInfo();
+
 void PrintAdvData(std::unique_ptr<AdvertisingReport> ar);
 
 extern BleApplication bleApp;

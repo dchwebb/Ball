@@ -4,6 +4,7 @@
 //#include <cstdlib>
 
 //extern "C" {
+enum class HidState {Idle, ClientConnected, DiscoverServices, DiscoverCharacs, DiscoverNotificationCharDesc, DiscoveringCharacs, EnableNotificationDesc, EnableHIDNotificationDesc};
 
 typedef enum {
 	PEER_CONN_HANDLE_EVT,
@@ -16,9 +17,9 @@ typedef struct {
 } P2PC_APP_ConnHandle_Not_evt_t;
 
 
-void HID_APP_Init(void);
+void HID_APP_Init();
 void HIDConnectionNotification(P2PC_APP_ConnHandle_Not_evt_t *pNotification);
-uint8_t HID_Client_APP_Get_State(void);
-void HID_APP_SW1_Button_Action(void);
+HidState HID_Client_APP_Get_State();
+void HID_APP_SW1_Button_Action();
 
 //}

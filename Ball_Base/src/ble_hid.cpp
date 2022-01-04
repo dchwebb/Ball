@@ -25,7 +25,7 @@ typedef struct {
 } HID_Client_App_Notification_evt_t;
 
 typedef struct {
-	APP_BLE_ConnStatus_t state;					// state of the P2P Client state machine
+	HidState state;								// state of the HID Client state machine
 	uint16_t connHandle;						// connection handle
 	uint16_t HIDServiceHandle;					// handle of the HID service
 	uint16_t HIDServiceEndHandle;				// end handle of the HID service
@@ -57,7 +57,7 @@ void HID_APP_Init(void)
 {
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SEARCH_SERVICE_ID, UTIL_SEQ_RFU, Update_Service);
 
-	HIDClientContext.state = APP_BLE_IDLE;
+	HIDClientContext.state = HidState::Idle;
 
 	SVCCTL_RegisterCltHandler(HIDEventHandler);	//  Register the event handler to the BLE controller
 	APP_DBG_MSG("-- P2P CLIENT INITIALIZED \n");
@@ -82,7 +82,7 @@ void HIDConnectionNotification(P2PC_APP_ConnHandle_Not_evt_t *pNotification)
 		break;
 
 	case PEER_DISCON_HANDLE_EVT:
-		HIDClientContext.state = APP_BLE_IDLE;
+		HIDClientContext.state = HidState::Idle;
 		HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
 		break;
@@ -124,18 +124,18 @@ static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event)
 			// Result of discover all primary services
 			aci_att_read_by_group_type_resp_event_rp0 *pr = (aci_att_read_by_group_type_resp_event_rp0*)blecore_evt->data;
 
-			if (HIDClientContext.state != APP_BLE_IDLE) {
-				APP_BLE_ConnStatus_t status = APP_BLE_Get_Client_Connection_Status(HIDClientContext.connHandle);
+			if (HIDClientContext.state != HidState::Idle) {
+				BleApplication::ConnectionStatus status = bleApp.GetClientConnectionStatus(HIDClientContext.connHandle);
 
 				// Handle disconnected
-				if ((HIDClientContext.state == APP_BLE_CONNECTED_CLIENT) && (status == APP_BLE_IDLE)) {
-					HIDClientContext.state = APP_BLE_IDLE;
+				if ((HIDClientContext.state == HidState::ClientConnected) && (status == BleApplication::ConnectionStatus::Idle)) {
+					HIDClientContext.state = HidState::Idle;
 					HIDClientContext.connHandle = 0xFFFF;
 					break;
 				}
 			}
 
-			if (HIDClientContext.state == APP_BLE_IDLE) {
+			if (HIDClientContext.state == HidState::Idle) {
 				HIDClientContext.connHandle = pr->Connection_Handle;
 
 				uint8_t numServ = (pr->Data_Length) / pr->Attribute_Data_Length;
@@ -152,12 +152,12 @@ static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event)
 						if (uuid == BATTERY_SERVICE_UUID) {
 							HIDClientContext.BatteryServiceHandle = UNPACK_2_BYTE_PARAMETER(&pr->Attribute_Data_List[idx - 4]);
 							HIDClientContext.BatteryServiceEndHandle = UNPACK_2_BYTE_PARAMETER (&pr->Attribute_Data_List[idx - 2]);
-							HIDClientContext.state = APP_BLE_DISCOVER_CHARACS;
+							HIDClientContext.state = HidState::DiscoverCharacs;
 							APP_DBG_MSG("-- GATT : Battery Service UUID: 0x%x\n", uuid);
 						} else if (uuid == HUMAN_INTERFACE_DEVICE_SERVICE_UUID) {
 							HIDClientContext.HIDServiceHandle = UNPACK_2_BYTE_PARAMETER(&pr->Attribute_Data_List[idx - 4]);
 							HIDClientContext.HIDServiceEndHandle = UNPACK_2_BYTE_PARAMETER (&pr->Attribute_Data_List[idx - 2]);
-							HIDClientContext.state = APP_BLE_DISCOVER_CHARACS;
+							HIDClientContext.state = HidState::DiscoverCharacs;
 							APP_DBG_MSG("-- GATT : HID Service UUID: 0x%x\n", uuid);
 						} else {
 							APP_DBG_MSG("-- GATT : Service UUID: 0x%x\n", uuid);
@@ -190,12 +190,12 @@ static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event)
 
 						if (uuid == BATTERY_LEVEL_CHAR_UUID) {
 							APP_DBG_MSG("-- GATT : Battery Notification Found\n");
-							HIDClientContext.state = APP_BLE_DISCOVER_NOTIFICATION_CHAR_DESC;
+							HIDClientContext.state = HidState::DiscoverNotificationCharDesc;
 							HIDClientContext.BatteryNotificationCharHdle = handle;
 						}
 						if (uuid == REPORT_CHAR_UUID) {
 							APP_DBG_MSG("-- GATT : HID Report Notification Found\n");
-							HIDClientContext.state = APP_BLE_DISCOVER_NOTIFICATION_CHAR_DESC;
+							HIDClientContext.state = HidState::DiscoverNotificationCharDesc;
 							HIDClientContext.HIDNotificationCharHdle = handle;
 						}
 						pr->Data_Length -= 7;
@@ -203,8 +203,8 @@ static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event)
 
 					}
 					// To avoid continually retriggering discover characteristics
-					if (HIDClientContext.state == APP_BLE_DISCOVER_CHARACS) {
-						HIDClientContext.state = APP_BLE_DISCOVERING_CHARACS;
+					if (HIDClientContext.state == HidState::DiscoverCharacs) {
+						HIDClientContext.state = HidState::DiscoveringCharacs;
 					}
 				}
 			}
@@ -230,12 +230,12 @@ static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event)
 						if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > HIDClientContext.BatteryNotificationCharHdle && handle <= HIDClientContext.BatteryServiceEndHandle) {
 							APP_DBG_MSG("-- GATT : Battery Client Char Config Descriptor: 0x%x\n", handle);
 							HIDClientContext.BatteryNotificationDescHandle = handle;
-							HIDClientContext.state = APP_BLE_ENABLE_NOTIFICATION_DESC;
+							HIDClientContext.state = HidState::EnableNotificationDesc;
 
 						} else if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > HIDClientContext.HIDNotificationCharHdle && handle <= HIDClientContext.HIDServiceEndHandle) {
 							APP_DBG_MSG("-- GATT : HID Client Char Config Descriptor: 0x%x\n", handle);
 							HIDClientContext.HIDNotificationDescHandle = handle;
-							HIDClientContext.state = APP_BLE_ENABLE_NOTIFICATION_DESC;
+							HIDClientContext.state = HidState::EnableNotificationDesc;
 						}
 
 						idx += 4;
@@ -336,7 +336,7 @@ void Gatt_Notification(HID_Client_App_Notification_evt_t *pNotification)
 }
 
 
-uint8_t HID_Client_APP_Get_State( void ) {
+HidState HID_Client_APP_Get_State() {
 	return HIDClientContext.state;
 }
 
@@ -349,15 +349,15 @@ void Update_Service()
 
 	uint8_t startHandle, endHandle;
 
-	if (HIDClientContext.state != APP_BLE_IDLE) {
+	if (HIDClientContext.state != HidState::Idle) {
 
 		switch (HIDClientContext.state)
 		{
 
-		case APP_BLE_DISCOVER_SERVICES:
+		case HidState::DiscoverServices:
 			APP_DBG_MSG("P2P_DISCOVER_SERVICES\n");
 			break;
-		case APP_BLE_DISCOVER_CHARACS:
+		case HidState::DiscoverCharacs:
 			APP_DBG_MSG("* GATT : Discover HID/Battery Characteristics\n");
 
 			// Discover characteristics of both battery and HID services
@@ -372,7 +372,7 @@ void Update_Service()
 
 			break;
 
-		case APP_BLE_DISCOVER_NOTIFICATION_CHAR_DESC:
+		case HidState::DiscoverNotificationCharDesc:
 			APP_DBG_MSG("* GATT : Discover HID/Battery Notification Characteristic Descriptor\n");
 
 			if (HIDClientContext.BatteryNotificationCharHdle > HIDClientContext.HIDNotificationCharHdle) {
@@ -387,18 +387,18 @@ void Update_Service()
 
 			break;
 
-		case APP_BLE_ENABLE_NOTIFICATION_DESC:
+		case HidState::EnableNotificationDesc:
 			APP_DBG_MSG("* GATT : Enable Battery Notification\n");
 			aci_gatt_write_char_desc(HIDClientContext.connHandle, HIDClientContext.BatteryNotificationDescHandle, 2, &enable);
 
-			HIDClientContext.state = APP_BLE_ENABLE_HID_NOTIFICATION_DESC;
+			HIDClientContext.state = HidState::EnableHIDNotificationDesc;
 			break;
 
-		case APP_BLE_ENABLE_HID_NOTIFICATION_DESC:
+		case HidState::EnableHIDNotificationDesc:
 			APP_DBG_MSG("* GATT : Enable HID Notification\n");
 			aci_gatt_write_char_desc(HIDClientContext.connHandle, HIDClientContext.HIDNotificationDescHandle, 2, &enable);
 
-			HIDClientContext.state = APP_BLE_CONNECTED_CLIENT;
+			HIDClientContext.state = HidState::ClientConnected;
 			HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
 			break;
 
@@ -406,7 +406,7 @@ void Update_Service()
 //			APP_DBG_MSG("* GATT : Disable Battery Notification\n");
 //			aci_gatt_write_char_desc(HIDClientContext.connHandle, HIDClientContext.BatteryNotificationDescHandle, 2, &disable);
 //
-//			HIDClientContext.state = APP_BLE_CONNECTED_CLIENT;
+//			HIDClientContext.state = HidState::ClientConnected;
 //
 //			break;
 		default:
