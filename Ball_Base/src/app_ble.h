@@ -3,25 +3,9 @@
 #include <string>
 #include "uartHandler.h"
 
-typedef enum {
-	APP_BLE_IDLE,
-	APP_BLE_FAST_ADV,
-	APP_BLE_LP_ADV,
-	APP_BLE_SCAN,
-	APP_BLE_LP_CONNECTING,
-	APP_BLE_CONNECTED_SERVER,
-	APP_BLE_CONNECTED_CLIENT,
+#define BD_ADDR_SIZE_LOCAL    6
 
-	APP_BLE_DISCOVER_SERVICES,
-	APP_BLE_DISCOVER_CHARACS,
-	APP_BLE_DISCOVERING_CHARACS,
-	APP_BLE_DISCOVER_WRITE_DESC,
-	APP_BLE_DISCOVER_NOTIFICATION_CHAR_DESC,
-	APP_BLE_ENABLE_NOTIFICATION_DESC,
-	APP_BLE_ENABLE_HID_NOTIFICATION_DESC,
-	APP_BLE_DISABLE_NOTIFICATION_DESC
-} APP_BLE_ConnStatus_t;
-
+// Advertising report created on the fly to preserve data for parsing and diagnostic output
 struct AdvertisingReport {
 	uint8_t address[6];
 	uint16_t appearance;
@@ -36,38 +20,40 @@ struct AdvertisingReport {
 	}
 };
 
-enum struct bleAction {ScanConnect, ScanInfo};
-
 
 struct BleApplication {
 public:
 	enum class ConnectionStatus {Idle, ClientConnected, Connecting};
 
-	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
-	ConnectionStatus Device_Connection_Status;
-	bool DeviceServerFound = false;
-	bleAction action;
 
 	void Init();
 	ConnectionStatus GetClientConnectionStatus(uint16_t connHandle);
 	void ScanAndConnect();
 	void ScanInfo();
 	static void DisconnectRequest();
+	void ServiceControlCallback(void* pckt);
 
 private:
+	enum class RequestAction {ScanConnect, ScanInfo};
+
+	bool deviceServerFound = false;
+	ConnectionStatus deviceConnectionStatus;
+	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
+	RequestAction action;
+	std::string advMsg;
+	uint8_t bd_addr_udn[BD_ADDR_SIZE_LOCAL];
+	uint8_t remoteConnectAddress[BD_ADDR_SIZE_LOCAL];
+
 	static void ScanRequest();
 	static void ConnectRequest();
-
-
+	static void UserEvtRx(void* pPayload);
+	static void StatusNot(HCI_TL_CmdStatus_t status);
+	void PrintAdvData(std::unique_ptr<AdvertisingReport> ar);
+	void HciGapGattInit();
+	void TransportLayerInit();
+	uint8_t* GetBdAddress();
 };
 
-//void APP_BLE_Init(void);
-//APP_BLE_ConnStatus_t APP_BLE_Get_Client_Connection_Status(uint16_t Connection_Handle);
 
-
-void APP_BLE_Key_Button2_Action();
-void APP_BLE_Key_Button3_Action();
-
-void PrintAdvData(std::unique_ptr<AdvertisingReport> ar);
 
 extern BleApplication bleApp;

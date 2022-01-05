@@ -30,13 +30,11 @@ void EXTI15_10_IRQHandler() {
 #else
 void EXTI0_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF0;
-	//APP_BLE_Key_Button2_Action();
 	usb.OutputDebug();
 }
 
 void EXTI1_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF1;
-	APP_BLE_Key_Button3_Action();
 }
 
 void EXTI4_IRQHandler() {
