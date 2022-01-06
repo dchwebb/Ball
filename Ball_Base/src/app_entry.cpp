@@ -1,9 +1,6 @@
-//#include "app_common.h"
 #include "main.h"
 #include "app_entry.h"
 #include "app_ble.h"
-//#include "ble.h"
-//#include "tl.h"
 #include "stm32_seq.h"
 #include "shci_tl.h"
 #include "stm32_lpm.h"
@@ -20,37 +17,11 @@ PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static TL_CmdPacket_t SystemCmdBuffer;
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t SystemSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255U];
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t BleSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255];
 
-//static void Config_HSE(void);
-//static void Reset_IPCC();
-//static void Reset_BackupDomain();
-//static void SystemPower_Config();
-//static void appe_Tl_Init();
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status);
 static void APPE_SysUserEvtRx(void* pPayload);
-//static void Init_Rtc();
-//static void Init_Exti();
-
-/*
-void MX_APPE_Config()
-{
-	// The OPTVERR flag is wrongly set at power on. It shall be cleared before using any HAL_FLASH_xxx() api
-	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR);
-
-	// Reset some configurations so that the system behave in the same way when either out of nReset or Power On
-	Reset_BackupDomain();
-	Reset_IPCC();
-
-	// Configure HSE Tuning
-	Config_HSE();
-}
-*/
 
 void APPE_Init()
 {
-//	Init_Exti();
-//	Init_Rtc();
-//	SystemPower_Config();
-
 	// normally configured in HAL set up
 	hrtc.Instance = RTC;
 	hrtc.State = HAL_RTC_STATE_READY;
@@ -84,85 +55,20 @@ void APPE_Init()
 }
 
 
-//void Init_Exti()
-//{
-//	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
-//	LL_EXTI_DisableIT_0_31(~0);
-//	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
-//}
-//
-//
-//static void Init_Rtc()
-//{
-//	LL_RTC_DisableWriteProtection(RTC);
-//	LL_RTC_WAKEUP_SetClock(RTC, CFG_RTC_WUCKSEL_DIVIDER);
-//	LL_RTC_EnableWriteProtection(RTC);
-//}
-
-
-//// Configures the system to be ready for low power mode
-//static void SystemPower_Config()
-//{
-//	// Select HSI as system clock source after Wake Up from Stop mode
-//	LL_RCC_SetClkAfterWakeFromStop(LL_RCC_STOP_WAKEUPCLOCK_HSI);
-//
-//	UTIL_LPM_Init();								// Initialize low power manager
-//	LL_C2_PWR_SetPowerMode(LL_PWR_MODE_SHUTDOWN);	// Initialize the CPU2 reset value before starting CPU2 with C2BOOT
-//
-//#if (CFG_USB_INTERFACE_ENABLE != 0)
-//	// Enable USB power
-//	HAL_PWREx_EnableVddUSB();
-//#endif
-//}
-
-
-//static void appe_Tl_Init()
-//{
-//	TL_MM_Config_t tl_mm_config;
-//	SHCI_TL_HciInitConf_t SHci_Tl_Init_Conf;
-//
-//	TL_Init();	// Reference table initialization
-//
-//	// System channel initialization
-//	UTIL_SEQ_RegTask(1 << CFG_TASK_SYSTEM_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, shci_user_evt_proc);
-//	SHci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&SystemCmdBuffer;
-//	SHci_Tl_Init_Conf.StatusNotCallBack = APPE_SysStatusNot;
-//	shci_init(APPE_SysUserEvtRx, (void*) &SHci_Tl_Init_Conf);
-//
-//	// Memory Manager channel initialization
-//	tl_mm_config.p_BleSpareEvtBuffer = BleSpareEvtBuffer;
-//	tl_mm_config.p_SystemSpareEvtBuffer = SystemSpareEvtBuffer;
-//	tl_mm_config.p_AsynchEvtPool = EvtPool;
-//	tl_mm_config.AsynchEvtPoolSize = POOL_SIZE;
-//	TL_MM_Init(&tl_mm_config);
-//
-//	TL_Enable();
-//}
-
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status)
 {
 	UNUSED(status);
 	return;
 }
 
-/**
- * The type of the payload for a system user event is tSHCI_UserEvtRxParam
- * When the system event is both :
- *    - a ready event (subevtcode = SHCI_SUB_EVT_CODE_READY)
- *    - reported by the FUS (sysevt_ready_rsp == FUS_FW_RUNNING)
- * The buffer shall not be released
- * (eg ((tSHCI_UserEvtRxParam*)pPayload)->status shall be set to SHCI_TL_UserEventFlow_Disable)
- * When the status is not filled, the buffer is released by default
- */
+
+
 static void APPE_SysUserEvtRx(void* pPayload)
 {
-	//UNUSED(pPayload);
-	// Traces channel initialization
 	APPD_EnableCPU2();
 
 	bleApp.Init();
 	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);
-	return;
 }
 
 
@@ -204,25 +110,4 @@ void shci_cmd_resp_wait(uint32_t timeout)
 	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
 }
 
-/*
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	switch (GPIO_Pin)
-	{
-		case BUTTON_SW1_Pin:
-			APP_BLE_Key_Button1_Action();
-			break;
 
-		case BUTTON_SW2_Pin:
-			APP_BLE_Key_Button2_Action();
-			break;
-
-		case BUTTON_SW3_Pin:
-			APP_BLE_Key_Button3_Action();
-			break;
-
-		default:
-			break;
-	}
-}
-*/

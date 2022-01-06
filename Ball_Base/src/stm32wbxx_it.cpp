@@ -1,6 +1,6 @@
 #include "main.h"
 #include "initialisation.h"
-#include "stm32wbxx_it.h"
+//#include "stm32wbxx_it.h"
 #include "app_ble.h"
 #include "USB.h"
 

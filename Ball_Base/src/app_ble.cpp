@@ -1,28 +1,20 @@
+#include "app_ble.h"
 #include "ble_hid.h"
 #include "main.h"
-#include "app_common.h"
 #include "dbg_trace.h"
 #include "ble.h"
-#include "hci_tl.h"
-#include "app_ble.h"
 #include "stm32_seq.h"
 #include "shci.h"
 #include "stm32_lpm.h"
-//#include "otp.h"
 #include "uartHandler.h"
 #include "usb.h"
 #include <bitset>
 
 extern USBHandler usb;
+extern HidApp hidApp;
 
+PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
 
-//PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
-static TL_CmdPacket_t BleCmdBuffer;
-
-static const uint8_t BLE_CFG_IR_VALUE[16] = CFG_BLE_IRK;		// Identity root key used to derive LTK and CSRK
-static const uint8_t BLE_CFG_ER_VALUE[16] = CFG_BLE_ERK;		// Encryption root key used to derive LTK and CSRK
-
-P2PC_APP_ConnHandle_Not_evt_t handleNotification;
 
 void BleApplication::Init()
 {
@@ -84,7 +76,7 @@ void BleApplication::Init()
 	aci_hal_set_radio_activity_mask(0x0020);			// Connection event master
 
 	// Initialize HID Client Application
-	HID_APP_Init();
+	hidApp.Init();
 
 }
 
@@ -106,7 +98,6 @@ void BleApplication::ServiceControlCallback(void* pckt)
 
 		case HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE:
 		{
-			handleNotification.P2P_Evt_Opcode = PEER_DISCON_HANDLE_EVT;
 			evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
 
 			switch (blecore_evt->ecode)
@@ -159,9 +150,7 @@ void BleApplication::ServiceControlCallback(void* pckt)
 				connectionHandle = 0;
 				deviceConnectionStatus = BleApplication::ConnectionStatus::Idle;
 				APP_DBG_MSG("* BLE: Disconnection event with server\r\n");
-				handleNotification.P2P_Evt_Opcode = PEER_DISCON_HANDLE_EVT;
-				handleNotification.ConnectionHandle = connectionHandle;
-				HIDConnectionNotification(&handleNotification);
+				hidApp.HIDConnectionNotification();
 			}
 		}
 		break;
@@ -181,9 +170,7 @@ void BleApplication::ServiceControlCallback(void* pckt)
 
 					// connection with client
 					APP_DBG_MSG("* BLE: Connection event with server\r\n");
-					handleNotification.P2P_Evt_Opcode = PEER_CONN_HANDLE_EVT;
-					handleNotification.ConnectionHandle = connectionHandle;
-					HIDConnectionNotification(&handleNotification);
+					hidApp.HIDConnectionNotification();
 
 					result = aci_gatt_disc_all_primary_services(connectionHandle);
 					if (result == BLE_STATUS_SUCCESS) {
@@ -302,15 +289,16 @@ BleApplication::ConnectionStatus BleApplication::GetClientConnectionStatus(uint1
 
 void BleApplication::ScanInfo()
 {
-	if (HID_Client_APP_Get_State() != HidState::ClientConnected) {
+	if (hidApp.state != HidApp::HidState::ClientConnected) {
 		bleApp.action = RequestAction::ScanInfo;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_START_SCAN_ID, CFG_SCH_PRIO_0);
 	}
 }
 
+
 void BleApplication::ScanAndConnect()
 {
-	if (HID_Client_APP_Get_State() != HidState::ClientConnected)	{
+	if (hidApp.state != HidApp::HidState::ClientConnected)	{
 		bleApp.action = RequestAction::ScanConnect;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_START_SCAN_ID, CFG_SCH_PRIO_0);
 	} else {
@@ -338,8 +326,6 @@ void BleApplication::HciGapGattInit()
 	uint32_t srd_bd_addr[2];
 	uint16_t appearance[1] = {0};
 
-	// Initialize HCI layer
-
 	// HCI Reset to synchronise BLE Stack
 	hci_reset();
 
@@ -353,10 +339,10 @@ void BleApplication::HciGapGattInit()
 	aci_hal_write_config_data(CONFIG_DATA_RANDOM_ADDRESS_OFFSET, CONFIG_DATA_RANDOM_ADDRESS_LEN, (uint8_t*)srd_bd_addr);
 
 	// Write Identity root key used to derive LTK and CSRK
-	aci_hal_write_config_data(CONFIG_DATA_IR_OFFSET, CONFIG_DATA_IR_LEN, (uint8_t*)BLE_CFG_IR_VALUE);
+	aci_hal_write_config_data(CONFIG_DATA_IR_OFFSET, CONFIG_DATA_IR_LEN, (uint8_t*)IdentityRootKey);
 
 	// Write Encryption root key used to derive LTK and CSRK
-	aci_hal_write_config_data(CONFIG_DATA_ER_OFFSET, CONFIG_DATA_ER_LEN, (uint8_t*)BLE_CFG_ER_VALUE);
+	aci_hal_write_config_data(CONFIG_DATA_ER_OFFSET, CONFIG_DATA_ER_LEN, (uint8_t*)EncryptionRootKey);
 
 	// Set TX Power to 0dBm.
 	aci_hal_set_tx_power_level(1, CFG_TX_POWER);
@@ -433,7 +419,6 @@ void BleApplication::ConnectRequest()
 			bleApp.deviceConnectionStatus = ConnectionStatus::Idle;
 		}
 	}
-	return;
 }
 
 

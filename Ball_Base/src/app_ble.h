@@ -1,4 +1,5 @@
 #pragma once
+#include "app_conf.h"
 #include "hci_tl.h"
 #include <string>
 #include "uartHandler.h"
@@ -25,6 +26,7 @@ struct BleApplication {
 public:
 	enum class ConnectionStatus {Idle, ClientConnected, Connecting};
 
+	ConnectionStatus deviceConnectionStatus;
 
 	void Init();
 	ConnectionStatus GetClientConnectionStatus(uint16_t connHandle);
@@ -37,12 +39,13 @@ private:
 	enum class RequestAction {ScanConnect, ScanInfo};
 
 	bool deviceServerFound = false;
-	ConnectionStatus deviceConnectionStatus;
 	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
 	RequestAction action;
 	std::string advMsg;
 	uint8_t bd_addr_udn[BD_ADDR_SIZE_LOCAL];
 	uint8_t remoteConnectAddress[BD_ADDR_SIZE_LOCAL];
+	const uint8_t IdentityRootKey[16] = CFG_BLE_IRK;			// Identity root key used to derive LTK and CSRK
+	const uint8_t EncryptionRootKey[16] = CFG_BLE_ERK;			// Encryption root key used to derive LTK and CSRK
 
 	static void ScanRequest();
 	static void ConnectRequest();
