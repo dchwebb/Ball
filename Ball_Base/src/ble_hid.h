@@ -6,8 +6,12 @@
 
 struct HidApp {
 public:
-	enum class HidState {Idle, ClientConnected, DiscoverServices, DiscoverCharacs, DiscoverNotificationCharDesc, DiscoveringCharacs, EnableNotificationDesc, EnableHIDNotificationDesc};
+	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverServices, DiscoverCharacs, DiscoveredCharacs, DiscoveringCharacs, EnableNotificationDesc, EnableHIDNotificationDesc};
 	HidState state;								// state of the HID Client state machine
+
+	enum class HidAction {None, Connect, GetReportMap};
+	HidAction action;
+
 	struct Position3D {
 		int16_t x;
 		int16_t y;
@@ -19,6 +23,7 @@ public:
 
 private:
 	uint16_t connHandle;						// connection handle
+
 	uint16_t HIDServiceHandle;					// handle of the HID service
 	uint16_t HIDServiceEndHandle;				// end handle of the HID service
 	uint16_t HIDNotificationCharHdle;			// handle of the HID Report characteristic
@@ -27,12 +32,13 @@ private:
 	uint16_t BatteryServiceEndHandle;			// end handle of the Battery service
 	uint16_t BatteryNotificationCharHdle;		// handle of the Rx characteristic - Notification From Server
 	uint16_t BatteryNotificationDescHandle;		// handle of the client configuration descriptor of Rx characteristic
+	uint16_t HIDReportMapHdle;					// handle of report map
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void UpdateService();
 	void HidNotification(uint8_t* payload, uint8_t len);
 	void BatteryNotification(uint8_t* payload, uint8_t len);
-	HidState GetState();
+	void PrintReportMap(uint8_t* data, uint8_t len);
 };
 
 void HID_APP_SW1_Button_Action();

@@ -54,7 +54,7 @@ std::string HexToString(const uint32_t& v, const bool& spaces) {
 	return std::string(buf);
 }
 
-char uartBuf[50];
+char uartBuf[100];
 std::string HexToString(const uint8_t* v, uint32_t len, const bool spaces) {
 	uint32_t pos = 0, cnt = 0;
 	len = std::min(50ul, len);

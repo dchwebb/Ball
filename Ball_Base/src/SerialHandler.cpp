@@ -89,7 +89,23 @@ bool SerialHandler::Command()
 	} else if (ComCmd.compare("scan\n") == 0) {					// List ble devices
 		bleApp.ScanInfo();
 
-	} else if (ComCmd.compare("disconnect\n") == 0) {					// Disconnect
+	} else if (ComCmd.compare(0, 7, "hidmap:") == 0) {			// Print Hid repot map for given address
+
+		if (ComCmd.length() != 20) {
+			usb->SendString("Address format not recognised\r\n");
+		} else {
+			uint8_t addr[BleApp::bdddrSize];
+			int8_t pos = ComCmd.find(":") + 1;								// locate position of character preceding
+			size_t val = -1;
+			for (int8_t i = BleApp::bdddrSize; i > 0; --i) {
+				addr[i - 1] = stoi(ComCmd.substr(pos, 2), &val, 16);
+				pos += 2;
+			}
+
+			bleApp.GetHidReportMap(addr);
+		}
+
+	} else if (ComCmd.compare("disconnect\n") == 0) {			// Disconnect
 		bleApp.DisconnectRequest();
 
 	} else {

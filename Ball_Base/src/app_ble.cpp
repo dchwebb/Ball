@@ -16,7 +16,7 @@ extern HidApp hidApp;
 PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
 
 
-void BleApplication::Init()
+void BleApp::Init()
 {
 	SHCI_C2_Ble_Init_Cmd_Packet_t ble_init_cmd_packet =	{
 			{{0,0,0}},                          // Header unused
@@ -88,7 +88,7 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 }
 
 
-void BleApplication::ServiceControlCallback(void* pckt)
+void BleApp::ServiceControlCallback(void* pckt)
 {
 	hci_event_pckt* event_pckt = (hci_event_pckt*) ((hci_uart_pckt*) pckt)->data;
 	uint8_t result;
@@ -111,7 +111,7 @@ void BleApplication::ServiceControlCallback(void* pckt)
 
 						APP_DBG_MSG("* BLE: GAP General discovery procedure completed\r\n");
 						// if a device found, connect to it, device 1 being chosen first if both found
-						if (action == RequestAction::ScanConnect && deviceServerFound && deviceConnectionStatus != BleApplication::ConnectionStatus::ClientConnected) {
+						if (action == RequestAction::ScanConnect && deviceServerFound && deviceConnectionStatus != BleApp::ConnectionStatus::ClientConnected) {
 							UTIL_SEQ_SetTask(1 << CFG_TASK_CONN_DEV_1_ID, CFG_SCH_PRIO_0);
 						}
 					}
@@ -148,7 +148,7 @@ void BleApplication::ServiceControlCallback(void* pckt)
 			hci_disconnection_complete_event_rp0* cc = (hci_disconnection_complete_event_rp0*) event_pckt->data;
 			if (cc->Connection_Handle == connectionHandle) {
 				connectionHandle = 0;
-				deviceConnectionStatus = BleApplication::ConnectionStatus::Idle;
+				deviceConnectionStatus = BleApp::ConnectionStatus::Idle;
 				APP_DBG_MSG("* BLE: Disconnection event with server\r\n");
 				hidApp.HIDConnectionNotification();
 			}
@@ -166,10 +166,16 @@ void BleApplication::ServiceControlCallback(void* pckt)
 					// The connection is done
 					hci_le_connection_complete_event_rp0* connection_complete_event = (hci_le_connection_complete_event_rp0*) meta_evt->data;
 					connectionHandle = connection_complete_event->Connection_Handle;
-					deviceConnectionStatus = BleApplication::ConnectionStatus::ClientConnected;
+					deviceConnectionStatus = BleApp::ConnectionStatus::ClientConnected;
 
-					// connection with client
+					// connection with client: notify HidApp
 					APP_DBG_MSG("* BLE: Connection event with server\r\n");
+
+					if (action == RequestAction::GetReportMap) {
+						hidApp.action = HidApp::HidAction::GetReportMap;
+					} else {
+						hidApp.action = HidApp::HidAction::Connect;
+					}
 					hidApp.HIDConnectionNotification();
 
 					result = aci_gatt_disc_all_primary_services(connectionHandle);
@@ -190,7 +196,7 @@ void BleApplication::ServiceControlCallback(void* pckt)
 
 					std::unique_ptr<AdvertisingReport> ar = std::make_unique<AdvertisingReport>();
 
-					memcpy(ar->address, le_advertising_event->Advertising_Report[0].Address, 6);
+					memcpy(ar->address, le_advertising_event->Advertising_Report[0].Address, bdddrSize);
 
 					// When decoding advertising report the data and RSSI values must be read by using offsets
 					// RSSI = (int8_t)*(uint8_t*) (adv_report_data + le_advertising_event->Advertising_Report[0].Length_Data);
@@ -214,7 +220,7 @@ void BleApplication::ServiceControlCallback(void* pckt)
 									if (action == RequestAction::ScanConnect && ar->serviceClasses == 0x1812) {	// FIXME whitelist etc
 										APP_DBG_MSG("* BLE: Server detected - HID Device\r\n");
 										deviceServerFound = true;
-										memcpy(&remoteConnectAddress, le_advertising_event->Advertising_Report[0].Address, 6);
+										memcpy(&remoteConnectAddress, le_advertising_event->Advertising_Report[0].Address, bdddrSize);
 										aci_gap_terminate_gap_proc(0x2);		// If connecting terminate scan
 									}
 									break;
@@ -264,7 +270,7 @@ void BleApplication::ServiceControlCallback(void* pckt)
 }
 
 
-void BleApplication::PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
+void BleApp::PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
 {
 	advMsg = "* BLE: Found device:"
 			"\r\n  Address: " + ar->formatAddress() +
@@ -278,7 +284,7 @@ void BleApplication::PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
 }
 
 
-BleApplication::ConnectionStatus BleApplication::GetClientConnectionStatus(uint16_t connHandle)
+BleApp::ConnectionStatus BleApp::GetClientConnectionStatus(uint16_t connHandle)
 {
 	if (connectionHandle == connHandle) {
 		return deviceConnectionStatus;
@@ -287,16 +293,30 @@ BleApplication::ConnectionStatus BleApplication::GetClientConnectionStatus(uint1
 }
 
 
-void BleApplication::ScanInfo()
+void BleApp::ScanInfo()
 {
-	if (hidApp.state != HidApp::HidState::ClientConnected) {
+	if (bleApp.deviceConnectionStatus == ConnectionStatus::Idle) {
 		bleApp.action = RequestAction::ScanInfo;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_START_SCAN_ID, CFG_SCH_PRIO_0);
+	} else {
+		APP_DBG_MSG("Connection is busy ...\n");
 	}
 }
 
 
-void BleApplication::ScanAndConnect()
+void BleApp::GetHidReportMap(uint8_t* address)
+{
+	if (bleApp.deviceConnectionStatus == ConnectionStatus::Idle) {
+		bleApp.action = RequestAction::GetReportMap;
+		memcpy(&remoteConnectAddress, address, bdddrSize);
+		UTIL_SEQ_SetTask(1 << CFG_TASK_CONN_DEV_1_ID, CFG_SCH_PRIO_0);
+	} else {
+		APP_DBG_MSG("Connection is busy ...\n");
+	}
+}
+
+
+void BleApp::ScanAndConnect()
 {
 	if (hidApp.state != HidApp::HidState::ClientConnected)	{
 		bleApp.action = RequestAction::ScanConnect;
@@ -309,7 +329,7 @@ void BleApplication::ScanAndConnect()
 }
 
 
-void BleApplication::TransportLayerInit()
+void BleApp::TransportLayerInit()
 {
 	HCI_TL_HciInitConf_t Hci_Tl_Init_Conf;
 
@@ -319,7 +339,7 @@ void BleApplication::TransportLayerInit()
 }
 
 
-void BleApplication::HciGapGattInit()
+void BleApp::HciGapGattInit()
 {
 	const char *deviceName = "MJOY_CL";
 	uint16_t gap_service_handle, gap_dev_name_char_handle, gap_appearance_char_handle;
@@ -383,7 +403,7 @@ void BleApplication::HciGapGattInit()
 }
 
 
-void BleApplication::ScanRequest()
+void BleApp::ScanRequest()
 {
 	if (bleApp.deviceConnectionStatus != ConnectionStatus::ClientConnected) {
 		bleApp.deviceServerFound = false;
@@ -397,7 +417,7 @@ void BleApplication::ScanRequest()
 }
 
 
-void BleApplication::ConnectRequest()
+void BleApp::ConnectRequest()
 {
 	APP_DBG_MSG("* BLE: Create connection to server\r\n");
 
@@ -422,13 +442,13 @@ void BleApplication::ConnectRequest()
 }
 
 
-void BleApplication::DisconnectRequest()
+void BleApp::DisconnectRequest()
 {
 	aci_gap_terminate(bleApp.connectionHandle, 0x16);			// 0x16: Connection Terminated by Local Host
 }
 
 
-uint8_t* BleApplication::GetBdAddress()
+uint8_t* BleApp::GetBdAddress()
 {
 	// generates ble address fron data in flash
 	uint32_t udn = LL_FLASH_GetUDN();
@@ -450,7 +470,7 @@ uint8_t* BleApplication::GetBdAddress()
 }
 
 
-void BleApplication::UserEvtRx(void* pPayload)
+void BleApp::UserEvtRx(void* pPayload)
 {
 	tHCI_UserEvtRxParam* pParam = (tHCI_UserEvtRxParam*)pPayload;
 
@@ -463,7 +483,7 @@ void BleApplication::UserEvtRx(void* pPayload)
 }
 
 
-void BleApplication::StatusNot(HCI_TL_CmdStatus_t status)
+void BleApp::StatusNot(HCI_TL_CmdStatus_t status)
 {
 	uint32_t task_id_list;
 	switch (status)

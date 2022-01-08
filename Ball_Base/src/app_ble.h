@@ -4,7 +4,7 @@
 #include <string>
 #include "uartHandler.h"
 
-#define BD_ADDR_SIZE_LOCAL    6
+//#define BD_ADDR_SIZE_LOCAL    6
 
 // Advertising report created on the fly to preserve data for parsing and diagnostic output
 struct AdvertisingReport {
@@ -22,28 +22,30 @@ struct AdvertisingReport {
 };
 
 
-struct BleApplication {
+struct BleApp {
 public:
 	enum class ConnectionStatus {Idle, ClientConnected, Connecting};
 
 	ConnectionStatus deviceConnectionStatus;
+	static constexpr uint8_t bdddrSize = 6;
 
 	void Init();
 	ConnectionStatus GetClientConnectionStatus(uint16_t connHandle);
 	void ScanAndConnect();
+	void GetHidReportMap(uint8_t* address);
 	void ScanInfo();
 	static void DisconnectRequest();
 	void ServiceControlCallback(void* pckt);
 
 private:
-	enum class RequestAction {ScanConnect, ScanInfo};
+	enum class RequestAction {ScanConnect, ScanInfo, GetReportMap};
 
 	bool deviceServerFound = false;
 	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
 	RequestAction action;
 	std::string advMsg;
-	uint8_t bd_addr_udn[BD_ADDR_SIZE_LOCAL];
-	uint8_t remoteConnectAddress[BD_ADDR_SIZE_LOCAL];
+	uint8_t bd_addr_udn[bdddrSize];
+	uint8_t remoteConnectAddress[bdddrSize];
 	const uint8_t IdentityRootKey[16] = CFG_BLE_IRK;			// Identity root key used to derive LTK and CSRK
 	const uint8_t EncryptionRootKey[16] = CFG_BLE_ERK;			// Encryption root key used to derive LTK and CSRK
 
@@ -59,4 +61,4 @@ private:
 
 
 
-extern BleApplication bleApp;
+extern BleApp bleApp;
