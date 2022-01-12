@@ -4,8 +4,6 @@
 #include <string>
 #include "uartHandler.h"
 
-//#define BD_ADDR_SIZE_LOCAL    6
-
 // Advertising report created on the fly to preserve data for parsing and diagnostic output
 struct AdvertisingReport {
 	uint8_t address[6];

@@ -1,7 +1,8 @@
 #include "SerialHandler.h"
 #include "app_ble.h"
+#include "ble_hal_aci.h"
 #include <stdio.h>
-#include <cmath>		// for cordic test
+//#include <cmath>		// for cordic test
 
 int32_t SerialHandler::ParseInt(const std::string cmd, const char precedingChar, int low = 0, int high = 0) {
 	int32_t val = -1;
@@ -68,7 +69,10 @@ bool SerialHandler::Command()
 
 		usb->SendString("Mountjoy Ball Base\r\n"
 				"\r\nSupported commands:\r\n"
-				"info        -  Show diagnostic information\r\n"
+				"scan               -  List BLE devices\r\n"
+				"connect            -  Connect to HID BLE device\r\n"
+				"disconnect         -  Disconnect to HID BLE device\r\n"
+				"hidmap:xxxxxxxxxx  -  Print HID report map for device with address xxxxxxxxxx\r\n"
 				"\r\n"
 #if (USB_DEBUG)
 				"usbdebug    -  Start USB debugging\r\n"
@@ -107,6 +111,12 @@ bool SerialHandler::Command()
 
 	} else if (ComCmd.compare("disconnect\n") == 0) {			// Disconnect
 		bleApp.DisconnectRequest();
+
+	} else if (ComCmd.compare("fwversion\n") == 0) {			// Version of BLE firmware
+//		uint16_t version;
+//		if (aci_hal_get_fw_build_number(&version) == 0) {
+//			printf("BLE firmware version: %d\r\n", version);
+//		}
 
 	} else {
 		usb->SendString("Unrecognised command: " + ComCmd + "Type 'help' for supported commands\r\n");

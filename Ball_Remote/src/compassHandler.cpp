@@ -1,6 +1,9 @@
 #include "compassHandler.h"
 #include <stdio.h>
 
+// For use with ST LSM303 Accelerometer and magnetic sensor
+// PB8: I2C1_SCL; PB9: I2C1_SDA
+
 // Fixme - the I2C register address should cycle from 3 to 8 for sequential reads from the compass registers;
 // However there seems to be an issue as currently configured where after reading 6 registers the pointer jumps an extra place
 // Botch fix is to read 11 times - this will then wrap to the next start point without having to reset registers
@@ -19,7 +22,7 @@ void I2CSetup()
 	I2C1->CR2 |= 0x3C & I2C_CR2_SADD_Msk;
 	I2CWriteCmd(0x01, 0x20);						// CRB_REG_M register to set guass scale: Set Sensor input	field range to +-1.3 guass
 	I2CWriteCmd(0x02, 0x00);						// MR_REG_M register: 0* Continuous-conversion mode; 1 Single-conversion mode; 2 Sleep mode
-	I2CWriteAddr(0x83);								// MSB = 1 to indicate multiple reads; 0x03 = First manget read address: OUT_X_H_M
+	I2CWriteAddr(0x83);								// MSB = 1 to indicate multiple reads; 0x03 = First magnet read address: OUT_X_H_M
 
 	// Configure for repeated reads
 	I2C1->CR2 |= I2C_CR2_STOP;						// Clear interrupts - will be reset when next START is issued

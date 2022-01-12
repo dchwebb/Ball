@@ -221,7 +221,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 										APP_DBG_MSG("* BLE: Server detected - HID Device\r\n");
 										deviceServerFound = true;
 										memcpy(&remoteConnectAddress, le_advertising_event->Advertising_Report[0].Address, bdddrSize);
-										aci_gap_terminate_gap_proc(0x2);		// If connecting terminate scan
+										aci_gap_terminate_gap_proc(0x2);		// If connecting terminate scan - will fire ACI_GAP_PROC_COMPLETE_VSEVT_CODE event which will initiate connection
 									}
 									break;
 
@@ -424,7 +424,7 @@ void BleApp::ConnectRequest()
 	if (bleApp.deviceConnectionStatus != ConnectionStatus::ClientConnected) {
 		tBleStatus result = aci_gap_create_connection(SCAN_P,
 				SCAN_L,
-				RANDOM_ADDR, bleApp.remoteConnectAddress,
+				PUBLIC_ADDR, bleApp.remoteConnectAddress,		// Peer address type & address - fixme - get address type from advertising
 				PUBLIC_ADDR,
 				CONN_P1,
 				CONN_P2,

@@ -35,7 +35,7 @@ private:
 	uint16_t HIDReportMapHdle;					// handle of report map
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
-	static void UpdateService();
+	static void HIDServiceDiscovery();
 	void HidNotification(uint8_t* payload, uint8_t len);
 	void BatteryNotification(uint8_t* payload, uint8_t len);
 	void PrintReportMap(uint8_t* data, uint8_t len);

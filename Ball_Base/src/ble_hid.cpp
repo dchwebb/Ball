@@ -13,7 +13,7 @@ extern USBHandler usb;
 
 void HidApp::Init(void)
 {
-	UTIL_SEQ_RegTask(1 << CFG_TASK_SEARCH_SERVICE_ID, UTIL_SEQ_RFU, UpdateService);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_HIDServiceDiscovery, UTIL_SEQ_RFU, HIDServiceDiscovery);
 
 	state = HidState::Idle;
 
@@ -73,7 +73,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 
 		case ACI_ATT_READ_BY_GROUP_TYPE_RESP_VSEVT_CODE:
 		{
-			// Result of discover all primary services
+			// Triggered in app_ble: aci_gatt_disc_all_primary_services
 			aci_att_read_by_group_type_resp_event_rp0 *pr = (aci_att_read_by_group_type_resp_event_rp0*)blecore_evt->data;
 
 			if (hidApp.state != HidState::Idle) {
@@ -88,6 +88,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 			}
 
 			if (hidApp.state == HidState::Idle) {
+
 				hidApp.connHandle = pr->Connection_Handle;
 
 				uint8_t numServ = (pr->Data_Length) / pr->Attribute_Data_Length;
@@ -104,15 +105,17 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 						if (uuid == BATTERY_SERVICE_UUID) {
 							hidApp.BatteryServiceHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 4]);
 							hidApp.BatteryServiceEndHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 2]);
-							hidApp.state = HidState::DiscoverCharacs;
 							APP_DBG_MSG("  - Battery Service UUID: 0x%x\n", uuid);
 						} else if (uuid == HUMAN_INTERFACE_DEVICE_SERVICE_UUID) {
 							hidApp.HIDServiceHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 4]);
 							hidApp.HIDServiceEndHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 2]);
-							hidApp.state = HidState::DiscoverCharacs;
 							APP_DBG_MSG("  - HID Service UUID: 0x%x\n", uuid);
 						} else {
 							APP_DBG_MSG("  - Service UUID: 0x%x\n", uuid);
+						}
+
+						if (hidApp.BatteryServiceHandle > 0 && hidApp.HIDServiceHandle > 0){
+							hidApp.state = HidState::DiscoverCharacs;
 						}
 
 						idx += 6;
@@ -236,7 +239,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 			APP_DBG_MSG("-- GATT : ACI_GATT_PROC_COMPLETE_VSEVT_CODE \n\n");
 
 			if (hidApp.connHandle == pr->Connection_Handle) {
-				UTIL_SEQ_SetTask(1 << CFG_TASK_SEARCH_SERVICE_ID, CFG_SCH_PRIO_0);		// Triggers UpdateService()
+				UTIL_SEQ_SetTask(1 << CFG_TASK_HIDServiceDiscovery, CFG_SCH_PRIO_0);		// Call discovery state machine
 			}
 		}
 		break;
@@ -255,11 +258,10 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 	return SVCCTL_EvtNotAck;
 }
 
-std::string rptMap;
+
 void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
 {
-	rptMap = "* Report Map:\r\n" + HexToString(data, len, true) + "\r\n";
-	usb.SendString(rptMap);
+	usb.SendString("* Report Map:\r\n" + HexToString(data, len, true) + "\r\n");
 }
 
 
@@ -293,7 +295,7 @@ void HidApp::BatteryNotification(uint8_t* payload, uint8_t len)
 }
 
 
-void HidApp::UpdateService()
+void HidApp::HIDServiceDiscovery()
 {
 	// Triggered each time a GATT operation completes - keep track of discovery process status to get handles and activate notifications accordingly
 	uint8_t enable = 1;
