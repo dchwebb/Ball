@@ -4,52 +4,11 @@
 
 HidService hidService;
 
-static SVCCTL_EvtAckStatus_t HIDS_Event_Handler(void *Event);
-
-// called from externa C prog
+// called from external C prog svc_ctl.c
 void HIDS_Init()
 {
 	hidService.Init();
 }
-
-typedef struct {
-	uint16_t x;
-	uint16_t y;
-	uint16_t z;
-} JoystickReport_t;
-
-PLACE_IN_SECTION("BLE_APP_CONTEXT") JoystickReport_t joystickReport;
-
-
-
-
-
-
-
-
-const uint8_t rep_map_data[] = {
-	    // Header codes are formed of: tag (4 bits), type (2 bits), size (2 bits) [see USB_hid1_11 6.2.2.7]
-	    // Eg logical maximum 0x26 = 0010 01 10 = tag: 2 (logical maximum), type: 1 (global), size: 2 bytes
-	 	0x05, 0x01,			// Usage Page (Generic Desktop)
-		0x09, 0x04,			// Usage (Joystick)
-		0xA1, 0x01,			// Collection (Application)
-		0xA1, 0x02,				// Collection (Logical)
-
-		0x75, 0x10,					// Report size (16)
-		0x95, 0x03,					// Report count (3)
-		0x15, 0x00,					// Logical Minimum (0) [Logical = actual data being sent]
-		0x26, 0xFF, 0x0F,			// Logical Maximum (4095)
-		0x35, 0x00,					// Physical Minumum (0) [Physical = maps logical values to real unit values]
-		0x46, 0xFF, 0x0F,			// Physical Maximum (4095)
-		0x09, 0x30,					// Usage (X)
-		0x09, 0x31,					// Usage (Y)
-		0x09, 0x32,					// Usage (Z)
-		0x81, 0x02,					// Input (Data, Variable, Absolute)
-
-		0xC0,					// End collection
-		0xC0				// End collection
-};
-
 
 void HidService::Init()
 {
@@ -99,7 +58,7 @@ void HidService::Init()
 	hciCmdResult = aci_gatt_add_char(ServiceHandle,
 			UUID_TYPE_16,
 			(Char_UUID_t*)&uuid,
-			sizeof(rep_map_data),
+			sizeof(reportMap),
 			CHAR_PROP_READ,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
@@ -160,30 +119,18 @@ void HidService::AppInit()
 }
 
 
-tBleStatus HidService::UpdateChar(characteristics_t characteristic)
+tBleStatus HidService::UpdateChar(Characteristic characteristic)
 {
 	tBleStatus result = BLE_STATUS_INVALID_PARAMS;
 
 	if (characteristic == ReportMap) {
-		result = aci_gatt_update_char_value(ServiceHandle,
-				ReportMapHandle,
-				0, 							// charValOffset
-				sizeof(rep_map_data),		// charValueLen
-				(uint8_t*)&rep_map_data);
+		result = aci_gatt_update_char_value(ServiceHandle, ReportMapHandle,	0, sizeof(reportMap), reportMap);
 	}
 	if (characteristic == HidInformation) {
-		result = aci_gatt_update_char_value(ServiceHandle,
-				HidInformationHandle,
-				0, 							// charValOffset
-				sizeof(hidInformation),		// charValueLen
-				(uint8_t*)&hidInformation);
+		result = aci_gatt_update_char_value(ServiceHandle, HidInformationHandle, 0,	sizeof(hidInformation),	(uint8_t*)&hidInformation);
 	}
 	if (characteristic == ReportJoystick) {
-		result = aci_gatt_update_char_value(ServiceHandle,
-				ReportJoystickHandle,
-				0, 							// charValOffset
-				sizeof(joystickReport),		// charValueLen
-				(uint8_t*)&joystickReport);
+		result = aci_gatt_update_char_value(ServiceHandle, ReportJoystickHandle, 0,	sizeof(joystickReport),	(uint8_t*)&joystickReport);
 	}
 
 	return result;
@@ -204,60 +151,30 @@ void HidService::JoystickNotification(uint16_t x, uint16_t y, uint16_t z)
 }
 
 
-
-
-//void HIDS_Notification(HIDS_Notification_evt_t *pNotification)
-//{
-//	switch(pNotification->HIDS_Evt_Opcode) {
-//
-//	case HIDS_MOUSE_INPUT_NOTIFY_ENABLED:
-//		HIDS_App_Context.HIDS_Movement_Notification_Status = 1;         // notification status has been enabled
-//		HIDS_Movement_Notification(0, 0);
-//		break;
-//
-//	case HIDS_MOUSE_INPUT_NOTIFY_DISABLED:
-//		HIDS_App_Context.HIDS_Movement_Notification_Status = 0;         // notification status has been disabled
-//		break;
-//
-//	default:
-//		break;
-//	}
-//	return;
-//}
-
-void HIDS_ControlPointWrite(uint16_t data) {
-	// Do stuff with data
+void HidService::ControlPointWrite(uint16_t data) {
+	// To inform the device that the host is entering or leaving suspend state
 	return;
 }
 
-#define CHARACTERISTIC_DESCRIPTOR_ATTRIBUTE_OFFSET         2
-#define CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET              1
-
-uint16_t blankValue = 0x00;
 
 SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
 {
-	SVCCTL_EvtAckStatus_t return_value;
-	hci_event_pckt *event_pckt;
-	evt_blecore_aci *blecore_evt;
-	aci_gatt_attribute_modified_event_rp0 *attribute_modified;
-	aci_gatt_write_permit_req_event_rp0   *write_perm_req;
-	aci_gatt_read_permit_req_event_rp0    *read_req;
-//	HIDS_Notification_evt_t     Notification;
+	aci_gatt_attribute_modified_event_rp0* attribute_modified;
+	aci_gatt_write_permit_req_event_rp0*   write_perm_req;
+	aci_gatt_read_permit_req_event_rp0*    read_req;
 
-	return_value = SVCCTL_EvtNotAck;
-	event_pckt = (hci_event_pckt *)(((hci_uart_pckt*)Event)->data);
+	SVCCTL_EvtAckStatus_t return_value = SVCCTL_EvtNotAck;
+	hci_event_pckt* event_pckt = (hci_event_pckt *)(((hci_uart_pckt*)Event)->data);
 
-	switch (event_pckt->evt) {
-	case HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE:
-		blecore_evt = (evt_blecore_aci*)event_pckt->data;
+	if (event_pckt->evt ==  HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
+		evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
 
-		switch(blecore_evt->ecode) {
+		switch (blecore_evt->ecode) {
 
 		case ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE:
 			attribute_modified = (aci_gatt_attribute_modified_event_rp0*)blecore_evt->data;
 
-			if (attribute_modified->Attr_Handle == (hidService.ReportJoystickHandle + CHARACTERISTIC_DESCRIPTOR_ATTRIBUTE_OFFSET)) {
+			if (attribute_modified->Attr_Handle == (hidService.ReportJoystickHandle + DescriptorOffset)) {
 				return_value = SVCCTL_EvtAckFlowEnable;
 
 				if (attribute_modified->Attr_Data[0] == 1) {
@@ -268,36 +185,26 @@ SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
 				}
 			}
 
-			if (attribute_modified->Attr_Handle == (hidService.HidControlPointHdle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET)) {
+			if (attribute_modified->Attr_Handle == (hidService.HidControlPointHdle + ValueOffset)) {
 				return_value = SVCCTL_EvtAckFlowEnable;
 				uint16_t write_data = (attribute_modified->Attr_Data[1] << 8) | attribute_modified->Attr_Data[0];
-				HIDS_ControlPointWrite(write_data);
+				hidService.ControlPointWrite(write_data);
 			}
-
-//			if (return_value == SVCCTL_EvtNotAck) {
-//				return_value = SVCCTL_EvtAckFlowEnable;
-//				tBleStatus result = aci_gatt_update_char_value(SvcHdle,
-//						0x27,
-//						0, 							// charValOffset
-//						2,		// charValueLen
-//						(uint8_t *)  blankValue);
-//				printf("Cleared notify on handle 27: %d\r\n", result);
-//			}
 
 			break;
 
-		case ACI_GATT_READ_PERMIT_REQ_VSEVT_CODE :
+		case ACI_GATT_READ_PERMIT_REQ_VSEVT_CODE:
 			read_req = (aci_gatt_read_permit_req_event_rp0*)blecore_evt->data;
 
-			if (read_req->Attribute_Handle == (hidService.ReportMapHandle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET)) {
+			if (read_req->Attribute_Handle == (hidService.ReportMapHandle + ValueOffset)) {
 				return_value = SVCCTL_EvtAckFlowEnable;
 				aci_gatt_allow_read(read_req->Connection_Handle);
 			}
-			if (read_req->Attribute_Handle == (hidService.ReportJoystickHandle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET)) {
+			if (read_req->Attribute_Handle == (hidService.ReportJoystickHandle + ValueOffset)) {
 				return_value = SVCCTL_EvtAckFlowEnable;
 				aci_gatt_allow_read(read_req->Connection_Handle);
 			}
-			if (read_req->Attribute_Handle == (hidService.HidInformationHandle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET)) {
+			if (read_req->Attribute_Handle == (hidService.HidInformationHandle + ValueOffset)) {
 				return_value = SVCCTL_EvtAckFlowEnable;
 				aci_gatt_allow_read(read_req->Connection_Handle);
 			}
@@ -305,12 +212,11 @@ SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
 
 		case ACI_ATT_EXEC_WRITE_RESP_VSEVT_CODE:
 			write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
-
 			break;
 
 		case ACI_GATT_WRITE_PERMIT_REQ_VSEVT_CODE:
 			write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
-			if (write_perm_req->Attribute_Handle == (hidService.HidControlPointHdle + CHARACTERISTIC_VALUE_ATTRIBUTE_OFFSET)) {
+			if (write_perm_req->Attribute_Handle == (hidService.HidControlPointHdle + ValueOffset)) {
 				return_value = SVCCTL_EvtAckFlowEnable;
 				/* Allow or reject a write request from a client using aci_gatt_write_resp(...) function */
 //				tBleStatus aci_gatt_write_resp( uint16_t Connection_Handle,
@@ -327,10 +233,7 @@ SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
 		default:
 			break;
 		}
-		break;
 
-	default:
-		break;
 	}
 
 	return return_value;
