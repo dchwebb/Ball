@@ -9,10 +9,9 @@
 #include "compassHandler.h"
 
 RTC_HandleTypeDef hrtc;
-
 void Button1_Task(void) {
 	printf("Button 1 pressed\r\n");
-	HIDS_Joystick_Notification(5, 0, 0);
+	hidService.JoystickNotification(5, 0, 0);
 }
 void Button2_Task(void) {
 	printf("Button 2 pressed\r\n");

@@ -65,8 +65,8 @@ void BleApp::Init()
 	SVCCTL_Init();
 
 	// From here, all initialization are BLE application specific
-	UTIL_SEQ_RegTask(1 << CFG_TASK_START_SCAN_ID, UTIL_SEQ_RFU, ScanRequest);
-	UTIL_SEQ_RegTask(1 << CFG_TASK_CONN_DEV_1_ID, UTIL_SEQ_RFU, ConnectRequest);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_ScanRequest, UTIL_SEQ_RFU, ScanRequest);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_ConnectRequest, UTIL_SEQ_RFU, ConnectRequest);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, UTIL_SEQ_RFU, DisconnectRequest);
 
 	// Initialization of the BLE App Context
@@ -112,7 +112,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 						APP_DBG_MSG("* BLE: GAP General discovery procedure completed\r\n");
 						// if a device found, connect to it, device 1 being chosen first if both found
 						if (action == RequestAction::ScanConnect && deviceServerFound && deviceConnectionStatus != BleApp::ConnectionStatus::ClientConnected) {
-							UTIL_SEQ_SetTask(1 << CFG_TASK_CONN_DEV_1_ID, CFG_SCH_PRIO_0);
+							UTIL_SEQ_SetTask(1 << CFG_TASK_ConnectRequest, CFG_SCH_PRIO_0);
 						}
 					}
 				}
@@ -149,7 +149,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 			if (cc->Connection_Handle == connectionHandle) {
 				connectionHandle = 0;
 				deviceConnectionStatus = BleApp::ConnectionStatus::Idle;
-				APP_DBG_MSG("* BLE: Disconnection event with server\r\n");
+				APP_DBG_MSG("* BLE: Disconnected from device\r\n");
 				hidApp.HIDConnectionNotification();
 			}
 		}
@@ -220,7 +220,8 @@ void BleApp::ServiceControlCallback(void* pckt)
 									if (action == RequestAction::ScanConnect && ar->serviceClasses == 0x1812) {	// FIXME whitelist etc
 										APP_DBG_MSG("* BLE: Server detected - HID Device\r\n");
 										deviceServerFound = true;
-										memcpy(&remoteConnectAddress, le_advertising_event->Advertising_Report[0].Address, bdddrSize);
+										memcpy(&deviceAddress, le_advertising_event->Advertising_Report[0].Address, bdddrSize);
+										deviceAddressType = (AddressTypes)le_advertising_event->Advertising_Report[0].Address_Type;
 										aci_gap_terminate_gap_proc(0x2);		// If connecting terminate scan - will fire ACI_GAP_PROC_COMPLETE_VSEVT_CODE event which will initiate connection
 									}
 									break;
@@ -297,19 +298,19 @@ void BleApp::ScanInfo()
 {
 	if (bleApp.deviceConnectionStatus == ConnectionStatus::Idle) {
 		bleApp.action = RequestAction::ScanInfo;
-		UTIL_SEQ_SetTask(1 << CFG_TASK_START_SCAN_ID, CFG_SCH_PRIO_0);
+		UTIL_SEQ_SetTask(1 << CFG_TASK_ScanRequest, CFG_SCH_PRIO_0);
 	} else {
 		APP_DBG_MSG("Connection is busy ...\n");
 	}
 }
 
 
-void BleApp::GetHidReportMap(uint8_t* address)
+void BleApp::GetHidReportMap(uint8_t* address)			// FIXME: need to handle random/public address type
 {
 	if (bleApp.deviceConnectionStatus == ConnectionStatus::Idle) {
 		bleApp.action = RequestAction::GetReportMap;
-		memcpy(&remoteConnectAddress, address, bdddrSize);
-		UTIL_SEQ_SetTask(1 << CFG_TASK_CONN_DEV_1_ID, CFG_SCH_PRIO_0);
+		memcpy(&deviceAddress, address, bdddrSize);
+		UTIL_SEQ_SetTask(1 << CFG_TASK_ConnectRequest, CFG_SCH_PRIO_0);
 	} else {
 		APP_DBG_MSG("Connection is busy ...\n");
 	}
@@ -320,7 +321,7 @@ void BleApp::ScanAndConnect()
 {
 	if (hidApp.state != HidApp::HidState::ClientConnected)	{
 		bleApp.action = RequestAction::ScanConnect;
-		UTIL_SEQ_SetTask(1 << CFG_TASK_START_SCAN_ID, CFG_SCH_PRIO_0);
+		UTIL_SEQ_SetTask(1 << CFG_TASK_ScanRequest, CFG_SCH_PRIO_0);
 	} else {
 		UTIL_SEQ_SetTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
 
@@ -424,8 +425,9 @@ void BleApp::ConnectRequest()
 	if (bleApp.deviceConnectionStatus != ConnectionStatus::ClientConnected) {
 		tBleStatus result = aci_gap_create_connection(SCAN_P,
 				SCAN_L,
-				PUBLIC_ADDR, bleApp.remoteConnectAddress,		// Peer address type & address - fixme - get address type from advertising
-				PUBLIC_ADDR,
+				bleApp.deviceAddressType,		// Peer address type & address
+				bleApp.deviceAddress,
+				PUBLIC_ADDR,					// Own address type
 				CONN_P1,
 				CONN_P2,
 				0,

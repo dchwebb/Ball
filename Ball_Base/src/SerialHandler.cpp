@@ -72,7 +72,7 @@ bool SerialHandler::Command()
 				"scan               -  List BLE devices\r\n"
 				"connect            -  Connect to HID BLE device\r\n"
 				"disconnect         -  Disconnect to HID BLE device\r\n"
-				"hidmap:xxxxxxxxxx  -  Print HID report map for device with address xxxxxxxxxx\r\n"
+				"hidmap:xxxxxxxxxx  -  Print HID report map given device address\r\n"
 				"\r\n"
 #if (USB_DEBUG)
 				"usbdebug    -  Start USB debugging\r\n"

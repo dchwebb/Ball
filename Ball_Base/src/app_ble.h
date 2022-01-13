@@ -37,13 +37,16 @@ public:
 
 private:
 	enum class RequestAction {ScanConnect, ScanInfo, GetReportMap};
+	enum AddressTypes {PublicAddress = 0, RandomAddress = 1, ResolvablePrivateAddress = 2, NonResolvablePrivateAddress = 3};
 
 	bool deviceServerFound = false;
+	AddressTypes deviceAddressType;
+
 	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
 	RequestAction action;
 	std::string advMsg;
 	uint8_t bd_addr_udn[bdddrSize];
-	uint8_t remoteConnectAddress[bdddrSize];
+	uint8_t deviceAddress[bdddrSize];
 	const uint8_t IdentityRootKey[16] = CFG_BLE_IRK;			// Identity root key used to derive LTK and CSRK
 	const uint8_t EncryptionRootKey[16] = CFG_BLE_ERK;			// Encryption root key used to derive LTK and CSRK
 

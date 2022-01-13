@@ -137,7 +137,7 @@ void APP_BLE_Init(void)
 
 	DISAPP_Init();														// Initialize DIS Application
 	BAS_App_Init();														// Initialize Battery Service
-	HIDS_App_Init();													// Initialise HID Service
+	hidService.AppInit();													// Initialise HID Service
 
 	// Create timer to handle the connection state machine
 	HW_TS_Create(CFG_TIM_PROC_ID_ISR, &(BleAppContext.Advertising_mgr_timer_Id), hw_ts_SingleShot, Adv_Mgr);
@@ -213,7 +213,7 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void *pckt)
 					APP_DBG_MSG("PHY Param  TX= %d, RX= %d \n", TX_PHY, RX_PHY);
 				}
 			} else {
-				APP_DBG_MSG("Read conf not succeess \n");
+				APP_DBG_MSG("Read conf unsuccessful \n");
 			}
 			break;
 

@@ -531,8 +531,8 @@ typedef enum
 /**< Add in that list all tasks that may send a ACI/HCI command */
 typedef enum
 {
-    CFG_TASK_START_SCAN_ID,
-    CFG_TASK_CONN_DEV_1_ID,
+    CFG_TASK_ScanRequest,
+    CFG_TASK_ConnectRequest,
     CFG_TASK_HIDServiceDiscovery,
     CFG_TASK_CONN_UPDATE_ID,
     CFG_TASK_HCI_ASYNCH_EVT_ID,

@@ -73,54 +73,45 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 
 		case ACI_ATT_READ_BY_GROUP_TYPE_RESP_VSEVT_CODE:
 		{
-			// Triggered in app_ble: aci_gatt_disc_all_primary_services
+			// Triggered in app_ble: aci_gatt_disc_all_primary_services (initial HID discovery event)
 			aci_att_read_by_group_type_resp_event_rp0 *pr = (aci_att_read_by_group_type_resp_event_rp0*)blecore_evt->data;
 
-			if (hidApp.state != HidState::Idle) {
-				BleApp::ConnectionStatus status = bleApp.GetClientConnectionStatus(hidApp.connHandle);
+			hidApp.connHandle = pr->Connection_Handle;
+			uint8_t numServ = (pr->Data_Length) / pr->Attribute_Data_Length;
 
-				// Handle disconnected
-				if ((hidApp.state == HidState::ClientConnected) && (status == BleApp::ConnectionStatus::Idle)) {
-					hidApp.state = HidState::Idle;
-					hidApp.connHandle = 0xFFFF;
-					break;
-				}
-			}
+			APP_DBG_MSG("-- GATT : Services: %d; Connection handle 0x%x \n", numServ, hidApp.connHandle);
 
-			if (hidApp.state == HidState::Idle) {
+			// Event data: 2 bytes start handle | 2 bytes end handle | 2 or 16 bytes data
+			// Only if the UUID is 16 bit so check if the data length is 6
+			if (pr->Attribute_Data_Length == 6) {
+				std::string servicetext;
+				uint8_t idx = 4;
+				for (uint8_t i = 0; i < numServ; i++) {
+					uint16_t uuid = *((uint16_t*)&pr->Attribute_Data_List[idx]);
 
-				hidApp.connHandle = pr->Connection_Handle;
-
-				uint8_t numServ = (pr->Data_Length) / pr->Attribute_Data_Length;
-
-				APP_DBG_MSG("-- GATT : Services: %d; Connection handle 0x%x \n", numServ, hidApp.connHandle);
-
-				// Event data: 2 bytes start handle | 2 bytes end handle | 2 or 16 bytes data
-				// Only if the UUID is 16 bit so check if the data length is 6
-				if (pr->Attribute_Data_Length == 6) {
-					uint8_t idx = 4;
-					for (uint8_t i = 0; i < numServ; i++) {
-						uint16_t uuid = *((uint16_t*)&pr->Attribute_Data_List[idx]);
-
-						if (uuid == BATTERY_SERVICE_UUID) {
-							hidApp.BatteryServiceHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 4]);
-							hidApp.BatteryServiceEndHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 2]);
-							APP_DBG_MSG("  - Battery Service UUID: 0x%x\n", uuid);
-						} else if (uuid == HUMAN_INTERFACE_DEVICE_SERVICE_UUID) {
-							hidApp.HIDServiceHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 4]);
-							hidApp.HIDServiceEndHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 2]);
-							APP_DBG_MSG("  - HID Service UUID: 0x%x\n", uuid);
-						} else {
-							APP_DBG_MSG("  - Service UUID: 0x%x\n", uuid);
-						}
-
-						if (hidApp.BatteryServiceHandle > 0 && hidApp.HIDServiceHandle > 0){
-							hidApp.state = HidState::DiscoverCharacs;
-						}
-
-						idx += 6;
+					servicetext+= "  - Service UUID: 0x" + HexToString((uint32_t)uuid, false);
+					if (uuid == BATTERY_SERVICE_UUID) {
+						hidApp.BatteryServiceHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 4]);
+						hidApp.BatteryServiceEndHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 2]);
+						//APP_DBG_MSG("  - Battery Service UUID: 0x%x\n", uuid);
+						servicetext += " [Battery]\n";
+					} else if (uuid == HUMAN_INTERFACE_DEVICE_SERVICE_UUID) {
+						hidApp.HIDServiceHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 4]);
+						hidApp.HIDServiceEndHandle = *((uint16_t*)&pr->Attribute_Data_List[idx - 2]);
+						//APP_DBG_MSG("  - HID Service UUID: 0x%x\n", uuid);
+						servicetext += " [HID]\n";
+					} else {
+						//APP_DBG_MSG("  - Service UUID: 0x%x\n", uuid);
+						servicetext += "\n";
 					}
+
+					if (hidApp.BatteryServiceHandle > 0 || hidApp.HIDServiceHandle > 0){
+						hidApp.state = HidState::DiscoverCharacs;
+					}
+
+					idx += 6;
 				}
+				usb.SendString(servicetext);
 			}
 		}
 		break;
@@ -130,45 +121,43 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 			// Triggered after discover characteristics
 			aci_att_read_by_type_resp_event_rp0 *pr = (aci_att_read_by_type_resp_event_rp0*)blecore_evt->data;
 
-			if (hidApp.connHandle == pr->Connection_Handle) {
-				// Event data: 2 bytes start handle | 1 byte char properties | 2 bytes handle | 2 or 16 bytes data (Only handle 16 bit UUIDs)
-				uint8_t idx = 5;
-				if (pr->Handle_Value_Pair_Length == 7) {
+			// Event data: 2 bytes start handle | 1 byte char properties | 2 bytes handle | 2 or 16 bytes data (Only handle 16 bit UUIDs)
+			uint8_t idx = 5;
+			if (pr->Handle_Value_Pair_Length == 7) {
 
-					while (pr->Data_Length > 0) {
-						uint16_t uuid = *((uint16_t*)&pr->Handle_Value_Pair_Data[idx]);
-						// store the characteristic handle not the attribute handle
-						uint16_t handle = *((uint16_t*)&pr->Handle_Value_Pair_Data[idx - 2]);
+				while (pr->Data_Length > 0) {
+					uint16_t uuid = *((uint16_t*)&pr->Handle_Value_Pair_Data[idx]);
+					// store the characteristic handle not the attribute handle
+					uint16_t handle = *((uint16_t*)&pr->Handle_Value_Pair_Data[idx - 2]);
 
-						switch (uuid) {
-						case BATTERY_LEVEL_CHAR_UUID:
-							APP_DBG_MSG("  - uuid %x handle: %x [Battery Notification]\n", uuid, handle);
-							hidApp.state = HidState::DiscoveredCharacs;
-							hidApp.BatteryNotificationCharHdle = handle;
-							break;
-						case REPORT_CHAR_UUID:
-							APP_DBG_MSG("  - uuid %x handle: %x [HID Report Notification\n", uuid, handle);
-							hidApp.state = HidState::DiscoveredCharacs;
-							hidApp.HIDNotificationCharHdle = handle;
-							break;
-						case REPORT_MAP_CHAR_UUID:
-							APP_DBG_MSG("  - uuid %x handle: %x [HID Report Map]\n", uuid, handle);
-							hidApp.state = HidState::DiscoveredCharacs;
-							hidApp.HIDReportMapHdle = handle;
-							break;
-						default:
-							APP_DBG_MSG("  - uuid %x handle: %x\n", uuid, handle);
-						}
-
-
-						pr->Data_Length -= 7;
-						idx += 7;
-
+					switch (uuid) {
+					case BATTERY_LEVEL_CHAR_UUID:
+						APP_DBG_MSG("  - uuid %x handle: %x [Battery Notification]\n", uuid, handle);
+						hidApp.state = HidState::DiscoveredCharacs;
+						hidApp.BatteryNotificationCharHdle = handle;
+						break;
+					case REPORT_CHAR_UUID:
+						APP_DBG_MSG("  - uuid %x handle: %x [HID Report Notification\n", uuid, handle);
+						hidApp.state = HidState::DiscoveredCharacs;
+						hidApp.HIDNotificationCharHdle = handle;
+						break;
+					case REPORT_MAP_CHAR_UUID:
+						APP_DBG_MSG("  - uuid %x handle: %x [HID Report Map]\n", uuid, handle);
+						hidApp.state = HidState::DiscoveredCharacs;
+						hidApp.HIDReportMapHdle = handle;
+						break;
+					default:
+						APP_DBG_MSG("  - uuid %x handle: %x\n", uuid, handle);
 					}
-					// To avoid continually retriggering discover characteristics
-					if (hidApp.state == HidState::DiscoverCharacs) {
-						hidApp.state = HidState::DiscoveringCharacs;
-					}
+
+
+					pr->Data_Length -= 7;
+					idx += 7;
+
+				}
+				// To avoid continually retriggering discover characteristics
+				if (hidApp.state == HidState::DiscoverCharacs) {
+					hidApp.state = HidState::DiscoveringCharacs;
 				}
 			}
 		}
@@ -179,30 +168,28 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 			// After finding client configuration descriptor to activate notify event
 			aci_att_find_info_resp_event_rp0 *pr = (aci_att_find_info_resp_event_rp0*)blecore_evt->data;
 
-			if (hidApp.connHandle == pr->Connection_Handle) {
-				uint8_t numDesc = (pr->Event_Data_Length) / 4;
-				APP_DBG_MSG("  - Found %d client configuration descriptors\n", numDesc);
+			uint8_t numDesc = (pr->Event_Data_Length) / 4;
+			APP_DBG_MSG("  - Found %d client configuration descriptors\n", numDesc);
 
-				// event data: 2 bytes handle | 2 bytes UUID
-				uint8_t idx = 0;
-				if (pr->Format == UUID_TYPE_16) {
-					for (uint8_t i = 0; i < numDesc; i++) {
-						uint16_t handle = *((uint16_t*)&pr->Handle_UUID_Pair[idx]);
-						uint16_t uuid = *((uint16_t*)&pr->Handle_UUID_Pair[idx + 2]);
+			// event data: 2 bytes handle | 2 bytes UUID
+			uint8_t idx = 0;
+			if (pr->Format == UUID_TYPE_16) {
+				for (uint8_t i = 0; i < numDesc; i++) {
+					uint16_t handle = *((uint16_t*)&pr->Handle_UUID_Pair[idx]);
+					uint16_t uuid = *((uint16_t*)&pr->Handle_UUID_Pair[idx + 2]);
 
-						if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > hidApp.BatteryNotificationCharHdle && handle <= hidApp.BatteryServiceEndHandle) {
-							APP_DBG_MSG("  - Battery Client Char Config Descriptor: 0x%x\n", handle);
-							hidApp.BatteryNotificationDescHandle = handle;
-							hidApp.state = HidState::EnableNotificationDesc;
+					if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > hidApp.BatteryNotificationCharHdle && handle <= hidApp.BatteryServiceEndHandle) {
+						APP_DBG_MSG("  - Battery Client Char Config Descriptor: 0x%x\n", handle);
+						hidApp.BatteryNotificationDescHandle = handle;
+						hidApp.state = HidState::EnableNotificationDesc;
 
-						} else if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > hidApp.HIDNotificationCharHdle && handle <= hidApp.HIDServiceEndHandle) {
-							APP_DBG_MSG("  - HID Client Char Config Descriptor: 0x%x\n", handle);
-							hidApp.HIDNotificationDescHandle = handle;
-							hidApp.state = HidState::EnableNotificationDesc;
-						}
-
-						idx += 4;
+					} else if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > hidApp.HIDNotificationCharHdle && handle <= hidApp.HIDServiceEndHandle) {
+						APP_DBG_MSG("  - HID Client Char Config Descriptor: 0x%x\n", handle);
+						hidApp.HIDNotificationDescHandle = handle;
+						hidApp.state = HidState::EnableNotificationDesc;
 					}
+
+					idx += 4;
 				}
 			}
 		}
@@ -220,15 +207,11 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 		{
 			aci_gatt_notification_event_rp0 *pr = (aci_gatt_notification_event_rp0*)blecore_evt->data;
 
-			if (hidApp.connHandle == pr->Connection_Handle) {
-
-				if (pr->Attribute_Handle == hidApp.BatteryNotificationCharHdle) {
-					hidApp.BatteryNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
-				}
-				if (pr->Attribute_Handle == hidApp.HIDNotificationCharHdle) {
-					hidApp.HidNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
-				}
-
+			if (pr->Attribute_Handle == hidApp.BatteryNotificationCharHdle) {
+				hidApp.BatteryNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
+			}
+			if (pr->Attribute_Handle == hidApp.HIDNotificationCharHdle) {
+				hidApp.HidNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
 			}
 		}
 		break;
