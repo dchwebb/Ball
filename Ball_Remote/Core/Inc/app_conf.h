@@ -144,8 +144,6 @@
 /**< specific parameters */
 /*****************************************************/
 
-#define  RADIO_ACTIVITY_EVENT   1          /* 1 for OOB Demo */
-
 /**
 * AD Element - Group B Feature
 */
@@ -558,12 +556,8 @@ typedef enum
 /**< Add in that list all tasks that may send a ACI/HCI command */
 typedef enum
 {
-    CFG_TASK_ADV_UPDATE_ID,
-    CFG_TASK_HTS_MEAS_REQ_ID,
-    CFG_TASK_HTS_INTERMEDIATE_TEMPERATURE_REQ_ID,
-    CFG_TASK_HTS_MEAS_INTERVAL_REQ_ID,
-    CFG_TASK_HTS_DISCONNECTION_REQ_ID,
-    CFG_TASK_ADV_CANCEL_ID,
+    CFG_TASK_SwitchLPAdvertising,
+    CFG_TASK_CancelAdvertising,
 #if (L2CAP_REQUEST_NEW_CONN_PARAM != 0 )
     CFG_TASK_CONN_UPDATE_REG_ID,
 #endif

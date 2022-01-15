@@ -1,13 +1,17 @@
 #pragma once
 
 #include "svc_ctl.h"
+#include "ble_types.h"
 
 struct HidService
 {
 public:
+	bool JoystickNotifications;
+
 	void Init();
 	void AppInit();
-	void JoystickNotification(uint16_t x, uint16_t y, uint16_t z);
+	void JoystickNotification(int16_t x, int16_t y, int16_t z);
+	void Disconnect();
 	static SVCCTL_EvtAckStatus_t HIDS_Event_Handler(void *Event);
 private:
 	enum HIDInfoFlags {RemoteWake = 1, NormallyConnectable = 2};
@@ -30,9 +34,10 @@ private:
 	uint16_t HidInformationHandle;
 	uint16_t HidControlPointHdle;
 	uint16_t ReportMapHandle;
-	bool JoystickNotifications;
 
-	tBleStatus UpdateChar(Characteristic characteristic);
+	void UpdateJoystickReportChar();
+	void UpdateReportMapChar();
+	void UpdateHidInformationChar();
 	void ControlPointWrite(uint16_t data);
 };
 

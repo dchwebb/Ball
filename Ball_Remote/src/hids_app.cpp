@@ -1,6 +1,7 @@
 #include "common_blesvc.h"
 #include "stm32_seq.h"
 #include "hids_app.h"
+#include "compassHandler.h"
 
 HidService hidService;
 
@@ -103,50 +104,51 @@ void HidService::Init()
 }
 
 
-
 void HidService::AppInit()
 {
 	JoystickNotifications = false;
 
-	UpdateChar(ReportMap);
-	UpdateChar(HidInformation);
+	UpdateReportMapChar();
+	UpdateHidInformationChar();
 
 	// Initialise the mouse movement report
 	joystickReport.x = 0;
 	joystickReport.y = 0;
 	joystickReport.z = 0;
-	UpdateChar(ReportJoystick);
+	UpdateJoystickReportChar();
 }
 
 
-tBleStatus HidService::UpdateChar(Characteristic characteristic)
+void HidService::UpdateJoystickReportChar()
 {
-	tBleStatus result = BLE_STATUS_INVALID_PARAMS;
+	aci_gatt_update_char_value(ServiceHandle, ReportJoystickHandle, 0,	sizeof(joystickReport),	(uint8_t*)&joystickReport);
+}
 
-	if (characteristic == ReportMap) {
-		result = aci_gatt_update_char_value(ServiceHandle, ReportMapHandle,	0, sizeof(reportMap), reportMap);
-	}
-	if (characteristic == HidInformation) {
-		result = aci_gatt_update_char_value(ServiceHandle, HidInformationHandle, 0,	sizeof(hidInformation),	(uint8_t*)&hidInformation);
-	}
-	if (characteristic == ReportJoystick) {
-		result = aci_gatt_update_char_value(ServiceHandle, ReportJoystickHandle, 0,	sizeof(joystickReport),	(uint8_t*)&joystickReport);
-	}
+void HidService::UpdateReportMapChar()
+{
+	aci_gatt_update_char_value(ServiceHandle, ReportMapHandle,	0, sizeof(reportMap), reportMap);
+}
 
-	return result;
+void HidService::UpdateHidInformationChar()
+{
+	aci_gatt_update_char_value(ServiceHandle, ReportJoystickHandle, 0,	sizeof(joystickReport),	(uint8_t*)&joystickReport);
 }
 
 
-void HidService::JoystickNotification(uint16_t x, uint16_t y, uint16_t z)
+void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 {
 	joystickReport.x = x;
 	joystickReport.y = y;
 	joystickReport.z = z;
 
+	static uint32_t lastPrint = 0;
+
 	if (JoystickNotifications) {
-		UpdateChar(ReportJoystick);
-	} else {
-		APP_DBG_MSG("-- HIDS APPLICATION : CAN'T INFORM CLIENT -  NOTIFICATION DISABLED\n ");
+		if (uwTick - lastPrint > 300) {
+			printf("x: %d y: %d z: %d\r\n", x, y, z);
+			lastPrint = uwTick;
+		}
+		UpdateJoystickReportChar();
 	}
 }
 
@@ -156,6 +158,10 @@ void HidService::ControlPointWrite(uint16_t data) {
 	return;
 }
 
+
+void HidService::Disconnect() {
+	JoystickNotifications = false;
+}
 
 SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
 {
@@ -179,7 +185,7 @@ SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
 
 				if (attribute_modified->Attr_Data[0] == 1) {
 					hidService.JoystickNotifications = true;
-					hidService.JoystickNotification(0, 0, 0);
+					compass.StartRead();
 				} else {
 					hidService.JoystickNotifications = false;
 				}
@@ -228,7 +234,6 @@ SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
 //				aci_gatt_write_resp(read_req->Connection_Handle);
 			}
 			break;
-
 
 		default:
 			break;

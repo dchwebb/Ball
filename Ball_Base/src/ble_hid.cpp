@@ -255,6 +255,12 @@ void HidApp::HidNotification(uint8_t* payload, uint8_t len)
 	position3D.y = hidPayload[1];
 	position3D.z = hidPayload[2];
 
+	static uint32_t lastPrint = 0;
+	if (uwTick - lastPrint > 400) {
+		APP_DBG_MSG("x: %d y: %d z: %d\r\n", position3D.x, position3D.y, position3D.z);
+		lastPrint = uwTick;
+	}
+
 	// Output to PWM - values vary from ~400 - 600
 	//int16_t pwmX2 = std::clamp(position3D.x - 410, 0, 205) * 20;
 	int16_t pwmX = position3D.x;

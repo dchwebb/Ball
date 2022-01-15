@@ -22,17 +22,17 @@ void EXTI0_IRQHandler() {
 
 void EXTI1_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF1;
-	extern bool compassCapture;
-	compassCapture = !compassCapture;
-	if (compassCapture) {
-		printf("Starting capture ...\r\n");
-		I2CStartRead();
-	}
+//	extern bool compassCapture;
+//	compassCapture = !compassCapture;
+//	if (compassCapture) {
+//		printf("Starting capture ...\r\n");
+//		compass.StartRead();
+//	}
 }
 
 void I2C1_EV_IRQHandler() {
 	I2C1->CR2 |= I2C_CR2_STOP;			// Clear the Transfer complete interrupt (STOP bit cleared when next START issued)
-	I2CProcessResults();
+	compass.ProcessResults();
 }
 
 void HSEM_IRQHandler() {

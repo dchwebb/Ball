@@ -44,13 +44,5 @@ void DISAPP_Init(void)
 {
 	DIS_UpdateChar(MANUFACTURER_NAME_UUID, &DISNameStruct);
 
-	/* USER CODE BEGIN DISAPP_Init */
-
-	/* USER CODE END DISAPP_Init */
 }
 
-/* USER CODE BEGIN FD */
-
-/* USER CODE END FD */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

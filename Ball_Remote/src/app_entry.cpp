@@ -103,9 +103,8 @@ static void APPE_SysUserEvtRx(void* pPayload)
 	// Traces channel initialization
 	APPD_EnableCPU2();
 
-	APP_BLE_Init();
+	bleApp.Init();
 	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);
-	return;
 }
 
 
