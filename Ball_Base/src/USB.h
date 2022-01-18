@@ -5,7 +5,7 @@
 #include <cstring>
 
 // Enables capturing of debug data for output over STLink UART on dev boards
-#define USB_DEBUG true
+#define USB_DEBUG false
 #if (USB_DEBUG)
 #include "uartHandler.h"
 extern bool USBDebug;
@@ -74,7 +74,7 @@ public:
 private:
 	static constexpr const char* manufacturerString = "Mountjoy Modular";
 	static constexpr const char* productString      = "Mountjoy Ball Base";
-	static constexpr const char* cdcString          = "Mountjoy Ball Remote CDC";
+	static constexpr const char* cdcString          = "Mountjoy Ball Base CDC";
 
 	enum EndPointType {Control = 0, Isochronous = 1, Bulk = 2, Interrupt = 3};
 	enum Descriptor {DeviceDescriptor = 0x1, ConfigurationDescriptor = 0x2, StringDescriptor = 0x3, InterfaceDescriptor = 0x4, EndpointDescriptor = 0x5, DeviceQualifierDescriptor = 0x6, IadDescriptor = 0xb, BosDescriptor = 0xF};

@@ -91,7 +91,7 @@ static void InitGPIO()
 	EXTI->IMR1 |= EXTI_IMR1_IM10;					// 1: Wakeup with interrupt request from Line x is unmasked
 	EXTI->FTSR1 |= EXTI_FTSR1_FT10;					// Enable falling edge trigger
 
-	// Configure LED pins : PB0 LED_GREEN_Pin;  PB1 LED_RED_Pin; PA4 LED_BLUE_Pin
+	// Configure LED pins : PB0 LED_GREEN_Pin; PB1 LED_RED_Pin; PA4 LED_BLUE_Pin
 	GPIOB->MODER &= ~(GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1);
 	GPIOA->MODER &= ~GPIO_MODER_MODE4_1;
 

@@ -54,7 +54,8 @@ void BleApp::Init()
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
 
-	if (SHCI_C2_BLE_Init(&ble_init_cmd_packet) != SHCI_Success) {		// Starts the BLE Stack on CPU2
+	SHCI_CmdStatus_t result = SHCI_C2_BLE_Init(&ble_init_cmd_packet);
+	if (result != SHCI_Success) {		// Starts the BLE Stack on CPU2
 		Error_Handler();
 	}
 
@@ -64,7 +65,7 @@ void BleApp::Init()
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchLPAdvertising, UTIL_SEQ_RFU, SwitchLPAdvertising);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_CancelAdvertising, UTIL_SEQ_RFU, CancelAdvertising);
 
-	// Allows masked radio activity to trigger eveny
+	// Allows masked radio activity to trigger event
 	// 0x01: Idle, 0x02: Advertising, 0x04: Connection event slave, 0x08: Scanning, 0x10: Connection request, 0x20: Connection event master, 0x40: TX test mode, 0x80: RX test mode
 	aci_hal_set_radio_activity_mask(0x0006);
 
@@ -283,7 +284,6 @@ void BleApp::HciGapGattInit()
 }
 
 
-// Start to Advertise to be connected by a Client
 void BleApp::EnableAdvertising(ConnStatus newStatus)
 {
 	tBleStatus ret = BLE_STATUS_INVALID_PARAMS;

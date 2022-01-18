@@ -2,7 +2,9 @@
 #include "app_ble.h"
 #include "ble_hal_aci.h"
 #include <stdio.h>
-//#include <cmath>		// for cordic test
+extern "C" {
+#include "shci.h"
+}
 
 int32_t SerialHandler::ParseInt(const std::string cmd, const char precedingChar, int low = 0, int high = 0) {
 	int32_t val = -1;
@@ -113,10 +115,13 @@ bool SerialHandler::Command()
 		bleApp.DisconnectRequest();
 
 	} else if (ComCmd.compare("fwversion\n") == 0) {			// Version of BLE firmware
-//		uint16_t version;
-//		if (aci_hal_get_fw_build_number(&version) == 0) {
-//			printf("BLE firmware version: %d\r\n", version);
-//		}
+		WirelessFwInfo_t fwInfo;
+		if (SHCI_GetWirelessFwInfo(&fwInfo) == 0) {
+			printf("BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n",
+					fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
+					fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub);
+		}
+
 
 	} else {
 		usb->SendString("Unrecognised command: " + ComCmd + "Type 'help' for supported commands\r\n");

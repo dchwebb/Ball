@@ -12,3 +12,4 @@ std::string HexByte(const uint16_t& v);
 void uartSendString(const std::string& s);
 void uartSendString(const char* s);
 void InitUart();
+bool uartCommand();

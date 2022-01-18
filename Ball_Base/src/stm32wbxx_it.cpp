@@ -1,14 +1,8 @@
 #include "main.h"
 #include "initialisation.h"
-//#include "stm32wbxx_it.h"
 #include "app_ble.h"
 #include "USB.h"
 
-//extern IPCC_HandleTypeDef hipcc;
-//extern DMA_HandleTypeDef hdma_lpuart1_tx;
-//extern DMA_HandleTypeDef hdma_usart1_tx;
-//extern UART_HandleTypeDef hlpuart1;
-//extern UART_HandleTypeDef huart1;
 
 extern "C" {
 
@@ -25,12 +19,12 @@ void USB_LP_IRQHandler() {
 #if USEDONGLE
 void EXTI15_10_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF10;
-	APP_BLE_Scan_and_Connect();
+	bleApp.DisconnectRequest();
 }
 #else
 void EXTI0_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF0;
-	usb.OutputDebug();
+	//usb.OutputDebug();
 }
 
 void EXTI1_IRQHandler() {
