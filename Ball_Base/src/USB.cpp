@@ -296,12 +296,11 @@ void USBHandler::InitUSB()
 	GPIOA->AFR[1] |= ((0xA << GPIO_AFRH_AFSEL11_Pos) | (0xA << GPIO_AFRH_AFSEL12_Pos));
 
 	PWR->CR2 |= PWR_CR2_USV;							// To determine if USB power is valid
-	//RCC->CCIPR |= RCC_CCIPR_CLK48SEL_0;					// 01: PLLSAI1 “Q” clock (PLLSAI1QCLK) selected as 48 MHz clock
 
 	while (LL_HSEM_1StepLock(HSEM, 5)) {};				// Lock semaphore 5 (See AN5289 p.25)
 	RCC->CRRCR |= RCC_CRRCR_HSI48ON;					// Enable Internal High Speed oscillator for USB
 	while ((RCC->CRRCR & RCC_CRRCR_HSI48RDY) == 0);		// Wait till internal USB oscillator is ready
-	//LL_HSEM_ReleaseLock(HSEM, 5, 0);					// FIXME: hsem5 should be released to enable CPU2 to use RNG; this breaks USB so leaving locked for now
+	//LL_HSEM_ReleaseLock(HSEM, 5, 0);					// HSEM 5 should be released to enable CPU2 to use RNG; this breaks USB so leaving locked
 
 	RCC->APB1ENR1 |= RCC_APB1ENR1_USBEN;				// USB2OTG (OTG_HS2) Peripheral Clocks Enable
 

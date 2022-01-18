@@ -1,5 +1,4 @@
 #include "main.h"
-#include "stm32wbxx_it.h"
 #include "app_common.h"
 #include "stm32_seq.h"
 #include "compassHandler.h"
