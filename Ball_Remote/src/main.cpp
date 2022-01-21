@@ -8,7 +8,6 @@
 #include "uartHandler.h"
 #include "compassHandler.h"
 
-RTC_HandleTypeDef hrtc;
 void Button1_Task(void) {
 	printf("Button 1 pressed\r\n");
 	hidService.JoystickNotification(5, 0, 0);
@@ -20,6 +19,8 @@ void Button2_Task(void) {
 	BAS_App_Set_Level(battery++);
 }
 
+bool sleep = false;
+
 int main(void)
 {
 	SystemClock_Config();			// Set system clocks
@@ -28,7 +29,7 @@ int main(void)
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
 	InitUart();						// Debugging via STLink UART
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
-	compass.Setup();				// Setup address and settings for magnetometer
+//	compass.Setup();				// Setup address and settings for magnetometer
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, 0, Button1_Task);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW2_BUTTON_PUSHED_ID, 0, Button2_Task);

@@ -2,7 +2,9 @@
 #include "compassHandler.h"
 extern "C" {
 #include "shci.h"
+#include "stm32_lpm.h"
 }
+#include <charconv>
 
 volatile uint8_t uartCmdPos = 0;
 volatile char uartCmd[100];
@@ -121,13 +123,15 @@ bool uartCommand()
 
 
 	} else if (comCmd.compare(0, 7, "i2creg:") == 0) {				// Read i2c register
-		int8_t pos = comCmd.find(":") + 1;								// locate position of character preceding
-		size_t val = -1;
-		std::string strVal = std::string(comCmd.substr(pos, 2));
-		int8_t regNo = stoi(strVal, &val, 16);
+		uint8_t regNo;
+		auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo);
 
-		uint8_t readData = compass.ReadData(regNo);
-		uartSendString("I2C Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
+		if (res.ec == std::errc()) {
+			uint8_t readData = compass.ReadData(regNo);
+			uartSendString("I2C Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
+		} else {
+			uartSendString("Invalid register\r\n");
+		}
 
 
 	} else if (comCmd.compare("fwversion\n") == 0) {			// Version of BLE firmware
@@ -137,6 +141,23 @@ bool uartCommand()
 					fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
 					fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub);
 		}
+
+	} else if (comCmd.compare("sleep\n") == 0) {			// Enter sleep mode
+
+		uartSendString("Going to sleep\n");
+		extern bool sleep;
+		sleep = true;
+
+
+//		UTIL_LPM_SetStopMode(1, UTIL_LPM_ENABLE);			// Enable stop (standby) mode for user 1
+//		UTIL_LPM_EnterLowPower();							// call void UTIL_LPM_EnterLowPower() in background
+//		USART1->RQR |= USART_RQR_RXFRQ;						// Flush the uart receive register
+//
+//		MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);			// 10: HSE selected as system clock
+//		while ((RCC->CFGR & RCC_CFGR_SWS) == 0);			// Wait until HSE is selected
+//
+//		SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
+//		uartSendString("Waking up\n");
 
 	} else {
 		uartSendString("Unrecognised command: " + std::string(comCmd) + "Type 'help' for supported commands\r\n");
@@ -151,9 +172,15 @@ extern "C" {
 
 // USART Decoder
 void USART1_IRQHandler() {
+	// Check for overrun
+	if ((USART1->ISR & USART_ISR_ORE) == USART_ISR_ORE) {
+		USART1->ICR |= USART_ICR_ORECF;
+	}
+
 	if (!uartCmdRdy) {
 		uartCmd[uartCmdPos] = USART1->RDR; 				// accessing RDR automatically resets the receive flag
 		if (uartCmd[uartCmdPos] == 10) {
+			uartCmd[uartCmdPos + 1] = 0;				// ensure last character is null terminator
 			uartCmdRdy = true;
 			uartCmdPos = 0;
 		} else {

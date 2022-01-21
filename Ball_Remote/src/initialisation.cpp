@@ -76,7 +76,7 @@ void InitHardware()
 
 	// These bits select the low-power mode entered when CPU2 enters the deepsleep mode. The
 	// system low-power mode entered depend also on the PWR_CR1.LPMS allowed low-power mode from CPU1.
-	PWR->C2CR1 |= 4 & PWR_C2CR1_LPMS_Msk;			// 1xx: Shutdown mode
+	PWR->C2CR1 |= 3 & PWR_C2CR1_LPMS_Msk;			// 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
 
 	InitGPIO();
 	InitI2C();

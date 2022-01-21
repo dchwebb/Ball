@@ -28,21 +28,6 @@ extern "C"
 {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
-/* Exported types ------------------------------------------------------------*/
-typedef struct
-{
-  uint8_t     *pPayload;
-  uint8_t     Length;
-}DIS_Data_t;
-
-
-/* Exported constants --------------------------------------------------------*/
-/* External variables --------------------------------------------------------*/
-/* Exported macros -----------------------------------------------------------*/
-/* Exported functions ------------------------------------------------------- */
-void DIS_Init(void);
-tBleStatus DIS_UpdateChar(uint16_t uuid, DIS_Data_t *p_data);
 
 #ifdef __cplusplus
 }

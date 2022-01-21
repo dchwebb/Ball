@@ -6,8 +6,9 @@
 #include "stm32_lpm.h"
 #include "app_debug.h"
 #include "otp.h"
+#include "uartHandler.h"
 
-extern RTC_HandleTypeDef hrtc;
+RTC_HandleTypeDef hrtc;
 
 #define POOL_SIZE (CFG_TLBLE_EVT_QUEUE_LENGTH * 4U * DIVC((sizeof(TL_PacketHeader_t) + TL_BLE_EVENT_FRAME_SIZE), 4U))
 
@@ -104,7 +105,7 @@ static void APPE_SysUserEvtRx(void* pPayload)
 	APPD_EnableCPU2();
 
 	bleApp.Init();
-	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);
+//	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);
 }
 
 
@@ -114,12 +115,22 @@ void MX_APPE_Process(void)
 }
 
 
-//void UTIL_SEQ_Idle()
-//{
-//#if (CFG_LPM_SUPPORTED == 1)
-//	UTIL_LPM_EnterLowPower();
-//#endif
-//}
+void UTIL_SEQ_Idle()
+{
+	extern bool sleep;
+	if (sleep) {
+		UTIL_LPM_SetStopMode(1, UTIL_LPM_ENABLE);			// Enable stop (standby) mode for user 1
+		UTIL_LPM_EnterLowPower();
+
+		sleep = false;
+		MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);			// 10: HSE selected as system clock
+		while ((RCC->CFGR & RCC_CFGR_SWS) == 0);			// Wait until HSE is selected
+
+		SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
+		uartSendString("Waking up\n");
+		bleApp.Init();
+	}
+}
 
 
 // This function is called by the scheduler each time an event is pending.

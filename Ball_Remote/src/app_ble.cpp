@@ -49,7 +49,7 @@ void BleApp::Init()
 	};
 
 	TransportLayerInit();												// Initialize Ble Transport Layer
-	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP_BLE, UTIL_LPM_DISABLE);		// Do not allow standby in the application
+	//UTIL_LPM_SetOffMode(1, UTIL_LPM_DISABLE);							// Do not allow standby in the application
 
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
@@ -69,7 +69,7 @@ void BleApp::Init()
 	// 0x01: Idle, 0x02: Advertising, 0x04: Connection event slave, 0x08: Scanning, 0x10: Connection request, 0x20: Connection event master, 0x40: TX test mode, 0x80: RX test mode
 	aci_hal_set_radio_activity_mask(0x0006);
 
-	DISAPP_Init();														// Initialize DIS Application
+	devInfoService.AppInit();											// Initialize DIS Application
 	BAS_App_Init();														// Initialize Battery Service
 	hidService.AppInit();												// Initialise HID Service
 

@@ -94,9 +94,6 @@ static SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event)
 	if (event_pckt->evt == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
 		evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
 
-		// Debug
-		//printf("- BAS: Event: %04X\r\n", blecore_evt->ecode);
-
 		switch (blecore_evt->ecode) {
 			case ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE:
 			{

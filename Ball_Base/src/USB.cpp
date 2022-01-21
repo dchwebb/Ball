@@ -300,7 +300,6 @@ void USBHandler::InitUSB()
 	while (LL_HSEM_1StepLock(HSEM, 5)) {};				// Lock semaphore 5 (See AN5289 p.25)
 	RCC->CRRCR |= RCC_CRRCR_HSI48ON;					// Enable Internal High Speed oscillator for USB
 	while ((RCC->CRRCR & RCC_CRRCR_HSI48RDY) == 0);		// Wait till internal USB oscillator is ready
-	//LL_HSEM_ReleaseLock(HSEM, 5, 0);					// HSEM 5 should be released to enable CPU2 to use RNG; this breaks USB so leaving locked
 
 	RCC->APB1ENR1 |= RCC_APB1ENR1_USBEN;				// USB2OTG (OTG_HS2) Peripheral Clocks Enable
 
