@@ -7,6 +7,7 @@
 #include "app_debug.h"
 #include "otp.h"
 #include "uartHandler.h"
+#include "utilities_conf.h"
 
 RTC_HandleTypeDef hrtc;
 
@@ -19,7 +20,7 @@ PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t BleSpareEvtBuffer[sizeof(TL_
 
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status);
 static void APPE_SysUserEvtRx(void* pPayload);
-
+static void Sleep();
 
 
 void APPE_Init()
@@ -68,22 +69,6 @@ void Init_Smps()
 }
 
 
-
-/* USER CODE BEGIN FD
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	switch (GPIO_Pin) {
-	case BUTTON_SW1_Pin:
-		UTIL_SEQ_SetTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
-		break;
-	case BUTTON_SW2_Pin:
-		UTIL_SEQ_SetTask(1 << CFG_TASK_SW2_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
-		break;
-	default:
-		break;
-	}
-}
-*/
-
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status)
 {
 	UNUSED(status);
@@ -103,9 +88,7 @@ static void APPE_SysUserEvtRx(void* pPayload)
 {
 	// Traces channel initialization
 	APPD_EnableCPU2();
-
 	bleApp.Init();
-//	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);
 }
 
 
@@ -115,20 +98,74 @@ void MX_APPE_Process(void)
 }
 
 
+
+static void Switch_On_HSI()
+{
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_HSI);			// Set HSI as clock source
+	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSE is selected
+}
+
+static void GoToSleep()
+{
+	UTILS_ENTER_CRITICAL_SECTION();										// Disable interrupts
+
+	CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);					// Disable Systick interrupt
+
+	//EnterLowPower();
+	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
+
+	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
+		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Standby mode
+			LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
+			Switch_On_HSI();
+		}
+	} else {
+		Switch_On_HSI();
+	}
+
+	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);					// Release RCC semaphore
+
+	PWR->SCR |= PWR_SCR_CWUF;										// Clear all wake up flags
+
+	// See p153 for LP modes entry and wake up
+	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP0);			// 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
+	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;								// SLEEPDEEP must be set for STOP, STANDBY or STANDBY modes
+
+	UTILS_EXIT_CRITICAL_SECTION();										// Disable interrupts
+
+	__WFI();														// Activates sleep (wait for interrupts)
+}
+
+
+static void Sleep() {
+//	bleApp.CancelAdvertising();
+	HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_RESET);
+	GoToSleep();
+
+	RCC->CR |= RCC_CR_HSEON;							// Turn on external oscillator
+	while ((RCC->CR & RCC_CR_HSERDY) == 0);				// Wait till HSE is ready
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);			// 10: HSE selected as system clock
+	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);			// Wait until HSE is selected
+
+	SystemCoreClockUpdate();							// Read configured clock speed into SystemCoreClock (system clock frequency)
+	uartSendString("Waking up\n");
+	//bleApp.Init();
+}
+
 void UTIL_SEQ_Idle()
 {
 	extern bool sleep;
 	if (sleep) {
-		UTIL_LPM_SetStopMode(1, UTIL_LPM_ENABLE);			// Enable stop (standby) mode for user 1
-		UTIL_LPM_EnterLowPower();
-
 		sleep = false;
-		MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);			// 10: HSE selected as system clock
-		while ((RCC->CFGR & RCC_CFGR_SWS) == 0);			// Wait until HSE is selected
+		//UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
+		UTIL_SEQ_RegTask(1 << CFG_TASK_Sleep, UTIL_SEQ_RFU, Sleep);
 
-		SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
-		uartSendString("Waking up\n");
-		bleApp.Init();
+		UTIL_SEQ_SetTask(1 << CFG_TASK_Sleep, CFG_SCH_PRIO_0);
+		//Sleep();
+
+		//while (bleApp.connectionStatus != BleApp::ConnStatus::Idle) {};
+
+
 	}
 }
 

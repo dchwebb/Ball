@@ -558,6 +558,7 @@ typedef enum
 {
     CFG_TASK_SwitchLPAdvertising,
     CFG_TASK_CancelAdvertising,
+	CFG_TASK_Sleep,
 #if (L2CAP_REQUEST_NEW_CONN_PARAM != 0 )
     CFG_TASK_CONN_UPDATE_REG_ID,
 #endif

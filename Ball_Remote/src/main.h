@@ -24,8 +24,8 @@ void Error_Handler(void);
 #define GREEN_LED_GPIO_Port GPIOB
 #define RED_LED_Pin GPIO_PIN_1
 #define RED_LED_GPIO_Port GPIOB
-#define LD1_Pin GPIO_PIN_5
-#define LD1_GPIO_Port GPIOB
+#define BLUE_LED_Pin GPIO_PIN_5
+#define BLUE_LED_GPIO_Port GPIOB
 
 #define STLINK_RX_Pin GPIO_PIN_6
 #define STLINK_RX_GPIO_Port GPIOB

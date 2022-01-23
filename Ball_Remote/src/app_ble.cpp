@@ -48,8 +48,8 @@ void BleApp::Init()
 			CFG_BLE_MAX_TX_POWER}
 	};
 
+
 	TransportLayerInit();												// Initialize Ble Transport Layer
-	//UTIL_LPM_SetOffMode(1, UTIL_LPM_DISABLE);							// Do not allow standby in the application
 
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
@@ -60,14 +60,15 @@ void BleApp::Init()
 	}
 
 	HciGapGattInit();													// Initialization of HCI & GATT & GAP layer
-	SVCCTL_Init();														// Initialization of the BLE Services
+	SVCCTL_Init();														// Initialization of the BLE Services FIXME - THIS CAN BE CLEANED UP
+
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchLPAdvertising, UTIL_SEQ_RFU, SwitchLPAdvertising);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_CancelAdvertising, UTIL_SEQ_RFU, CancelAdvertising);
 
 	// Allows masked radio activity to trigger event
 	// 0x01: Idle, 0x02: Advertising, 0x04: Connection event slave, 0x08: Scanning, 0x10: Connection request, 0x20: Connection event master, 0x40: TX test mode, 0x80: RX test mode
-	aci_hal_set_radio_activity_mask(0x0006);
+	//aci_hal_set_radio_activity_mask(0x0006);
 
 	devInfoService.AppInit();											// Initialize DIS Application
 	BAS_App_Init();														// Initialize Battery Service
@@ -77,7 +78,6 @@ void BleApp::Init()
 	HW_TS_Create(CFG_TIM_PROC_ID_ISR, &(lowPowerAdvTimerId), hw_ts_SingleShot, QueueLPAdvertising);
 
 	EnableAdvertising(ConnStatus::FastAdv);								// Start advertising for client connections
-
 }
 
 

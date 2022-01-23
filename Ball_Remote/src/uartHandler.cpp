@@ -3,6 +3,8 @@
 extern "C" {
 #include "shci.h"
 #include "stm32_lpm.h"
+#include "stm32_seq.h"
+#include "app_conf.h"
 }
 #include <charconv>
 
@@ -147,17 +149,10 @@ bool uartCommand()
 		uartSendString("Going to sleep\n");
 		extern bool sleep;
 		sleep = true;
+	} else if (comCmd.compare("canceladv\n") == 0) {			// Enter sleep mode
 
+		UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
 
-//		UTIL_LPM_SetStopMode(1, UTIL_LPM_ENABLE);			// Enable stop (standby) mode for user 1
-//		UTIL_LPM_EnterLowPower();							// call void UTIL_LPM_EnterLowPower() in background
-//		USART1->RQR |= USART_RQR_RXFRQ;						// Flush the uart receive register
-//
-//		MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);			// 10: HSE selected as system clock
-//		while ((RCC->CFGR & RCC_CFGR_SWS) == 0);			// Wait until HSE is selected
-//
-//		SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
-//		uartSendString("Waking up\n");
 
 	} else {
 		uartSendString("Unrecognised command: " + std::string(comCmd) + "Type 'help' for supported commands\r\n");

@@ -35,6 +35,7 @@ int main(void)
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW2_BUTTON_PUSHED_ID, 0, Button2_Task);
 
 	while (1) {
+		HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_SET);
 		MX_APPE_Process();
 		uartCommand();
 	}

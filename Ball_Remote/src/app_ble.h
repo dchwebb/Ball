@@ -13,6 +13,7 @@ public:
 
 	void Init();
 	void ServiceControlCallback(void* pckt);
+	static void CancelAdvertising();
 private:
 
 	// Advertising Data: Length | Type | Data
@@ -46,7 +47,7 @@ private:
 
 	void EnableAdvertising(ConnStatus status);
 	static void SwitchLPAdvertising();
-	static void CancelAdvertising();
+
 	static void QueueLPAdvertising();
 	static void StatusNot(HCI_TL_CmdStatus_t status);
 	void HciGapGattInit();
