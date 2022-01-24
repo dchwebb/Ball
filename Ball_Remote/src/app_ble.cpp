@@ -64,7 +64,10 @@ void BleApp::Init()
 
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchLPAdvertising, UTIL_SEQ_RFU, SwitchLPAdvertising);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchFastAdvertising, UTIL_SEQ_RFU, SwitchFastAdvertising);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_CancelAdvertising, UTIL_SEQ_RFU, CancelAdvertising);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_GoToSleep, UTIL_SEQ_RFU, GoToSleep);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_EnterSleepMode, UTIL_SEQ_RFU, EnterSleepMode);
 
 	// Allows masked radio activity to trigger event
 	// 0x01: Idle, 0x02: Advertising, 0x04: Connection event slave, 0x08: Scanning, 0x10: Connection request, 0x20: Connection event master, 0x40: TX test mode, 0x80: RX test mode
@@ -87,18 +90,10 @@ SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
 	return SVCCTL_UserEvtFlowEnable;
 }
 
+
 void BleApp::ServiceControlCallback(void* pckt)
 {
-	hci_le_phy_update_complete_event_rp0 *evt_le_phy_update_complete;
-	uint8_t TX_PHY, RX_PHY;
-	tBleStatus ret = BLE_STATUS_INVALID_PARAMS;
-
 	hci_event_pckt* event_pckt = (hci_event_pckt*) ((hci_uart_pckt*) pckt)->data;
-
-	// PAIRING
-	aci_gap_numeric_comparison_value_event_rp0 *evt_numeric_value;
-	aci_gap_pairing_complete_event_rp0 *pairing_complete;
-	uint32_t numeric_value;
 
 	switch (event_pckt->evt) {
 	case HCI_DISCONNECTION_COMPLETE_EVT_CODE:
@@ -109,7 +104,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 		connectionStatus = ConnStatus::Idle;
 		hidService.Disconnect();
 
-		APP_DBG_MSG("\r\n\r** DISCONNECTION EVENT WITH CLIENT \n");
+		APP_DBG_MSG("\r\n\r** Disconnection event with client \n");
 
 		EnableAdvertising(ConnStatus::FastAdv);			// restart advertising
 
@@ -122,51 +117,17 @@ void BleApp::ServiceControlCallback(void* pckt)
 	{
 		evt_le_meta_event* meta_evt = (evt_le_meta_event*) event_pckt->data;
 
-		switch (meta_evt->subevent)	{
-			case HCI_LE_CONNECTION_UPDATE_COMPLETE_SUBEVT_CODE:
-				APP_DBG_MSG("\r\n\r** CONNECTION UPDATE EVENT WITH CLIENT \n");
-				break;
+		if (meta_evt->subevent == HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE) {
+			hci_le_connection_complete_event_rp0* connCompleteEvent = (hci_le_connection_complete_event_rp0*) meta_evt->data;
 
-			case HCI_LE_PHY_UPDATE_COMPLETE_SUBEVT_CODE:
-				APP_DBG_MSG("EVT_UPDATE_PHY_COMPLETE \n");
-				evt_le_phy_update_complete = (hci_le_phy_update_complete_event_rp0*)meta_evt->data;
-				if (evt_le_phy_update_complete->Status == 0) {
-					APP_DBG_MSG("EVT_UPDATE_PHY_COMPLETE, status ok \n");
-				} else {
-					APP_DBG_MSG("EVT_UPDATE_PHY_COMPLETE, status nok \n");
-				}
+			HW_TS_Stop(lowPowerAdvTimerId);					// connected: no need anymore to schedule the LP ADV
 
-				ret = hci_le_read_phy(connectionHandle, &TX_PHY, &RX_PHY);
-				if (ret == BLE_STATUS_SUCCESS) {
-					APP_DBG_MSG("Read_PHY success \n");
+			APP_DBG_MSG("Client connected: handle 0x%x\n", connCompleteEvent->Connection_Handle);
+			connectionStatus = ConnStatus::Connected;
+			connectionHandle = connCompleteEvent->Connection_Handle;
 
-					if ((TX_PHY == TX_2M) && (RX_PHY == RX_2M))	{
-						APP_DBG_MSG("PHY Param  TX= %d, RX= %d \n", TX_PHY, RX_PHY);
-					} else {
-						APP_DBG_MSG("PHY Param  TX= %d, RX= %d \n", TX_PHY, RX_PHY);
-					}
-				} else {
-					APP_DBG_MSG("Read conf unsuccessful \n");
-				}
-				break;
-
-			case HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE:
-			{
-				hci_le_connection_complete_event_rp0* connCompleteEvent = (hci_le_connection_complete_event_rp0*) meta_evt->data;
-
-				HW_TS_Stop(lowPowerAdvTimerId);					// connected: no need anymore to schedule the LP ADV
-
-				APP_DBG_MSG("HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE for connection handle 0x%x\n", connCompleteEvent->Connection_Handle);
-				connectionStatus = ConnStatus::Connected;
-				connectionHandle = connCompleteEvent->Connection_Handle;
-
-				HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);		// Turn off advertising LED
-			}
-			break;
-
-			default:
-				break;
+			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);		// Turn off advertising LED
 		}
 	}
 	break;
@@ -194,17 +155,19 @@ void BleApp::ServiceControlCallback(void* pckt)
 				aci_gap_pass_key_resp(connectionHandle, CFG_FIXED_PIN);
 				break;
 
-			case ACI_GAP_NUMERIC_COMPARISON_VALUE_VSEVT_CODE:
-				evt_numeric_value = (aci_gap_numeric_comparison_value_event_rp0*)blecore_evt->data;
-				numeric_value = evt_numeric_value->Numeric_Value;
+			case ACI_GAP_NUMERIC_COMPARISON_VALUE_VSEVT_CODE: {
+				auto evt_numeric_value = (aci_gap_numeric_comparison_value_event_rp0*)blecore_evt->data;
+				uint32_t numeric_value = evt_numeric_value->Numeric_Value;
 				APP_DBG_MSG("numeric_value = %ld\n", numeric_value);
 				aci_gap_numeric_comparison_value_confirm_yesno(connectionHandle, YES);
 				break;
+			}
 
-			case ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE:
-				pairing_complete = (aci_gap_pairing_complete_event_rp0*)blecore_evt->data;
+			case ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE: {
+				auto pairing_complete = (aci_gap_pairing_complete_event_rp0*)blecore_evt->data;
 				APP_DBG_MSG("BLE_CTRL_App_Notification: ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE, pairing_complete->Status = %d\n", pairing_complete->Status);
 				break;
+			}
 		}
 		break;
 	}
@@ -259,6 +222,9 @@ void BleApp::HciGapGattInit()
 		BLE_DBG_SVCCTL_MSG("Appearance aci_gatt_update_char_value failed.\n");
 	}
 
+//	const uint8_t eventMask[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+//	hci_le_set_event_mask(eventMask);			// 2 = LE Advertising Report Event
+
 	// Initialize Default PHY
 	hci_le_set_default_phy(ALL_PHYS_PREFERENCE, TX_2M_PREFERRED, RX_2M_PREFERRED);
 
@@ -272,7 +238,7 @@ void BleApp::HciGapGattInit()
 			CFG_KEYPRESS_NOTIFICATION_SUPPORT,
 			Security.encryptionKeySizeMin,
 			Security.encryptionKeySizeMax,
-			Security.Use_Fixed_Pin,
+			Security.useFixedPin,
 			Security.fixedPin,
 			CFG_BLE_ADDRESS_TYPE
 	);
@@ -355,25 +321,111 @@ void BleApp::QueueLPAdvertising()
 }
 
 
+void BleApp::QueueFastAdvertising()
+{
+	// Queues transition from fast to lop wer advertising
+	UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchFastAdvertising, CFG_SCH_PRIO_0);
+}
+
 void BleApp::SwitchLPAdvertising()
 {
 	bleApp.EnableAdvertising(ConnStatus::LPAdv);
 }
 
 
+void BleApp::SwitchFastAdvertising()
+{
+	bleApp.EnableAdvertising(ConnStatus::FastAdv);
+}
+
 void BleApp::CancelAdvertising()
 {
-	if (bleApp.connectionStatus != ConnStatus::Connected) {
+	if (bleApp.connectionStatus == ConnStatus::FastAdv || bleApp.connectionStatus == ConnStatus::LPAdv) {
 		HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
+		HW_TS_Stop(bleApp.lowPowerAdvTimerId);					// Cancel timer to activate LP Advertising
+
 		tBleStatus result = aci_gap_set_non_discoverable();
 
 		bleApp.connectionStatus = ConnStatus::Idle;
 		if (result == BLE_STATUS_SUCCESS) {
-			APP_DBG_MSG("** STOP ADVERTISING **  \r\n\r");
+			APP_DBG_MSG("Stop advertising \r\n");
 		} else {
-			APP_DBG_MSG("** STOP ADVERTISING **  Failed \r\n\r");
+			APP_DBG_MSG("Stop advertising Failed \r\n");
 		}
 	}
+
+	// As advertising must be stopped before entering sleep mode, trigger task here
+	if (bleApp.sleepState == SleepState::CancelAdv) {
+		bleApp.sleepState = SleepState::Asleep;
+		UTIL_SEQ_SetTask(1 << CFG_TASK_EnterSleepMode, CFG_SCH_PRIO_0);
+	}
+}
+
+
+static void Switch_On_HSI()
+{
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_HSI);			// Set HSI as clock source
+	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSE is selected
+}
+
+
+void BleApp::DisconnectRequest()
+{
+	aci_gap_terminate(bleApp.connectionHandle, 0x16);			// 0x16: Connection Terminated by Local Host
+}
+
+
+void BleApp::GoToSleep() {
+	bleApp.sleepState = SleepState::CancelAdv;
+	UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
+}
+
+
+void BleApp::EnterSleepMode() {
+	HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_RESET);
+
+	uint32_t primask_bit = __get_PRIMASK();
+	__disable_irq();													// Disable interrupts
+
+	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
+
+	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
+
+	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
+		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Standby mode
+			LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
+			Switch_On_HSI();
+		}
+	} else {
+		Switch_On_HSI();
+	}
+
+	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
+
+	// See p153 for LP modes entry and wake up
+	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP0);				// 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
+	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;									// SLEEPDEEP must be set for STOP, STANDBY or STANDBY modes
+	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
+	__set_PRIMASK(primask_bit);											// Re-enable interrupts for exiting sleep mode
+	__WFI();															// Activates sleep (wait for interrupts)
+
+	bleApp.WakeFromSleep();
+}
+
+
+void BleApp::WakeFromSleep()
+{
+	// Executes on wake-up
+	RCC->CR |= RCC_CR_HSEON;							// Turn on external oscillator
+	while ((RCC->CR & RCC_CR_HSERDY) == 0);				// Wait till HSE is ready
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);			// 10: HSE selected as system clock
+	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);			// Wait until HSE is selected
+
+	SystemCoreClockUpdate();							// Read configured clock speed into SystemCoreClock (system clock frequency)
+	sleepState = SleepState::Awake;
+
+	APP_DBG_MSG("\nWaking up\n");
+	EnableAdvertising(ConnStatus::FastAdv);
 }
 
 

@@ -557,8 +557,10 @@ typedef enum
 typedef enum
 {
     CFG_TASK_SwitchLPAdvertising,
+	CFG_TASK_SwitchFastAdvertising,
     CFG_TASK_CancelAdvertising,
-	CFG_TASK_Sleep,
+	CFG_TASK_GoToSleep,
+	CFG_TASK_EnterSleepMode,
 #if (L2CAP_REQUEST_NEW_CONN_PARAM != 0 )
     CFG_TASK_CONN_UPDATE_REG_ID,
 #endif

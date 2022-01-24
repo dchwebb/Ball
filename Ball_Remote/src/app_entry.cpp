@@ -20,7 +20,6 @@ PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t BleSpareEvtBuffer[sizeof(TL_
 
 static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status);
 static void APPE_SysUserEvtRx(void* pPayload);
-static void Sleep();
 
 
 void APPE_Init()
@@ -99,19 +98,15 @@ void MX_APPE_Process(void)
 
 
 
-static void Switch_On_HSI()
-{
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_HSI);			// Set HSI as clock source
-	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSE is selected
-}
 
+/*
 static void GoToSleep()
 {
 	UTILS_ENTER_CRITICAL_SECTION();										// Disable interrupts
 
-	CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);					// Disable Systick interrupt
+	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
 
-	//EnterLowPower();
+
 	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
 
 	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
@@ -123,49 +118,25 @@ static void GoToSleep()
 		Switch_On_HSI();
 	}
 
-	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);					// Release RCC semaphore
-
-	PWR->SCR |= PWR_SCR_CWUF;										// Clear all wake up flags
+	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
 	// See p153 for LP modes entry and wake up
-	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP0);			// 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
-	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;								// SLEEPDEEP must be set for STOP, STANDBY or STANDBY modes
-
-	UTILS_EXIT_CRITICAL_SECTION();										// Disable interrupts
-
-	__WFI();														// Activates sleep (wait for interrupts)
+	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP0);				// 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
+	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;									// SLEEPDEEP must be set for STOP, STANDBY or STANDBY modes
+	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
+	UTILS_EXIT_CRITICAL_SECTION();										// Re-enable interrupts for exiting sleep mode
+	__WFI();															// Activates sleep (wait for interrupts)
 }
+*/
 
 
-static void Sleep() {
-//	bleApp.CancelAdvertising();
-	HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_RESET);
-	GoToSleep();
-
-	RCC->CR |= RCC_CR_HSEON;							// Turn on external oscillator
-	while ((RCC->CR & RCC_CR_HSERDY) == 0);				// Wait till HSE is ready
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);			// 10: HSE selected as system clock
-	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);			// Wait until HSE is selected
-
-	SystemCoreClockUpdate();							// Read configured clock speed into SystemCoreClock (system clock frequency)
-	uartSendString("Waking up\n");
-	//bleApp.Init();
-}
 
 void UTIL_SEQ_Idle()
 {
 	extern bool sleep;
 	if (sleep) {
 		sleep = false;
-		//UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
-		UTIL_SEQ_RegTask(1 << CFG_TASK_Sleep, UTIL_SEQ_RFU, Sleep);
-
-		UTIL_SEQ_SetTask(1 << CFG_TASK_Sleep, CFG_SCH_PRIO_0);
-		//Sleep();
-
-		//while (bleApp.connectionStatus != BleApp::ConnStatus::Idle) {};
-
-
+		UTIL_SEQ_SetTask(1 << CFG_TASK_GoToSleep, CFG_SCH_PRIO_0);
 	}
 }
 

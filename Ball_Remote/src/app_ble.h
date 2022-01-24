@@ -2,6 +2,7 @@
 
 #include "hci_tl.h"
 #include "ble_defs.h"
+#include "app_conf.h"
 
 struct BleApp {
 public:
@@ -13,8 +14,9 @@ public:
 
 	void Init();
 	void ServiceControlCallback(void* pckt);
-	static void CancelAdvertising();
+	static void DisconnectRequest();
 private:
+	enum class SleepState {CancelAdv, Asleep, Awake};
 
 	// Advertising Data: Length | Type | Data
 	const uint8_t ad_data[25] = {
@@ -33,13 +35,14 @@ private:
 	static constexpr uint16_t LPAdvIntervalMax = 4000;
 
 	uint8_t bd_addr_udn[bdAddrSize];
-	uint8_t lowPowerAdvTimerId;											// ID of timer used to switch to low power avertising
+	uint8_t lowPowerAdvTimerId;
+	SleepState sleepState {SleepState::Awake};
 
 	struct  {
 		uint8_t ioCapability = CFG_IO_CAPABILITY;						// IO capability of the device
 		uint8_t mitmMode = CFG_MITM_PROTECTION;							// Man In the Middle protection required?
 		uint8_t bondingMode = CFG_BONDING_MODE;							// bonding mode of the device
-		uint8_t Use_Fixed_Pin = CFG_USED_FIXED_PIN;						// 0 = use fixed pin; 1 = request for passkey
+		uint8_t useFixedPin = CFG_USED_FIXED_PIN;						// 0 = use fixed pin; 1 = request for passkey
 		uint8_t encryptionKeySizeMin = CFG_ENCRYPTION_KEY_SIZE_MIN;		// minimum encryption key size requirement
 		uint8_t encryptionKeySizeMax = CFG_ENCRYPTION_KEY_SIZE_MAX;		// maximum encryption key size requirement
 		uint32_t fixedPin = CFG_FIXED_PIN;								// Fixed pin for pairing process if Use_Fixed_Pin = 1
@@ -47,8 +50,14 @@ private:
 
 	void EnableAdvertising(ConnStatus status);
 	static void SwitchLPAdvertising();
-
+	static void SwitchFastAdvertising();
 	static void QueueLPAdvertising();
+	static void QueueFastAdvertising();
+	static void CancelAdvertising();
+	static void GoToSleep();
+	static void EnterSleepMode();
+	void WakeFromSleep();
+
 	static void StatusNot(HCI_TL_CmdStatus_t status);
 	void HciGapGattInit();
 	uint8_t* GetBdAddress();

@@ -1,5 +1,6 @@
 #include "uartHandler.h"
 #include "compassHandler.h"
+#include "app_ble.h"
 extern "C" {
 #include "shci.h"
 #include "stm32_lpm.h"
@@ -86,7 +87,7 @@ size_t uartSendString(const unsigned char* s, size_t size) {
 
 void uartSendString(const char* s) {
 	char c = s[0];
-	uint8_t i = 0;
+	uint16_t i = 0;
 	while (c) {
 		while ((USART1->ISR & USART_ISR_TXE_TXFNF) == 0);
 		USART1->TDR = c;
@@ -121,7 +122,15 @@ bool uartCommand()
 				"\r\nSupported commands:\r\n"
 				"disconnect      -  Disconnect to HID BLE device\r\n"
 				"i2creg:HH       -  Read I2C register at 0xHH\r\n"
-				"\r\n");
+				"fwversion       -  Read firmware version\r\n"
+				"sleep           -  Enter sleep mode\r\n"
+				"canceladv       -  Cancel advertising\r\n"
+				"startadv        -  Start advertising\r\n"
+				"disconnect      -  Disconnects clients\r\n"
+
+		"\r\n");
+
+
 
 
 	} else if (comCmd.compare(0, 7, "i2creg:") == 0) {				// Read i2c register
@@ -144,15 +153,19 @@ bool uartCommand()
 					fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub);
 		}
 
-	} else if (comCmd.compare("sleep\n") == 0) {			// Enter sleep mode
-
+	} else if (comCmd.compare("sleep\n") == 0) {				// Enter sleep mode
 		uartSendString("Going to sleep\n");
 		extern bool sleep;
 		sleep = true;
-	} else if (comCmd.compare("canceladv\n") == 0) {			// Enter sleep mode
 
+	} else if (comCmd.compare("canceladv\n") == 0) {			// Cancel advertising
 		UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
 
+	} else if (comCmd.compare("startadv\n") == 0) {				// Start advertising
+		UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchFastAdvertising, CFG_SCH_PRIO_0);
+
+	} else if (comCmd.compare("disconnect\n") == 0) {				// Disconnect client
+		bleApp.DisconnectRequest();
 
 	} else {
 		uartSendString("Unrecognised command: " + std::string(comCmd) + "Type 'help' for supported commands\r\n");
