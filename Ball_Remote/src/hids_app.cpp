@@ -17,7 +17,7 @@ void HidService::Init()
 	tBleStatus hciCmdResult = BLE_STATUS_SUCCESS;
 
 	// Register the event handler to the BLE controller
-	SVCCTL_RegisterSvcHandler(HIDS_Event_Handler);
+	//SVCCTL_RegisterSvcHandler(HIDS_Event_Handler);
 
 	uuid = HUMAN_INTERFACE_DEVICE_SERVICE_UUID;
 	hciCmdResult = aci_gatt_add_service(UUID_TYPE_16,

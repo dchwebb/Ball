@@ -10,4 +10,4 @@ tBleStatus BAS_Update_Char();
 void BAS_App_Init();
 void BAS_App_Set_Level(uint8_t level);
 void BAS_App_Send_Notification();
-
+SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event);

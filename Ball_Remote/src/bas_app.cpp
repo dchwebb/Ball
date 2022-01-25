@@ -2,7 +2,7 @@
 #include "stm32_seq.h"
 #include "bas_app.h"
 
-static SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event);
+//static SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event);
 
 typedef struct {
 	uint16_t SvcHdle;					// Service handle
@@ -24,7 +24,7 @@ void BAS_Init()
 	uint16_t uuid;
 	tBleStatus hciCmdResult = BLE_STATUS_SUCCESS;
 
-	SVCCTL_RegisterSvcHandler(BAS_Event_Handler);	// Register the event handler to the BLE controller
+	//SVCCTL_RegisterSvcHandler(BAS_Event_Handler);	// Register the event handler to the BLE controller
 
 	uuid = BATTERY_SERVICE_UUID;
 	hciCmdResult = aci_gatt_add_service(UUID_TYPE_16,
@@ -86,7 +86,7 @@ void BAS_App_Set_Level(uint8_t level)
 }
 
 
-static SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event)
+SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event)
 {
 	SVCCTL_EvtAckStatus_t return_value = SVCCTL_EvtNotAck;
 	hci_event_pckt* event_pckt = (hci_event_pckt *)(((hci_uart_pckt*)Event)->data);

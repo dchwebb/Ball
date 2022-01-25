@@ -29,7 +29,7 @@ int main(void)
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
 	InitUart();						// Debugging via STLink UART
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
-//	compass.Setup();				// Setup address and settings for magnetometer
+	compass.Setup();				// Setup address and settings for magnetometer
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, 0, Button1_Task);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW2_BUTTON_PUSHED_ID, 0, Button2_Task);

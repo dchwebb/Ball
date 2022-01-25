@@ -58,7 +58,7 @@ private:
 	static void EnterSleepMode();
 	void WakeFromSleep();
 
-	static void StatusNot(HCI_TL_CmdStatus_t status);
+	static void StatusNotify(HCI_TL_CmdStatus_t status);
 	void HciGapGattInit();
 	uint8_t* GetBdAddress();
 	static void UserEvtRx(void* pPayload);

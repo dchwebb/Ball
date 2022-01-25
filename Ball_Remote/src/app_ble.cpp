@@ -60,7 +60,11 @@ void BleApp::Init()
 	}
 
 	HciGapGattInit();													// Initialization of HCI & GATT & GAP layer
-	SVCCTL_Init();														// Initialization of the BLE Services FIXME - THIS CAN BE CLEANED UP
+//	SVCCTL_Init();														// Initialization of the BLE Services FIXME - THIS CAN BE CLEANED UP
+	devInfoService.Init();
+	hidService.Init();
+	BAS_Init();
+
 
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchLPAdvertising, UTIL_SEQ_RFU, SwitchLPAdvertising);
@@ -185,7 +189,7 @@ void BleApp::TransportLayerInit()
 	HCI_TL_HciInitConf_t Hci_Tl_Init_Conf;
 
 	Hci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&BleCmdBuffer;
-	Hci_Tl_Init_Conf.StatusNotCallBack = StatusNot;
+	Hci_Tl_Init_Conf.StatusNotCallBack = StatusNotify;
 	hci_init(UserEvtRx, (void*) &Hci_Tl_Init_Conf);
 }
 
@@ -221,9 +225,6 @@ void BleApp::HciGapGattInit()
 	if (aci_gatt_update_char_value(gap_service_handle, gap_appearance_char_handle, 0, 2, (uint8_t*)&appearance)) {
 		BLE_DBG_SVCCTL_MSG("Appearance aci_gatt_update_char_value failed.\n");
 	}
-
-//	const uint8_t eventMask[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-//	hci_le_set_event_mask(eventMask);			// 2 = LE Advertising Report Event
 
 	// Initialize Default PHY
 	hci_le_set_default_phy(ALL_PHYS_PREFERENCE, TX_2M_PREFERRED, RX_2M_PREFERRED);
@@ -362,13 +363,6 @@ void BleApp::CancelAdvertising()
 }
 
 
-static void Switch_On_HSI()
-{
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_HSI);			// Set HSI as clock source
-	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSE is selected
-}
-
-
 void BleApp::DisconnectRequest()
 {
 	aci_gap_terminate(bleApp.connectionHandle, 0x16);			// 0x16: Connection Terminated by Local Host
@@ -378,6 +372,13 @@ void BleApp::DisconnectRequest()
 void BleApp::GoToSleep() {
 	bleApp.sleepState = SleepState::CancelAdv;
 	UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
+}
+
+
+static void SwitchToHSI()
+{
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_HSI);			// Set HSI as clock source
+	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSE is selected
 }
 
 
@@ -394,10 +395,10 @@ void BleApp::EnterSleepMode() {
 	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
 		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Standby mode
 			LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
-			Switch_On_HSI();
+			SwitchToHSI();
 		}
 	} else {
-		Switch_On_HSI();
+		SwitchToHSI();
 	}
 
 	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
@@ -424,6 +425,8 @@ void BleApp::WakeFromSleep()
 	SystemCoreClockUpdate();							// Read configured clock speed into SystemCoreClock (system clock frequency)
 	sleepState = SleepState::Awake;
 
+	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;			// Restart Systick interrupt
+
 	APP_DBG_MSG("\nWaking up\n");
 	EnableAdvertising(ConnStatus::FastAdv);
 }
@@ -448,29 +451,36 @@ void hci_cmd_resp_wait(uint32_t timeout)
 
 void BleApp::UserEvtRx(void * pPayload)
 {
+	// This will call the SVCCTL_UserEvtRx function in svc_ctl.c.
+	// This will first call the app handlers (hids, bas etc) which try and match on Attribute Handles.
+	// If not handled (status returned as SVCCTL_EvtNotAck) will then call bleApp.ServiceControlCallback() for connection/security handling
 	tHCI_UserEvtRxParam* pParam = (tHCI_UserEvtRxParam*)pPayload;
-	SVCCTL_UserEvtFlowStatus_t svctl_return_status = SVCCTL_UserEvtRx((void*)&(pParam->pckt->evtserial));
+	//SVCCTL_UserEvtFlowStatus_t svctl_return_status = SVCCTL_UserEvtRx((void*)&(pParam->pckt->evtserial));
+	auto packet = (void*)&(pParam->pckt->evtserial);
 
-	if (svctl_return_status != SVCCTL_UserEvtFlowDisable) {
-		pParam->status = HCI_TL_UserEventFlow_Enable;
-	} else {
-		pParam->status = HCI_TL_UserEventFlow_Disable;
+	if (HidService::HIDS_Event_Handler(packet) == SVCCTL_EvtNotAck) {
+		if (BAS_Event_Handler(packet) == SVCCTL_EvtNotAck) {
+			bleApp.ServiceControlCallback(packet);
+		}
 	}
+//	if (svctl_return_status != SVCCTL_UserEvtFlowDisable) {
+//		pParam->status = HCI_TL_UserEventFlow_Enable;
+//	} else {
+//		pParam->status = HCI_TL_UserEventFlow_Disable;
+//	}
 }
 
 
-void BleApp::StatusNot(HCI_TL_CmdStatus_t status)
+// This callback is triggered at the start and end of hci_send_req() to halt all pending tasks and then resume when command complete
+void BleApp::StatusNotify(HCI_TL_CmdStatus_t status)
 {
-	uint32_t task_id_list;
+	uint32_t task_id_list = (1 << CFG_LAST_TASK_ID_WITH_HCICMD) - 1;
 	switch (status)	{
 	case HCI_TL_CmdBusy:
-		// All tasks that may send an aci/hci commands shall be listed here:  This is to prevent a new command is sent while one is already pending
-		task_id_list = (1 << CFG_LAST_TASK_ID_WITH_HCICMD) - 1;
 		UTIL_SEQ_PauseTask(task_id_list);
 		break;
 
 	case HCI_TL_CmdAvailable:
-		task_id_list = (1 << CFG_LAST_TASK_ID_WITH_HCICMD) - 1;
 		UTIL_SEQ_ResumeTask(task_id_list);
 		break;
 

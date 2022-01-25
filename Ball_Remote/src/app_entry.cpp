@@ -18,7 +18,7 @@ PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static TL_CmdPacket_t SystemCmdBuffer;
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t SystemSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255U];
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t BleSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255];
 
-static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status);
+static void APPE_SysStatusNotify(SHCI_TL_CmdStatus_t status);
 static void APPE_SysUserEvtRx(void* pPayload);
 
 
@@ -32,18 +32,17 @@ void APPE_Init()
 	HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 	// Initialize the TimerServer
 
 	// Initialize transport layers
-	TL_MM_Config_t tl_mm_config;
-	SHCI_TL_HciInitConf_t SHci_Tl_Init_Conf;
-
 	TL_Init();	// Reference table initialization
 
 	// System channel initialization
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SYSTEM_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, shci_user_evt_proc);
+	SHCI_TL_HciInitConf_t SHci_Tl_Init_Conf;
 	SHci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&SystemCmdBuffer;
-	SHci_Tl_Init_Conf.StatusNotCallBack = APPE_SysStatusNot;
+	SHci_Tl_Init_Conf.StatusNotCallBack = APPE_SysStatusNotify;
 	shci_init(APPE_SysUserEvtRx, (void*) &SHci_Tl_Init_Conf);
 
 	// Memory Manager channel initialization
+	TL_MM_Config_t tl_mm_config;
 	tl_mm_config.p_BleSpareEvtBuffer = BleSpareEvtBuffer;
 	tl_mm_config.p_SystemSpareEvtBuffer = SystemSpareEvtBuffer;
 	tl_mm_config.p_AsynchEvtPool = EvtPool;
@@ -68,7 +67,7 @@ void Init_Smps()
 }
 
 
-static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status)
+static void APPE_SysStatusNotify(SHCI_TL_CmdStatus_t status)
 {
 	UNUSED(status);
 	return;
@@ -95,40 +94,6 @@ void MX_APPE_Process(void)
 {
 	UTIL_SEQ_Run(UTIL_SEQ_DEFAULT);
 }
-
-
-
-
-/*
-static void GoToSleep()
-{
-	UTILS_ENTER_CRITICAL_SECTION();										// Disable interrupts
-
-	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
-
-
-	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
-
-	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
-		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Standby mode
-			LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
-			Switch_On_HSI();
-		}
-	} else {
-		Switch_On_HSI();
-	}
-
-	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
-
-	// See p153 for LP modes entry and wake up
-	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP0);				// 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
-	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;									// SLEEPDEEP must be set for STOP, STANDBY or STANDBY modes
-	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
-	UTILS_EXIT_CRITICAL_SECTION();										// Re-enable interrupts for exiting sleep mode
-	__WFI();															// Activates sleep (wait for interrupts)
-}
-*/
-
 
 
 void UTIL_SEQ_Idle()
