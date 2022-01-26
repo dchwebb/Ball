@@ -1,7 +1,6 @@
 #pragma once
 
-#include "svc_ctl.h"
-#include "ble_types.h"
+#include "ble_legacy.h"
 
 struct HidService
 {
@@ -9,10 +8,9 @@ public:
 	bool JoystickNotifications;
 
 	void Init();
-	void AppInit();
 	void JoystickNotification(int16_t x, int16_t y, int16_t z);
 	void Disconnect();
-	static SVCCTL_EvtAckStatus_t HIDS_Event_Handler(void *Event);
+	bool EventHandler(hci_event_pckt* Event);
 private:
 	enum HIDInfoFlags {RemoteWake = 1, NormallyConnectable = 2};
 	enum Characteristic {ReportMap, HidInformation, ReportJoystick};
@@ -35,6 +33,7 @@ private:
 	uint16_t HidControlPointHdle;
 	uint16_t ReportMapHandle;
 
+	void AppInit();
 	void UpdateJoystickReportChar();
 	void UpdateReportMapChar();
 	void UpdateHidInformationChar();
@@ -65,9 +64,5 @@ static constexpr uint8_t reportMap[] = {
 		0xC0,					// End collection
 		0xC0				// End collection
 };
-
-extern "C" {		// Declare with C linkage or will be overridden by weak declaration in svc_ctl.c
-void HIDS_Init();
-}
 
 extern HidService hidService;

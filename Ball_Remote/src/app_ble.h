@@ -3,20 +3,23 @@
 #include "hci_tl.h"
 #include "ble_defs.h"
 #include "app_conf.h"
+#include "ble_legacy.h"
 
 struct BleApp {
 public:
 	enum class ConnStatus {Idle, FastAdv, LPAdv, Scan, LPConnecting, Connected};
+	enum class LowPowerMode {Stop, Shutdown};
 	static constexpr uint8_t bdAddrSize = 6;
 
 	uint16_t connectionHandle = 0xFFFF;									// When disconnected handle is set to 0xFFFF
 	ConnStatus connectionStatus = ConnStatus::Idle;
+	LowPowerMode lowPowerMode {LowPowerMode::Stop};
 
 	void Init();
-	void ServiceControlCallback(void* pckt);
+	void ServiceControlCallback(hci_event_pckt* pckt);
 	static void DisconnectRequest();
 private:
-	enum class SleepState {CancelAdv, Asleep, Awake};
+	enum class SleepState {CancelAdv, GoToSleep, Awake};
 
 	// Advertising Data: Length | Type | Data
 	const uint8_t ad_data[25] = {
@@ -55,6 +58,7 @@ private:
 	static void QueueFastAdvertising();
 	static void CancelAdvertising();
 	static void GoToSleep();
+	static void GoToShutdown();
 	static void EnterSleepMode();
 	void WakeFromSleep();
 

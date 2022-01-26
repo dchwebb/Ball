@@ -39,20 +39,20 @@
 #define EVT_LE_PHY_UPDATE_COMPLETE      0x0C
 #define EVT_LE_ENHANCED_CONN_COMPLETE   0x0A
 
-typedef PACKED(struct) _hci_uart_pckt
+typedef struct __attribute__((packed)) _hci_uart_pckt
 {
   uint8_t type;
   uint8_t data[1];
 } hci_uart_pckt;
 
-typedef PACKED(struct) _hci_event_pckt
+typedef struct __attribute__((packed)) _hci_event_pckt
 {
   uint8_t         evt;
   uint8_t         plen;
   uint8_t         data[1];
 } hci_event_pckt;
 
-typedef PACKED(struct) _evt_le_meta_event
+typedef struct __attribute__((packed)) _evt_le_meta_event
 {
   uint8_t         subevent;
   uint8_t         data[1];
@@ -61,7 +61,7 @@ typedef PACKED(struct) _evt_le_meta_event
 /**
  * Vendor specific event for BLE core.
  */
-typedef PACKED(struct) _evt_blecore_aci
+typedef struct __attribute__((packed)) _evt_blecore_aci
 {
   uint16_t ecode; /**< One of the BLE core event codes. */
   uint8_t  data[1];

@@ -1,10 +1,9 @@
 #include "main.h"
-#include "dbg_trace.h"
 #include "ble.h"
 #include "app_ble.h"
 #include "stm32_seq.h"
 #include "shci.h"
-#include "stm32_lpm.h"
+
 #include "dis_app.h"
 #include "hids_app.h"
 #include "bas_app.h"
@@ -48,24 +47,17 @@ void BleApp::Init()
 			CFG_BLE_MAX_TX_POWER}
 	};
 
-
-	TransportLayerInit();												// Initialize Ble Transport Layer
+	TransportLayerInit();						// Initialize Ble Transport Layer
 
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
 
-	SHCI_CmdStatus_t result = SHCI_C2_BLE_Init(&ble_init_cmd_packet);
-	if (result != SHCI_Success) {		// Starts the BLE Stack on CPU2
+	auto result = SHCI_C2_BLE_Init(&ble_init_cmd_packet);		// Starts the BLE Stack on CPU2
+	if (result != SHCI_Success) {
 		Error_Handler();
 	}
 
-	HciGapGattInit();													// Initialization of HCI & GATT & GAP layer
-//	SVCCTL_Init();														// Initialization of the BLE Services FIXME - THIS CAN BE CLEANED UP
-	devInfoService.Init();
-	hidService.Init();
-	BAS_Init();
-
-
+	HciGapGattInit();							// Initialization of HCI & GATT & GAP layer
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchLPAdvertising, UTIL_SEQ_RFU, SwitchLPAdvertising);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchFastAdvertising, UTIL_SEQ_RFU, SwitchFastAdvertising);
@@ -73,113 +65,100 @@ void BleApp::Init()
 	UTIL_SEQ_RegTask(1 << CFG_TASK_GoToSleep, UTIL_SEQ_RFU, GoToSleep);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_EnterSleepMode, UTIL_SEQ_RFU, EnterSleepMode);
 
-	// Allows masked radio activity to trigger event
-	// 0x01: Idle, 0x02: Advertising, 0x04: Connection event slave, 0x08: Scanning, 0x10: Connection request, 0x20: Connection event master, 0x40: TX test mode, 0x80: RX test mode
-	//aci_hal_set_radio_activity_mask(0x0006);
-
-	devInfoService.AppInit();											// Initialize DIS Application
-	BAS_App_Init();														// Initialize Battery Service
-	hidService.AppInit();												// Initialise HID Service
-
 	// Create timer to switch to Low Power advertising
 	HW_TS_Create(CFG_TIM_PROC_ID_ISR, &(lowPowerAdvTimerId), hw_ts_SingleShot, QueueLPAdvertising);
 
-	EnableAdvertising(ConnStatus::FastAdv);								// Start advertising for client connections
+	disService.Init();							// Initialize Device Information Service
+	basService.Init();							// Initialize Battery level Service
+	hidService.Init();							// Initialize HID Service
+
+	EnableAdvertising(ConnStatus::FastAdv);		// Start advertising for client connections
 }
 
 
-SVCCTL_UserEvtFlowStatus_t SVCCTL_App_Notification(void* pckt)
+void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 {
-	bleApp.ServiceControlCallback(pckt);
-	return SVCCTL_UserEvtFlowEnable;
-}
-
-
-void BleApp::ServiceControlCallback(void* pckt)
-{
-	hci_event_pckt* event_pckt = (hci_event_pckt*) ((hci_uart_pckt*) pckt)->data;
 
 	switch (event_pckt->evt) {
-	case HCI_DISCONNECTION_COMPLETE_EVT_CODE:
-	{
-		//hci_disconnection_complete_event_rp0* disconnection_complete_event = (hci_disconnection_complete_event_rp0*) event_pckt->data;
+		case HCI_DISCONNECTION_COMPLETE_EVT_CODE:
+		{
+			//auto disconnection_complete_event = (hci_disconnection_complete_event_rp0*) event_pckt->data;
 
-		connectionHandle = 0xFFFF;
-		connectionStatus = ConnStatus::Idle;
-		hidService.Disconnect();
+			connectionHandle = 0xFFFF;
+			connectionStatus = ConnStatus::Idle;
+			hidService.Disconnect();
 
-		APP_DBG_MSG("\r\n\r** Disconnection event with client \n");
+			APP_DBG_MSG("\r\n\r** Disconnection event with client \n");
 
-		EnableAdvertising(ConnStatus::FastAdv);			// restart advertising
+			EnableAdvertising(ConnStatus::FastAdv);			// restart advertising
 
-		HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
-	}
-
-	break;
-
-	case HCI_LE_META_EVT_CODE:
-	{
-		evt_le_meta_event* meta_evt = (evt_le_meta_event*) event_pckt->data;
-
-		if (meta_evt->subevent == HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE) {
-			hci_le_connection_complete_event_rp0* connCompleteEvent = (hci_le_connection_complete_event_rp0*) meta_evt->data;
-
-			HW_TS_Stop(lowPowerAdvTimerId);					// connected: no need anymore to schedule the LP ADV
-
-			APP_DBG_MSG("Client connected: handle 0x%x\n", connCompleteEvent->Connection_Handle);
-			connectionStatus = ConnStatus::Connected;
-			connectionHandle = connCompleteEvent->Connection_Handle;
-
-			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);		// Turn off advertising LED
+			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
 		}
-	}
-	break;
 
-	case HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE:
-	{
-		evt_blecore_aci* blecore_evt = (evt_blecore_aci*) event_pckt->data;
+		break;
 
-		switch (blecore_evt->ecode)	{
-			case ACI_L2CAP_CONNECTION_UPDATE_RESP_VSEVT_CODE:
-				break;
+		case HCI_LE_META_EVT_CODE:
+		{
+			auto meta_evt = (evt_le_meta_event*) event_pckt->data;
 
-			case ACI_GAP_PROC_COMPLETE_VSEVT_CODE:
-				APP_DBG_MSG("\r\n\r** ACI_GAP_PROC_COMPLETE_VSEVT_CODE \n");
-				break;
+			if (meta_evt->subevent == HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE) {
+				auto connCompleteEvent = (hci_le_connection_complete_event_rp0*) meta_evt->data;
 
-			case ACI_HAL_END_OF_RADIO_ACTIVITY_VSEVT_CODE:
-				break;
+				HW_TS_Stop(lowPowerAdvTimerId);				// connected: no need anymore to schedule the LP ADV
 
-			case (ACI_GAP_KEYPRESS_NOTIFICATION_VSEVT_CODE):
-				APP_DBG_MSG("\r\n\r** ACI_GAP_KEYPRESS_NOTIFICATION_VSEVT_CODE \n");
-				break;
+				APP_DBG_MSG("Client connected: handle 0x%x\n", connCompleteEvent->Connection_Handle);
+				connectionStatus = ConnStatus::Connected;
+				connectionHandle = connCompleteEvent->Connection_Handle;
 
-			case ACI_GAP_PASS_KEY_REQ_VSEVT_CODE:
-				aci_gap_pass_key_resp(connectionHandle, CFG_FIXED_PIN);
-				break;
-
-			case ACI_GAP_NUMERIC_COMPARISON_VALUE_VSEVT_CODE: {
-				auto evt_numeric_value = (aci_gap_numeric_comparison_value_event_rp0*)blecore_evt->data;
-				uint32_t numeric_value = evt_numeric_value->Numeric_Value;
-				APP_DBG_MSG("numeric_value = %ld\n", numeric_value);
-				aci_gap_numeric_comparison_value_confirm_yesno(connectionHandle, YES);
-				break;
-			}
-
-			case ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE: {
-				auto pairing_complete = (aci_gap_pairing_complete_event_rp0*)blecore_evt->data;
-				APP_DBG_MSG("BLE_CTRL_App_Notification: ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE, pairing_complete->Status = %d\n", pairing_complete->Status);
-				break;
+				HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);		// Turn off advertising LED
 			}
 		}
 		break;
-	}
+
+		case HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE:
+		{
+			auto blecore_evt = (evt_blecore_aci*) event_pckt->data;
+
+			switch (blecore_evt->ecode)	{
+				case ACI_L2CAP_CONNECTION_UPDATE_RESP_VSEVT_CODE:
+					break;
+
+				case ACI_GAP_PROC_COMPLETE_VSEVT_CODE:
+					APP_DBG_MSG("\r\n\r** ACI_GAP_PROC_COMPLETE_VSEVT_CODE \n");
+					break;
+
+				case ACI_HAL_END_OF_RADIO_ACTIVITY_VSEVT_CODE:
+					break;
+
+				case (ACI_GAP_KEYPRESS_NOTIFICATION_VSEVT_CODE):
+					APP_DBG_MSG("\r\n\r** ACI_GAP_KEYPRESS_NOTIFICATION_VSEVT_CODE \n");
+					break;
+
+				case ACI_GAP_PASS_KEY_REQ_VSEVT_CODE:
+					aci_gap_pass_key_resp(connectionHandle, CFG_FIXED_PIN);
+					break;
+
+				case ACI_GAP_NUMERIC_COMPARISON_VALUE_VSEVT_CODE: {
+					auto evt_numeric_value = (aci_gap_numeric_comparison_value_event_rp0*)blecore_evt->data;
+					uint32_t numeric_value = evt_numeric_value->Numeric_Value;
+					APP_DBG_MSG("numeric_value = %ld\n", numeric_value);
+					aci_gap_numeric_comparison_value_confirm_yesno(connectionHandle, YES);
+					break;
+				}
+
+				case ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE: {
+					auto pairing_complete = (aci_gap_pairing_complete_event_rp0*)blecore_evt->data;
+					APP_DBG_MSG("ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE: Status = %d\n", pairing_complete->Status);
+					break;
+				}
+			}
+			break;
+		}
 
 		default:
 			break;
 	}
-
 
 }
 
@@ -219,11 +198,11 @@ void BleApp::HciGapGattInit()
 	aci_gap_init(GAP_PERIPHERAL_ROLE, 0, CFG_GAP_DEVICE_NAME_LENGTH, &gap_service_handle, &gap_dev_name_char_handle, &gap_appearance_char_handle);
 
 	if (aci_gatt_update_char_value(gap_service_handle, gap_dev_name_char_handle, 0, strlen(name), (uint8_t*)name)) {
-		BLE_DBG_SVCCTL_MSG("Device Name aci_gatt_update_char_value failed.\n");
+		APP_DBG_MSG("Device Name aci_gatt_update_char_value failed.\n");
 	}
 
 	if (aci_gatt_update_char_value(gap_service_handle, gap_appearance_char_handle, 0, 2, (uint8_t*)&appearance)) {
-		BLE_DBG_SVCCTL_MSG("Appearance aci_gatt_update_char_value failed.\n");
+		APP_DBG_MSG("Appearance aci_gatt_update_char_value failed.\n");
 	}
 
 	// Initialize Default PHY
@@ -317,16 +296,17 @@ uint8_t* BleApp::GetBdAddress()
 
 void BleApp::QueueLPAdvertising()
 {
-	// Queues transition from fast to lop wer advertising
+	// Queues transition from fast to low power advertising
 	UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchLPAdvertising, CFG_SCH_PRIO_0);
 }
 
 
 void BleApp::QueueFastAdvertising()
 {
-	// Queues transition from fast to lop wer advertising
+	// Queues activation of fast advertising
 	UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchFastAdvertising, CFG_SCH_PRIO_0);
 }
+
 
 void BleApp::SwitchLPAdvertising()
 {
@@ -357,7 +337,7 @@ void BleApp::CancelAdvertising()
 
 	// As advertising must be stopped before entering sleep mode, trigger task here
 	if (bleApp.sleepState == SleepState::CancelAdv) {
-		bleApp.sleepState = SleepState::Asleep;
+		bleApp.sleepState = SleepState::GoToSleep;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_EnterSleepMode, CFG_SCH_PRIO_0);
 	}
 }
@@ -393,7 +373,7 @@ void BleApp::EnterSleepMode() {
 	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
 
 	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
-		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Standby mode
+		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Shutdown mode
 			LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
 			SwitchToHSI();
 		}
@@ -404,9 +384,22 @@ void BleApp::EnterSleepMode() {
 	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
 	// See p153 for LP modes entry and wake up
-	MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP0);				// 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
-	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;									// SLEEPDEEP must be set for STOP, STANDBY or STANDBY modes
+	RCC->CFGR |= RCC_CFGR_STOPWUCK;										// HSI16 selected as wakeup from stop clock and CSS backup clock
+	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;									// SLEEPDEEP must be set for STOP, STANDBY or SHUTDOWN modes
 	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
+
+	if (bleApp.lowPowerMode == LowPowerMode::Stop) {
+		MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP1);			// CPU1: 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
+		//MODIFY_REG(PWR->C2CR1, PWR_C2CR1_LPMS, LL_PWR_MODE_STANDBY);	// CPU2 low power mode: note this doesn't do anything in most cases as CPU2
+	} else {
+		MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_SHUTDOWN);
+		MODIFY_REG(PWR->C2CR1, PWR_C2CR1_LPMS, LL_PWR_MODE_SHUTDOWN);
+
+		EXTI->C2IMR2 = 0;												// Clear all wake up interrupts on CPU2
+		for (int x = 0; x < 1000000; ++x) {								// Force a delay as otherwise something was using 4mA
+			__attribute__((unused)) volatile int y = 1;
+		}
+	}
 	__set_PRIMASK(primask_bit);											// Re-enable interrupts for exiting sleep mode
 	__WFI();															// Activates sleep (wait for interrupts)
 
@@ -449,25 +442,25 @@ void hci_cmd_resp_wait(uint32_t timeout)
 	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_HCI_CMD_EVT_RSP_ID);
 }
 
+
 void BleApp::UserEvtRx(void * pPayload)
 {
-	// This will call the SVCCTL_UserEvtRx function in svc_ctl.c.
-	// This will first call the app handlers (hids, bas etc) which try and match on Attribute Handles.
-	// If not handled (status returned as SVCCTL_EvtNotAck) will then call bleApp.ServiceControlCallback() for connection/security handling
-	tHCI_UserEvtRxParam* pParam = (tHCI_UserEvtRxParam*)pPayload;
-	//SVCCTL_UserEvtFlowStatus_t svctl_return_status = SVCCTL_UserEvtRx((void*)&(pParam->pckt->evtserial));
-	auto packet = (void*)&(pParam->pckt->evtserial);
+	// This will first call the service handlers (hids, bas etc) which try and match on Attribute Handles.
+	// If not handled will then call bleApp.ServiceControlCallback() for connection/security handling
 
-	if (HidService::HIDS_Event_Handler(packet) == SVCCTL_EvtNotAck) {
-		if (BAS_Event_Handler(packet) == SVCCTL_EvtNotAck) {
-			bleApp.ServiceControlCallback(packet);
+	auto pParam = (tHCI_UserEvtRxParam*)pPayload;
+	auto event_pckt = (hci_event_pckt *)&(pParam->pckt->evtserial.evt);
+
+	if (event_pckt->evt == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
+		if (hidService.EventHandler(event_pckt)) {
+			return;
+		}
+		if (basService.EventHandler(event_pckt)) {
+			return;
 		}
 	}
-//	if (svctl_return_status != SVCCTL_UserEvtFlowDisable) {
-//		pParam->status = HCI_TL_UserEventFlow_Enable;
-//	} else {
-//		pParam->status = HCI_TL_UserEventFlow_Disable;
-//	}
+
+	bleApp.ServiceControlCallback(event_pckt);
 }
 
 

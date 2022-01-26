@@ -16,7 +16,7 @@ void Button2_Task(void) {
 	printf("Button 2 pressed\r\n");
 	static uint8_t battery = 50;
 
-	BAS_App_Set_Level(battery++);
+	basService.SetLevel(battery++);
 }
 
 bool sleep = false;

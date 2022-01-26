@@ -64,7 +64,6 @@ void InitHardware()
 	NVIC_EnableIRQ(HSEM_IRQn);
 
 	InitIPCC();										// Enable IPCC clock and reset all channels
-
 	InitRTC();										// Initialise RTC
 
 	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
@@ -72,11 +71,6 @@ void InitHardware()
 	LL_EXTI_DisableIT_0_31(~0);
 	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
 
-	RCC->CFGR |= RCC_CFGR_STOPWUCK;					// 1: HSI16 oscillator selected as wakeup from stop clock and CSS backup clock
-
-	// These bits select the low-power mode entered when CPU2 enters the deepsleep mode. The
-	// system low-power mode entered depend also on the PWR_CR1.LPMS allowed low-power mode from CPU1.
-	PWR->C2CR1 |= 3 & PWR_C2CR1_LPMS_Msk;			// 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
 
 	InitGPIO();
 	InitI2C();
@@ -123,12 +117,16 @@ static void InitGPIO()
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
 	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 */
+	// Enable EXTI WKUP4 on PA2 to wake up from shutdown
+	//EXTI->EMR1 |= EXTI_EMR1_EM4;
+	PWR->CR4 &= ~PWR_CR4_WP4;		// Wake-Up pin polarity (0=rising 1 = falling edge)
+	PWR->CR3 |= PWR_CR3_EWUP4;		// Enable WKUP4 on PA2
 }
 
 
 void InitPWMTimer()
 {
-	// TIM2: Channel 1 Output: *PA0, PA5, (PA15); Channel 2: *PA1, PB3; Channel 3: PA2, PB10; Channel 4: PA3, PB11
+	// TIM2: Channel 1 Output: *PA0, PA5, (PA15); Channel 2: *PA1, PB3; Channel 3: [PA2 used for WKUP4], PB10; Channel 4: PA3, PB11
 
 	// Enable channel 1, 2 PWM output pins on PA0, PA1
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;

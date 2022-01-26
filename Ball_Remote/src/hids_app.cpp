@@ -1,23 +1,13 @@
-#include "common_blesvc.h"
-#include "stm32_seq.h"
+#include "ble.h"
 #include "hids_app.h"
 #include "compassHandler.h"
 
 HidService hidService;
 
-// called from external C prog svc_ctl.c
-void HIDS_Init()
-{
-	hidService.Init();
-}
-
 void HidService::Init()
 {
 	uint16_t uuid;
 	tBleStatus hciCmdResult = BLE_STATUS_SUCCESS;
-
-	// Register the event handler to the BLE controller
-	//SVCCTL_RegisterSvcHandler(HIDS_Event_Handler);
 
 	uuid = HUMAN_INTERFACE_DEVICE_SERVICE_UUID;
 	hciCmdResult = aci_gatt_add_service(UUID_TYPE_16,
@@ -101,6 +91,8 @@ void HidService::Init()
 	if (hciCmdResult != BLE_STATUS_SUCCESS) {
 		APP_DBG_MSG("-- HIDS APPLICATION : Error registering characteristics: 0x%X\n", hciCmdResult);
 	}
+
+	AppInit();
 }
 
 
@@ -111,7 +103,7 @@ void HidService::AppInit()
 	UpdateReportMapChar();
 	UpdateHidInformationChar();
 
-	// Initialise the mouse movement report
+	// Initialise the joystick report
 	joystickReport.x = 0;
 	joystickReport.y = 0;
 	joystickReport.z = 0;
@@ -163,68 +155,66 @@ void HidService::Disconnect() {
 	JoystickNotifications = false;
 }
 
-SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
+bool HidService::EventHandler(hci_event_pckt* event_pckt)
 {
 	aci_gatt_attribute_modified_event_rp0* attribute_modified;
 	aci_gatt_write_permit_req_event_rp0*   write_perm_req;
 	aci_gatt_read_permit_req_event_rp0*    read_req;
 
-	SVCCTL_EvtAckStatus_t return_value = SVCCTL_EvtNotAck;
-	hci_event_pckt* event_pckt = (hci_event_pckt *)(((hci_uart_pckt*)Event)->data);
+	bool handled = false;
 
-	if (event_pckt->evt ==  HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
-		evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
+	evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
 
-		switch (blecore_evt->ecode) {
+	switch (blecore_evt->ecode) {
 
-		case ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE:
-			attribute_modified = (aci_gatt_attribute_modified_event_rp0*)blecore_evt->data;
+	case ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE:
+		attribute_modified = (aci_gatt_attribute_modified_event_rp0*)blecore_evt->data;
 
-			if (attribute_modified->Attr_Handle == (hidService.ReportJoystickHandle + DescriptorOffset)) {
-				return_value = SVCCTL_EvtAckFlowEnable;
+		if (attribute_modified->Attr_Handle == (hidService.ReportJoystickHandle + DescriptorOffset)) {
+			handled = true;
 
-				if (attribute_modified->Attr_Data[0] == 1) {
-					hidService.JoystickNotifications = true;
-					compass.StartRead();
-				} else {
-					hidService.JoystickNotifications = false;
-				}
+			if (attribute_modified->Attr_Data[0] == 1) {
+				hidService.JoystickNotifications = true;
+				compass.StartRead();
+			} else {
+				hidService.JoystickNotifications = false;
 			}
+		}
 
-			if (attribute_modified->Attr_Handle == (hidService.HidControlPointHdle + ValueOffset)) {
-				return_value = SVCCTL_EvtAckFlowEnable;
-				uint16_t write_data = (attribute_modified->Attr_Data[1] << 8) | attribute_modified->Attr_Data[0];
-				hidService.ControlPointWrite(write_data);
-			}
+		if (attribute_modified->Attr_Handle == (hidService.HidControlPointHdle + ValueOffset)) {
+			handled = true;
+			uint16_t write_data = (attribute_modified->Attr_Data[1] << 8) | attribute_modified->Attr_Data[0];
+			hidService.ControlPointWrite(write_data);
+		}
 
-			break;
+		break;
 
-		case ACI_GATT_READ_PERMIT_REQ_VSEVT_CODE:
-			read_req = (aci_gatt_read_permit_req_event_rp0*)blecore_evt->data;
+	case ACI_GATT_READ_PERMIT_REQ_VSEVT_CODE:
+		read_req = (aci_gatt_read_permit_req_event_rp0*)blecore_evt->data;
 
-			if (read_req->Attribute_Handle == (hidService.ReportMapHandle + ValueOffset)) {
-				return_value = SVCCTL_EvtAckFlowEnable;
-				aci_gatt_allow_read(read_req->Connection_Handle);
-			}
-			if (read_req->Attribute_Handle == (hidService.ReportJoystickHandle + ValueOffset)) {
-				return_value = SVCCTL_EvtAckFlowEnable;
-				aci_gatt_allow_read(read_req->Connection_Handle);
-			}
-			if (read_req->Attribute_Handle == (hidService.HidInformationHandle + ValueOffset)) {
-				return_value = SVCCTL_EvtAckFlowEnable;
-				aci_gatt_allow_read(read_req->Connection_Handle);
-			}
-			break;
+		if (read_req->Attribute_Handle == (hidService.ReportMapHandle + ValueOffset)) {
+			handled = true;
+			aci_gatt_allow_read(read_req->Connection_Handle);
+		}
+		if (read_req->Attribute_Handle == (hidService.ReportJoystickHandle + ValueOffset)) {
+			handled = true;
+			aci_gatt_allow_read(read_req->Connection_Handle);
+		}
+		if (read_req->Attribute_Handle == (hidService.HidInformationHandle + ValueOffset)) {
+			handled = true;
+			aci_gatt_allow_read(read_req->Connection_Handle);
+		}
+		break;
 
-		case ACI_ATT_EXEC_WRITE_RESP_VSEVT_CODE:
-			write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
-			break;
+	case ACI_ATT_EXEC_WRITE_RESP_VSEVT_CODE:
+		write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
+		break;
 
-		case ACI_GATT_WRITE_PERMIT_REQ_VSEVT_CODE:
-			write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
-			if (write_perm_req->Attribute_Handle == (hidService.HidControlPointHdle + ValueOffset)) {
-				return_value = SVCCTL_EvtAckFlowEnable;
-				/* Allow or reject a write request from a client using aci_gatt_write_resp(...) function */
+	case ACI_GATT_WRITE_PERMIT_REQ_VSEVT_CODE:
+		write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
+		if (write_perm_req->Attribute_Handle == (hidService.HidControlPointHdle + ValueOffset)) {
+			handled = true;
+			/* Allow or reject a write request from a client using aci_gatt_write_resp(...) function */
 //				tBleStatus aci_gatt_write_resp( uint16_t Connection_Handle,
 //				                                uint16_t Attr_Handle,
 //				                                uint8_t Write_status,
@@ -232,16 +222,15 @@ SVCCTL_EvtAckStatus_t HidService::HIDS_Event_Handler(void *Event)
 //				                                uint8_t Attribute_Val_Length,
 //				                                const uint8_t* Attribute_Val )
 //				aci_gatt_write_resp(read_req->Connection_Handle);
-			}
-			break;
-
-		default:
-			break;
 		}
+		break;
 
+	default:
+		break;
 	}
 
-	return return_value;
+
+	return handled;
 }
 
 

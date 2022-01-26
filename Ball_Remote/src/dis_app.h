@@ -1,6 +1,6 @@
 #pragma once
 
-struct DevInfoService {
+struct DisService {
 public:
 	void Init();
 	void AppInit();
@@ -11,7 +11,4 @@ private:
 	uint16_t ManufacturerNameStringCharHdle; // Characteristic handle
 };
 
-extern "C" {		// Declare with C linkage or will be overridden by weak declaration in svc_ctl.c
-void DIS_Init();
-}
-extern DevInfoService devInfoService;
+extern DisService disService;

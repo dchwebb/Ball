@@ -3,11 +3,8 @@
 #include "app_ble.h"
 #include "stm32_seq.h"
 #include "shci_tl.h"
-#include "stm32_lpm.h"
-#include "app_debug.h"
-#include "otp.h"
+//#include "app_debug.h"
 #include "uartHandler.h"
-#include "utilities_conf.h"
 
 RTC_HandleTypeDef hrtc;
 
@@ -28,7 +25,6 @@ void APPE_Init()
 	hrtc.Instance = RTC;
 	hrtc.State = HAL_RTC_STATE_READY;
 
-	// Note bugs in this routine appear to result in many values not written to RTC registers - not init properly?
 	HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 	// Initialize the TimerServer
 
 	// Initialize transport layers
@@ -49,7 +45,7 @@ void APPE_Init()
 	tl_mm_config.AsynchEvtPoolSize = POOL_SIZE;
 	TL_MM_Init(&tl_mm_config);
 
-	TL_Enable();
+	HW_IPCC_Enable();
 
 	// From now, the application is waiting for the ready event (VS_HCI_C2_Ready) received on the system channel before starting the Stack
 	// This system event is received with APPE_SysUserEvtRx()
@@ -84,8 +80,7 @@ static void APPE_SysStatusNotify(SHCI_TL_CmdStatus_t status)
  */
 static void APPE_SysUserEvtRx(void* pPayload)
 {
-	// Traces channel initialization
-	APPD_EnableCPU2();
+	//APPD_EnableCPU2();			// Traces channel initialization
 	bleApp.Init();
 }
 
@@ -119,13 +114,13 @@ void shci_notify_asynch_evt(void* pdata)
 }
 
 
-void shci_cmd_resp_release(uint32_t flag)
-{
-	UTIL_SEQ_SetEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
-}
-
-
-void shci_cmd_resp_wait(uint32_t timeout)
-{
-	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
-}
+//void shci_cmd_resp_release(uint32_t flag)
+//{
+//	UTIL_SEQ_SetEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
+//}
+//
+//
+//void shci_cmd_resp_wait(uint32_t timeout)
+//{
+//	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
+//}

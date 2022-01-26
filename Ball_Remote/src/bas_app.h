@@ -1,13 +1,20 @@
 #pragma once
 
-#include "svc_ctl.h"
+struct BasService {
+public:
+	void Init();
+	bool EventHandler(hci_event_pckt* Event);
+	void SetLevel(uint8_t level);
+private:
+	uint16_t ServiceHandle;					// Service handle
+	uint16_t BatteryLevelHandle;			// Characteristic handle
+	uint16_t Level;							// Battery level
+	bool     BatteryNotifications;			// Notifications enabled
 
-extern "C" {		// Declare with C linkage or will be overridden by weak declaration in svc_ctl.c
-void BAS_Init();
-}
+	void AppInit();
+	tBleStatus UpdateChar();
+	static void SendNotification();
+};
 
-tBleStatus BAS_Update_Char();
-void BAS_App_Init();
-void BAS_App_Set_Level(uint8_t level);
-void BAS_App_Send_Notification();
-SVCCTL_EvtAckStatus_t BAS_Event_Handler(void *Event);
+extern BasService basService;
+

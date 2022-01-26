@@ -124,6 +124,7 @@ bool uartCommand()
 				"i2creg:HH       -  Read I2C register at 0xHH\r\n"
 				"fwversion       -  Read firmware version\r\n"
 				"sleep           -  Enter sleep mode\r\n"
+				"shutdown        -  Enter shutdown mode\r\n"
 				"canceladv       -  Cancel advertising\r\n"
 				"startadv        -  Start advertising\r\n"
 				"disconnect      -  Disconnects clients\r\n"
@@ -156,7 +157,13 @@ bool uartCommand()
 	} else if (comCmd.compare("sleep\n") == 0) {				// Enter sleep mode
 		uartSendString("Going to sleep\n");
 		extern bool sleep;
-		sleep = true;
+		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
+
+	} else if (comCmd.compare("shutdown\n") == 0) {				// Enter sleep mode
+		uartSendString("Shutting down\n");
+		bleApp.lowPowerMode = BleApp::LowPowerMode::Shutdown;
+		extern bool sleep;
+		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
 
 	} else if (comCmd.compare("canceladv\n") == 0) {			// Cancel advertising
 		UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
