@@ -386,7 +386,6 @@ void BleApp::EnterSleepMode() {
 	// See p153 for LP modes entry and wake up
 	RCC->CFGR |= RCC_CFGR_STOPWUCK;										// HSI16 selected as wakeup from stop clock and CSS backup clock
 	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;									// SLEEPDEEP must be set for STOP, STANDBY or SHUTDOWN modes
-	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
 
 	if (bleApp.lowPowerMode == LowPowerMode::Stop) {
 		MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP1);			// CPU1: 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
@@ -400,6 +399,8 @@ void BleApp::EnterSleepMode() {
 			__attribute__((unused)) volatile int y = 1;
 		}
 	}
+
+	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
 	__set_PRIMASK(primask_bit);											// Re-enable interrupts for exiting sleep mode
 	__WFI();															// Activates sleep (wait for interrupts)
 

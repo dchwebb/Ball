@@ -1,5 +1,6 @@
 #include "uartHandler.h"
 #include "compassHandler.h"
+#include "gyroHandler.h"
 #include "app_ble.h"
 extern "C" {
 #include "shci.h"
@@ -121,7 +122,9 @@ bool uartCommand()
 		uartSendString("Mountjoy Ball Remote\r\n"
 				"\r\nSupported commands:\r\n"
 				"disconnect      -  Disconnect to HID BLE device\r\n"
-				"i2creg:HH       -  Read I2C register at 0xHH\r\n"
+				"readi2c:HH      -  Read I2C register at 0xHH\r\n"
+				"writei2c:RR,VV  -  Write value 0xVV to I2C register 0xRR\r\n"
+				"i2cscan         -  Scan for valid I2C addresses\r\n"
 				"fwversion       -  Read firmware version\r\n"
 				"sleep           -  Enter sleep mode\r\n"
 				"shutdown        -  Enter shutdown mode\r\n"
@@ -134,17 +137,37 @@ bool uartCommand()
 
 
 
-	} else if (comCmd.compare(0, 7, "i2creg:") == 0) {				// Read i2c register
+	} else if (comCmd.compare(0, 8, "readi2c:") == 0) {				// Read i2c register
 		uint8_t regNo;
-		auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo);
+		auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo, 16);
 
 		if (res.ec == std::errc()) {
-			uint8_t readData = compass.ReadData(regNo);
+			uint8_t readData = gyro.ReadData(regNo);
 			uartSendString("I2C Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
 		} else {
 			uartSendString("Invalid register\r\n");
 		}
 
+	} else if (comCmd.compare(0, 9, "writei2c:") == 0) {			// write i2c register
+		uint8_t regNo, value;
+		auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo, 16);
+
+		if (res.ec == std::errc()) {			// no error
+			auto res = std::from_chars(comCmd.data() + comCmd.find(",") + 1, comCmd.data() + comCmd.size(), value, 16);
+			if (res.ec == std::errc()) {			// no error
+				gyro.WriteCmd(regNo, value);
+				uartSendString("I2C write: Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(value) + "\r\n");
+			} else {
+				uartSendString("Invalid value\r\n");
+			}
+		} else {
+			uartSendString("Invalid register\r\n");
+		}
+
+	} else if (comCmd.compare("i2cscan\n") == 0) {				// Scan i2c addresses
+		uartSendString("Starting scan ...\n");
+		int result = gyro.ScanAddresses();
+		printf("Finished scan. Found %d\n", result);
 
 	} else if (comCmd.compare("fwversion\n") == 0) {			// Version of BLE firmware
 		WirelessFwInfo_t fwInfo;
