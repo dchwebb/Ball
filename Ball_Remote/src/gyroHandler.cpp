@@ -16,10 +16,8 @@ volatile int8_t gyroBuffer[I2CCOUNT];
 void Gyro::Setup()
 {
 	MODIFY_REG(I2C1->CR2, I2C_CR2_SADD_Msk, Gyro::i2cAddress);
-	/*
-	WriteCmd(0x01, 0x20);							// CRB_REG_M register to set guass scale: Set Sensor input	field range to +-1.3 guass
-	WriteCmd(0x02, 0x00);							// MR_REG_M register: 0* Continuous-conversion mode; 1 Single-conversion mode; 2 Sleep mode
-	WriteAddr(0x83);								// MSB = 1 to indicate multiple reads; 0x03 = First magnet read address: OUT_X_H_M
+	WriteCmd(0x20, 0x6F);							// CTRL_REG1: DR = 01 (200 Hz ODR); BW = 10 (50 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+	WriteAddr(0xA8);								// MSB = 1 to indicate multiple reads; 0x28 = First read address: OUT_X_L (p.23)
 
 	// Configure for repeated reads
 	I2C1->CR2 |= I2C_CR2_STOP;						// Clear interrupts - will be reset when next START is issued
@@ -33,37 +31,14 @@ void Gyro::Setup()
 	DMA1_Channel1->CCR |= DMA_CCR_CIRC;				// Avoids having to continually alter the data count
 	DMA1_Channel1->CNDTR = I2CCOUNT;				// DMA Read count in bytes
 	DMA1_Channel1->CCR |= DMA_CCR_EN;				// Enable peripheral
-	*/
+
 }
 
 
-// Scan for legitimate I2C addresses
-uint32_t Gyro::ScanAddresses()
-{
-	uint32_t found = 0;
-
-	I2C1->CR2 &= ~I2C_CR2_RD_WRN;					// 0*: Write transfer; 1: Read transfer
-	MODIFY_REG(I2C1->CR2, I2C_CR2_NBYTES_Msk, 1 << I2C_CR2_NBYTES_Pos);		// Send 1 byte
-
-	for (uint8_t addr = 0x00; addr < 0xFF; ++addr) {
-		I2C1->CR1 &= ~I2C_CR1_PE;					// Disable peripheral - otherwise interrupts do not clear correctly
-		MODIFY_REG(I2C1->CR2, I2C_CR2_SADD_Msk, addr);
-		I2C1->CR1 |= I2C_CR1_PE;					// Enable peripheral
-		I2C1->CR2 |= I2C_CR2_START;					// Will continue sending address until ACK
-
-		uint32_t start = uwTick;
-		while ((I2C1->ISR & I2C_ISR_TXIS) == 0 && (uwTick < start + 50));		// Wait until ready
-		if ((I2C1->ISR & I2C_ISR_TXIS) == I2C_ISR_TXIS) {
-			printf("Found: 0x%X\n", addr);
-			found++;
-		}
-	}
-
-	I2C1->CR1 &= ~I2C_CR1_PE;						// Disable peripheral - otherwise interrupts do not clear correctly
-	MODIFY_REG(I2C1->CR2, I2C_CR2_SADD_Msk, Gyro::i2cAddress);
-	I2C1->CR1 |= I2C_CR1_PE;						// Enable peripheral
-
-	return found;
+void Gyro::MultipleRead() {
+	// Triggers a read of gyro x, y and z registers
+	multipleRead = true;
+	StartRead();
 }
 
 
@@ -75,14 +50,24 @@ void Gyro::StartRead()
 
 void Gyro::ProcessResults()
 {
-	hidService.JoystickNotification(
-			(gyroBuffer[0] << 8) | gyroBuffer[1],
-			(gyroBuffer[4] << 8) | gyroBuffer[5],
-			(gyroBuffer[2] << 8) | gyroBuffer[3]
-			);
+	if (multipleRead) {
+		multipleRead = false;
+		printf("x: %d, y:%d, z: %d\n",
+				(gyroBuffer[1] << 8) | gyroBuffer[0],
+				(gyroBuffer[3] << 8) | gyroBuffer[2],
+				(gyroBuffer[5] << 8) | gyroBuffer[4]);
+		//Setup();		// Reconfigure DMA
 
-	if (hidService.JoystickNotifications) {
-		StartRead();
+	} else {
+		hidService.JoystickNotification(
+				(gyroBuffer[1] << 8) | gyroBuffer[0],
+				(gyroBuffer[3] << 8) | gyroBuffer[2],
+				(gyroBuffer[5] << 8) | gyroBuffer[4]
+				);
+
+		if (hidService.JoystickNotifications) {
+			StartRead();
+		}
 	}
 }
 
@@ -90,6 +75,8 @@ void Gyro::ProcessResults()
 // Sets the register address
 void Gyro::WriteAddr(uint8_t reg)
 {
+	I2C1->CR1 &= ~I2C_CR1_RXDMAEN;					// Disable DMA transmission
+
 	I2C1->CR2 &= ~I2C_CR2_RD_WRN;					// 0*: Write transfer; 1: Read transfer
 	MODIFY_REG(I2C1->CR2, I2C_CR2_NBYTES_Msk, 1 << I2C_CR2_NBYTES_Pos);		// Send 1 byte
 	I2C1->CR2 |= I2C_CR2_START;						// Will continue sending address until ACK
@@ -134,5 +121,34 @@ uint8_t Gyro::ReadData(uint8_t reg)
 	Setup();										// Reset default values
 
 	return ret;
+}
 
+
+uint32_t Gyro::ScanAddresses()
+{
+	// Scan for legitimate I2C addresses
+	uint32_t found = 0;
+
+	I2C1->CR2 &= ~I2C_CR2_RD_WRN;					// 0*: Write transfer; 1: Read transfer
+	MODIFY_REG(I2C1->CR2, I2C_CR2_NBYTES_Msk, 1 << I2C_CR2_NBYTES_Pos);		// Send 1 byte
+
+	for (uint8_t addr = 0x00; addr < 0xFF; ++addr) {
+		I2C1->CR1 &= ~I2C_CR1_PE;					// Disable peripheral - otherwise interrupts do not clear correctly
+		MODIFY_REG(I2C1->CR2, I2C_CR2_SADD_Msk, addr);
+		I2C1->CR1 |= I2C_CR1_PE;					// Enable peripheral
+		I2C1->CR2 |= I2C_CR2_START;					// Will continue sending address until ACK
+
+		uint32_t start = uwTick;
+		while ((I2C1->ISR & I2C_ISR_TXIS) == 0 && (uwTick < start + 50));		// Wait until ready
+		if ((I2C1->ISR & I2C_ISR_TXIS) == I2C_ISR_TXIS) {
+			printf("Found: 0x%X\n", addr);
+			found++;
+		}
+	}
+
+	I2C1->CR1 &= ~I2C_CR1_PE;						// Disable peripheral - otherwise interrupts do not clear correctly
+	MODIFY_REG(I2C1->CR2, I2C_CR2_SADD_Msk, Gyro::i2cAddress);
+	I2C1->CR1 |= I2C_CR1_PE;						// Enable peripheral
+
+	return found;
 }

@@ -11,8 +11,10 @@ public:
 	uint32_t ScanAddresses();
 	uint8_t ReadData(uint8_t reg);
 	void WriteCmd(uint8_t reg, uint8_t val);
-private:
+	void MultipleRead();
 	void StartRead();
+private:
+	bool multipleRead {false};
 	void WriteAddr(uint8_t reg);
 };
 

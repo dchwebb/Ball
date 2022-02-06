@@ -22,6 +22,59 @@ void HidApp::Init(void)
 }
 
 
+void HidApp::Calibrate()
+{
+	position3D.x = 2047;
+	position3D.y = 2047;
+	position3D.z = 2047;
+
+	calibrateCounter = calibrateCount;
+}
+
+
+void HidApp::HidNotification(uint8_t* payload, uint8_t len)
+{
+	volatile int16_t* hidPayload = (int16_t*)payload;
+
+	static uint32_t lastPrint = 0;
+	if (outputGyro && (uwTick - lastPrint > 400)) {
+		APP_DBG_MSG("x: %d y: %d z: %d\r\n", hidPayload[0], hidPayload[1], hidPayload[2]);
+		lastPrint = uwTick;
+	}
+
+	if (calibrateCounter > 0) {
+		--calibrateCounter;
+		calibX += hidPayload[0];
+		calibY += hidPayload[1];
+		calibZ += hidPayload[2];
+
+		if (calibrateCounter == 0) {
+			offsetX = static_cast<float>(calibX) / calibrateCount;
+			offsetY = static_cast<float>(calibY) / calibrateCount;
+			offsetZ = static_cast<float>(calibZ) / calibrateCount;
+			APP_DBG_MSG("New Offsets x: %3.3f y: %3.3f z: %d\r\n", offsetX, offsetY, static_cast<int16_t>(offsetZ));
+		}
+	} else {
+		// Raw data from remote is signed 16 bit integer
+		float newX = std::clamp(((static_cast<float>(hidPayload[0]) - offsetX) / divider) + static_cast<float>(position3D.x), 0.0f, 4095.0f);
+		float newY = std::clamp(((static_cast<float>(hidPayload[1]) - offsetY) / divider) + static_cast<float>(position3D.y), 0.0f, 4095.0f);
+		float newZ = std::clamp(((static_cast<float>(hidPayload[2]) - offsetZ) / divider) + static_cast<float>(position3D.z), 0.0f, 4095.0f);
+
+		position3D.x = static_cast<int16_t>(newX);
+		position3D.y = static_cast<int16_t>(newY);
+		position3D.z = static_cast<int16_t>(newZ);
+	}
+
+	TIM2->CCR1 = position3D.x;
+	TIM2->CCR2 = position3D.y;
+	TIM2->CCR3 = position3D.z;
+
+	// Debug timing
+	if (GPIOB->ODR & GPIO_ODR_OD8)			GPIOB->ODR &= ~GPIO_ODR_OD8;
+	else                                    GPIOB->ODR |=  GPIO_ODR_OD8;
+}
+
+
 void HidApp::HIDConnectionNotification()
 {
 	switch (bleApp.deviceConnectionStatus) {
@@ -248,34 +301,7 @@ void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
 }
 
 
-void HidApp::HidNotification(uint8_t* payload, uint8_t len)
-{
-	volatile int16_t* hidPayload = (int16_t*)payload;
-	position3D.x = hidPayload[0];
-	position3D.y = hidPayload[1];
-	position3D.z = hidPayload[2];
 
-	static uint32_t lastPrint = 0;
-	if (uwTick - lastPrint > 400) {
-		APP_DBG_MSG("x: %d y: %d z: %d\r\n", position3D.x, position3D.y, position3D.z);
-		lastPrint = uwTick;
-	}
-
-	// Output to PWM - values vary from ~400 - 600
-	//int16_t pwmX2 = std::clamp(position3D.x - 410, 0, 205) * 20;
-	int16_t pwmX = position3D.x;
-	int16_t pwmY = position3D.y;
-	int16_t pwmZ = position3D.z;
-
-	TIM2->CCR1 = pwmX;
-	TIM2->CCR2 = pwmY;
-	TIM2->CCR3 = pwmZ;
-
-	if (GPIOB->ODR & GPIO_ODR_OD8)			GPIOB->ODR &= ~GPIO_ODR_OD8;
-	else                                    GPIOB->ODR |=  GPIO_ODR_OD8;
-
-	//APP_DBG_MSG(" -- P2P APPLICATION CLIENT: HID x: %d; y: %d; z: %d\n", pwmX, payload[1], payload[2]);
-}
 
 
 void HidApp::BatteryNotification(uint8_t* payload, uint8_t len)

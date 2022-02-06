@@ -305,3 +305,5 @@ public:
 	void OutputDebug();
 #endif
 };
+
+extern USBHandler usb;

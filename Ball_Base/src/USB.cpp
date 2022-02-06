@@ -2,6 +2,15 @@
 #include "stm32wbxx_ll_hsem.h"
 
 bool USBDebug = true;		// Used if outputting debug over USB
+USBHandler usb;
+
+extern "C" {
+// To enable USB for printf commands (To print floats enable 'Use float with printf from newlib-nano' MCU Build Settings)
+size_t _write(int handle, const unsigned char* buf, size_t bufSize)
+{
+	return usb.SendString(buf, bufSize);
+}
+}
 
 inline void ClearRxInterrupt(uint8_t ep)
 {

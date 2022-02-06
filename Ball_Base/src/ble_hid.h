@@ -13,13 +13,20 @@ public:
 	HidAction action;
 
 	struct Position3D {
-		int16_t x;
-		int16_t y;
-		int16_t z;
+		int16_t x{2047};
+		int16_t y{2047};
+		int16_t z{2047};
 	} position3D;
+
+	float divider = 200.0f;						// Divider for raw gyroscope data (increase for more sensitivity)
+	float offsetX{-130.0f};						// Offsets for raw incoming hid data
+	float offsetY{-100.0f};
+	float offsetZ{-80.0f};
+	bool outputGyro{false};						// Set to true to output raw gyro and received
 
 	void Init(void);
 	void HIDConnectionNotification();
+	void Calibrate();
 
 private:
 	uint16_t connHandle;						// connection handle
@@ -34,6 +41,10 @@ private:
 	uint16_t BatteryNotificationDescHandle;		// handle of the client configuration descriptor of Rx characteristic
 	uint16_t HIDReportMapHdle;					// handle of report map
 
+	uint32_t calibrateCounter{0};				// When calibrating offsets keeps count of readings averaged
+	static constexpr uint32_t calibrateCount{1000};				// Total number of readings to use when calibrating
+	int32_t calibX, calibY, calibZ;
+
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void HIDServiceDiscovery();
 	void HidNotification(uint8_t* payload, uint8_t len);
@@ -43,5 +54,5 @@ private:
 
 void HID_APP_SW1_Button_Action();
 
-
+extern HidApp hidApp;
 

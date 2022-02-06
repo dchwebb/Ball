@@ -19,7 +19,7 @@ private:
 	serialState state = serialState::pending;
 
 	bool CmdPending = false;
-	std::string ComCmd;
+	std::string comCmd;
 	USBHandler* usb;
 };
 

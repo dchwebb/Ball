@@ -1,6 +1,8 @@
 #include "ble.h"
 #include "hids_app.h"
-#include "compassHandler.h"
+//#include "compassHandler.h"
+#include "gyroHandler.h"
+
 
 HidService hidService;
 
@@ -175,7 +177,7 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 
 			if (attribute_modified->Attr_Data[0] == 1) {
 				hidService.JoystickNotifications = true;
-				compass.StartRead();
+				gyro.StartRead();
 			} else {
 				hidService.JoystickNotifications = false;
 			}

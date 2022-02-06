@@ -6,20 +6,10 @@
 #include "SerialHandler.h"
 #include "app_ble.h"
 RTC_HandleTypeDef hrtc;
-USBHandler usb;
 SerialHandler serial(usb);
 BleApp bleApp;
 
 extern uint32_t SystemCoreClock;
-
-extern "C" {
-// To enable USB for printf commands
-size_t _write(int handle, const unsigned char* buf, size_t bufSize)
-{
-	return usb.SendString(buf, bufSize);
-	//return usb.SendData(buf, bufSize, USBHandler::CDC_In);
-}
-}
 
 int main(void)
 {

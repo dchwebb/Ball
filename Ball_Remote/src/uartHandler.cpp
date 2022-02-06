@@ -137,6 +137,9 @@ bool uartCommand()
 
 
 
+	} else if (comCmd.compare("readgyro\n") == 0) {					// Trigger a repeated read
+		gyro.MultipleRead();
+
 	} else if (comCmd.compare(0, 8, "readi2c:") == 0) {				// Read i2c register
 		uint8_t regNo;
 		auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo, 16);

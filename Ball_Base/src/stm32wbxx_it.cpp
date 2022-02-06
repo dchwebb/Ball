@@ -10,8 +10,6 @@ void SysTick_Handler() {
 	HAL_IncTick();
 }
 
-extern USBHandler usb;
-
 void USB_LP_IRQHandler() {
 	usb.USBInterruptHandler();
 }
