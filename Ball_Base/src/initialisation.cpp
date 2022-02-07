@@ -32,17 +32,32 @@ void SystemClock_Config()
 	RCC->BDCR |= RCC_BDCR_LSEON;					// Turn on low speed external oscillator
 	while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0);		// Wait till LSE is ready
 
-	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 1);	// Increase Flash latency as using clock greater than 18MHz (see manual p.77)
-	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 1);
+	// Activate PLL: HSE = 16MHz / 4(M) * 32(N) / 4(R)
+	RCC->PLLCFGR |= LL_RCC_PLLSOURCE_HSE;			// Set PLL source to HSE
+	RCC->PLLCFGR |= LL_RCC_PLLM_DIV_4;				// Set PLL M divider to 4
+	MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLLN, 32 << RCC_PLLCFGR_PLLN_Pos);		// Set PLL N multiplier to 32
+	RCC->PLLCFGR |= LL_RCC_PLLR_DIV_4;				// Set PLL R divider to 4
+	RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN;				// Enable PLL R Clock
 
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);		// 10: HSE selected as system clock
-	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until HSE is selected
+	RCC->CR |= RCC_CR_PLLON;						// Turn on PLL
+	while ((RCC->CR & RCC_CR_PLLRDY) == 0);			// Wait till PLL is ready
 
-	SysTick->LOAD  = 32000 - 1;						// set reload register
-	SysTick->VAL = 0;								// Load the SysTick Counter Value
+	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 3);	// Increase Flash latency to 3 Wait States (see manual p.77)
+	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 3);
+
+//	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);		// 10: HSE selected as system clock
+//	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until HSE is selected
+
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_PLL);		// 11: PLL selected as system clock
+	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until PLL is selected
+
+	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
+
+//	SysTick->LOAD = 32000 - 1;						// Set reload register
+//	SysTick->VAL = 0;								// Load the SysTick Counter Value
 
 	// Peripheral clocks already set to default: RTC, USART, LPUSART
-	RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				//  RF system wakeup clock source selection: 01: LSE oscillator clock
+	RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				// RF system wakeup clock source selection: 01: LSE oscillator clock
 	RCC->SMPSCR |= RCC_SMPSCR_SMPSDIV_0;			// SMPS prescaler - FIXME not planning to use (see p214)
 	RCC->SMPSCR &= ~RCC_SMPSCR_SMPSSEL_Msk;			// 00: HSI16 selected as SMPS step-down converter clock
 
@@ -157,9 +172,9 @@ void InitPWMTimer()
 	GPIOA->MODER &= ~(GPIO_MODER_MODE0_0 | GPIO_MODER_MODE1_0 | GPIO_MODER_MODE2_0);			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 	GPIOA->AFR[0] |= (GPIO_AFRL_AFSEL0_0 | GPIO_AFRL_AFSEL1_0 | GPIO_AFRL_AFSEL2_0);			// Timer 2 Output channel is AF1
 
-	// Timing calculations: Clock = 32MHz / (PSC + 1) = 4m counts per second
+	// Timing calculations: Clock = 64MHz / (PSC + 1) = 32m counts per second
 	// ARR = number of counts per PWM tick = 4096
-	// 4m / ARR = 976.6Hz of PWM square wave with 4096 levels of output
+	// 32m / ARR = 7.812kHz of PWM square wave with 4096 levels of output
 	TIM2->CCMR1 |= (TIM_CCMR1_OC1PE | TIM_CCMR1_OC2PE);					// Output compare 1 and 2 preload enable
 	TIM2->CCMR1 |= (TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2);				// 0110: PWM mode 1 - In upcounting, channel 1 is active as long as TIMx_CNT<TIMx_CCR1
 	TIM2->CCMR2 |= TIM_CCMR2_OC3PE;										// Output compare 3 preload enable
@@ -170,7 +185,7 @@ void InitPWMTimer()
 
 	TIM2->CCR1 = 0x800;								// PWM level set in ble_hid.cpp
 	TIM2->ARR = 0xFFF;								// Total number of PWM ticks = 4096
-	TIM2->PSC = 1;									// Should give ~4kHz
+	TIM2->PSC = 1;									// Should give ~7.8kHz
 	TIM2->CR1 |= TIM_CR1_ARPE;						// 1: TIMx_ARR register is buffered
 	TIM2->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E);		// Capture mode enabled / OC1 signal is output on the corresponding output pin
 	TIM2->EGR |= TIM_EGR_UG;						// 1: Re-initialize the counter and generates an update of the registers
@@ -223,15 +238,6 @@ static void InitSysTick()
 {
 	SysTick_Config(SystemCoreClock / SYSTICK);		// gives 1ms
 	NVIC_SetPriority(SysTick_IRQn, 0);
-
-	// Currently systick increments uwTick at 1 kHz
-//	SysTick->LOAD  = 32000 - 1UL;					// set reload register
-//	SysTick->VAL = 0UL;								// Load the SysTick Counter Value
-//	NVIC_SetPriority(SysTick_IRQn, 0);
-//	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
-//			SysTick_CTRL_TICKINT_Msk  |
-//			SysTick_CTRL_ENABLE_Msk;    			// Enable SysTick IRQ and SysTick Timer
-
 }
 
 
