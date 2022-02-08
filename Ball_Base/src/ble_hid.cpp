@@ -113,7 +113,6 @@ void HID_APP_SW1_Button_Action(void)
 
 SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 {
-	//evt_blecore_aci* blecore_evt;
 	hci_event_pckt* event_pckt = (hci_event_pckt *)(((hci_uart_pckt*)Event)->data);
 
 	switch (event_pckt->evt)

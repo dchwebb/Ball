@@ -17,7 +17,11 @@ void USB_LP_IRQHandler() {
 #if USEDONGLE
 void EXTI15_10_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF10;
-	bleApp.DisconnectRequest();
+	if (bleApp.deviceConnectionStatus != BleApp::ConnectionStatus::ClientConnected)	{
+		bleApp.ScanAndConnect();
+	} else {
+		bleApp.DisconnectRequest();
+	}
 }
 #else
 void EXTI0_IRQHandler() {

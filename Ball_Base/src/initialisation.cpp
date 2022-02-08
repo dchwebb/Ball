@@ -32,7 +32,7 @@ void SystemClock_Config()
 	RCC->BDCR |= RCC_BDCR_LSEON;					// Turn on low speed external oscillator
 	while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0);		// Wait till LSE is ready
 
-	// Activate PLL: HSE = 16MHz / 4(M) * 32(N) / 4(R)
+	// Activate PLL: HSE = 32MHz / 4(M) * 32(N) / 4(R) = 64MHz
 	RCC->PLLCFGR |= LL_RCC_PLLSOURCE_HSE;			// Set PLL source to HSE
 	RCC->PLLCFGR |= LL_RCC_PLLM_DIV_4;				// Set PLL M divider to 4
 	MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLLN, 32 << RCC_PLLCFGR_PLLN_Pos);		// Set PLL N multiplier to 32
@@ -53,13 +53,10 @@ void SystemClock_Config()
 
 	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
 
-//	SysTick->LOAD = 32000 - 1;						// Set reload register
-//	SysTick->VAL = 0;								// Load the SysTick Counter Value
-
 	// Peripheral clocks already set to default: RTC, USART, LPUSART
 	RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				// RF system wakeup clock source selection: 01: LSE oscillator clock
-	RCC->SMPSCR |= RCC_SMPSCR_SMPSDIV_0;			// SMPS prescaler - FIXME not planning to use (see p214)
-	RCC->SMPSCR &= ~RCC_SMPSCR_SMPSSEL_Msk;			// 00: HSI16 selected as SMPS step-down converter clock
+//	RCC->SMPSCR |= RCC_SMPSCR_SMPSDIV_0;			// SMPS prescaler - FIXME not planning to use (see p214)
+//	RCC->SMPSCR &= ~RCC_SMPSCR_SMPSSEL_Msk;			// 00: HSI16 selected as SMPS step-down converter clock
 
 }
 
@@ -175,15 +172,18 @@ void InitPWMTimer()
 	// Timing calculations: Clock = 64MHz / (PSC + 1) = 32m counts per second
 	// ARR = number of counts per PWM tick = 4096
 	// 32m / ARR = 7.812kHz of PWM square wave with 4096 levels of output
-	TIM2->CCMR1 |= (TIM_CCMR1_OC1PE | TIM_CCMR1_OC2PE);					// Output compare 1 and 2 preload enable
-	TIM2->CCMR1 |= (TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2);				// 0110: PWM mode 1 - In upcounting, channel 1 is active as long as TIMx_CNT<TIMx_CCR1
-	TIM2->CCMR2 |= TIM_CCMR2_OC3PE;										// Output compare 3 preload enable
+	TIM2->CCMR1 |= TIM_CCMR1_OC1PE;					// Output compare 1 preload enable
+	TIM2->CCMR1 |= TIM_CCMR1_OC2PE;					// Output compare 2 preload enable
+	TIM2->CCMR2 |= TIM_CCMR2_OC3PE;					// Output compare 3 preload enable
 
-	TIM2->CCMR1 |= (TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_2);				// 0110: PWM mode 1 - In upcounting, channel 1 is active as long as TIMx_CNT<TIMx_CCR1
-	TIM2->CCMR2 |= (TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2);				// 0110: PWM mode 1 - In upcounting, channel 1 is active as long as TIMx_CNT<TIMx_CCR1
+	TIM2->CCMR1 |= (TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2);	// 0110: PWM mode 1 - In upcounting, channel 1 active if TIMx_CNT<TIMx_CCR1
+	TIM2->CCMR1 |= (TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_2);	// 0110: PWM mode 1 - In upcounting, channel 2 active if TIMx_CNT<TIMx_CCR2
+	TIM2->CCMR2 |= (TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2);	// 0110: PWM mode 1 - In upcounting, channel 3 active if TIMx_CNT<TIMx_CCR3
 
+	TIM2->CCR1 = 0x800;								// Initialise PWM level to midpoint (PWM level set in ble_hid.cpp)
+	TIM2->CCR2 = 0x800;
+	TIM2->CCR3 = 0x800;
 
-	TIM2->CCR1 = 0x800;								// PWM level set in ble_hid.cpp
 	TIM2->ARR = 0xFFF;								// Total number of PWM ticks = 4096
 	TIM2->PSC = 1;									// Should give ~7.8kHz
 	TIM2->CR1 |= TIM_CR1_ARPE;						// 1: TIMx_ARR register is buffered

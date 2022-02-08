@@ -10,6 +10,8 @@
 #include "usb.h"
 #include <bitset>
 
+BleApp bleApp;
+
 extern USBHandler usb;
 extern HidApp hidApp;
 

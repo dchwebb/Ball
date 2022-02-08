@@ -18,10 +18,10 @@ public:
 		int16_t z{2047};
 	} position3D;
 
-	float divider = 200.0f;						// Divider for raw gyroscope data (increase for more sensitivity)
-	float offsetX{-130.0f};						// Offsets for raw incoming hid data
+	float divider = 600.0f;						// Divider for raw gyroscope data (increase for more sensitivity)
+	float offsetX{-128.0f};						// Offsets for raw incoming hid data
 	float offsetY{-100.0f};
-	float offsetZ{-80.0f};
+	float offsetZ{-76.0f};
 	bool outputGyro{false};						// Set to true to output raw gyro and received
 
 	void Init(void);

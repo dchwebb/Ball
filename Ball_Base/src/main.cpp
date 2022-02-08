@@ -8,7 +8,6 @@
 
 RTC_HandleTypeDef hrtc;
 SerialHandler serial(usb);
-BleApp bleApp;
 
 extern uint32_t SystemCoreClock;
 

@@ -61,5 +61,4 @@ private:
 };
 
 
-
 extern BleApp bleApp;

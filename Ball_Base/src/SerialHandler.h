@@ -13,6 +13,7 @@ public:
 private:
 	int32_t ParseInt(const std::string cmd, const char precedingChar, int low, int high);
 	float ParseFloat(const std::string cmd, const char precedingChar, float low, float high);
+	char printBuffer[1000];
 
 	// State machine for multi-stage commands
 	enum class serialState {pending, dfuConfirm, calibConfirm, cancelAudioTest};

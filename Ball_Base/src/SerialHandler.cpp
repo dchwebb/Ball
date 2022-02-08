@@ -47,8 +47,6 @@ SerialHandler::SerialHandler(USBHandler& usbObj)
 // Check if a command has been received from USB, parse and action as required
 bool SerialHandler::Command()
 {
-	//char buf[50];
-
 	if (!CmdPending) {
 		return false;
 	}
@@ -67,12 +65,26 @@ bool SerialHandler::Command()
 
 	} else if (comCmd.compare("info\n") == 0) {		// Print diagnostic information
 
-		usb->SendString("Mountjoy Ball v1.0 - Current Settings:\r\n\r\n");
+		sprintf(printBuffer, "\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n"
+				"Offsets: %f, %f, %f\r\n"
+				"Sensitivity: %f\r\n"
+				"Current Position (0-4096): %d, %d, %d\r\n",
+				hidApp.offsetX, hidApp.offsetY, hidApp.offsetZ,
+				hidApp.divider,
+				hidApp.position3D.x, hidApp.position3D.y, hidApp.position3D.z);
+		usb->SendString(printBuffer);
+
+//		printf("\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n");
+//		printf("Offsets: %f, %f, %f\r\n", hidApp.offsetX, hidApp.offsetY, hidApp.offsetZ);
+//		printf("Sensitivity: %f\r\n", hidApp.divider);
+//		printf("Current Position (0-4096): %d, %d, %d\r\n", hidApp.position3D.x, hidApp.position3D.y, hidApp.position3D.z);
+
 
 	} else if (comCmd.compare("help\n") == 0) {
 
 		usb->SendString("Mountjoy Ball Base\r\n"
 				"\r\nSupported commands:\r\n"
+				"info               -  Current settings\r\n"
 				"scan               -  List BLE devices\r\n"
 				"connect            -  Connect to HID BLE device\r\n"
 				"disconnect         -  Disconnect to HID BLE device\r\n"
@@ -109,7 +121,7 @@ bool SerialHandler::Command()
 			usb->SendString("Address format not recognised\r\n");
 		} else {
 			uint8_t addr[BleApp::bdddrSize];
-			int8_t pos = comCmd.find(":") + 1;								// locate position of character preceding
+			int8_t pos = comCmd.find(":") + 1;					// locate position of character preceding
 			size_t val = -1;
 			for (int8_t i = BleApp::bdddrSize; i > 0; --i) {
 				addr[i - 1] = stoi(comCmd.substr(pos, 2), &val, 16);
