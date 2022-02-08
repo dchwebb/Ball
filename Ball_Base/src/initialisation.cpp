@@ -3,7 +3,7 @@
 
 static void InitIPCC();
 static void InitSysTick();
-static void InitRTC();
+//static void InitRTC();
 static void InitGPIO();
 
 #define IPCC_ALL_RX_BUF 0x0000003FU /*!< Mask for all RX buffers. */
@@ -73,7 +73,7 @@ void InitHardware()
 	NVIC_EnableIRQ(HSEM_IRQn);
 
 	InitIPCC();										// Enable IPCC clock and reset all channels
-	InitRTC();										// Initialise RTC
+//	InitRTC();										// Initialise RTC
 
 	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
 	// see 369 / 1532 for Interrupt list table

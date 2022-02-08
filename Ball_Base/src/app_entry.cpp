@@ -23,11 +23,11 @@ static void APPE_SysUserEvtRx(void* pPayload);
 void APPE_Init()
 {
 	// normally configured in HAL set up
-	hrtc.Instance = RTC;
-	hrtc.State = HAL_RTC_STATE_READY;
+//	hrtc.Instance = RTC;
+//	hrtc.State = HAL_RTC_STATE_READY;
 
 	// Note bugs in this routine appear to result in many values not written to RTC registers - not init properly?
-	HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 	// Initialize the TimerServer
+//	HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 	// Initialize the TimerServer
 
 	// Initialize transport layers
 	TL_MM_Config_t tl_mm_config;

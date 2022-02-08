@@ -101,7 +101,6 @@ void HidApp::HIDConnectionNotification()
 	default:
 		break;
 	}
-	return;
 }
 
 

@@ -6,7 +6,7 @@
 #include "SerialHandler.h"
 #include "app_ble.h"
 
-RTC_HandleTypeDef hrtc;
+//RTC_HandleTypeDef hrtc;
 SerialHandler serial(usb);
 
 extern uint32_t SystemCoreClock;

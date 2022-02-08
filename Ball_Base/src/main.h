@@ -21,9 +21,9 @@
 #define LED_BLUE_GPIO_Port GPIOB
 #endif
 
-#define STLINK_RX_Pin GPIO_PIN_6
+//#define STLINK_RX_Pin GPIO_PIN_6
 //#define STLINK_RX_GPIO_Port GPIOB
-#define STLINK_TX_Pin GPIO_PIN_7
+//#define STLINK_TX_Pin GPIO_PIN_7
 //#define STLINK_TX_GPIO_Port GPIOB
 
 
