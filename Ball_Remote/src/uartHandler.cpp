@@ -1,7 +1,7 @@
 #include "uartHandler.h"
-#include "compassHandler.h"
 #include "gyroHandler.h"
 #include "app_ble.h"
+#include "hids_app.h"
 extern "C" {
 #include "shci.h"
 #include "stm32_lpm.h"
@@ -121,7 +121,6 @@ bool uartCommand()
 
 		uartSendString("Mountjoy Ball Remote\r\n"
 				"\r\nSupported commands:\r\n"
-				"disconnect      -  Disconnect to HID BLE device\r\n"
 				"readi2c:HH      -  Read I2C register at 0xHH\r\n"
 				"writei2c:RR,VV  -  Write value 0xVV to I2C register 0xRR\r\n"
 				"i2cscan         -  Scan for valid I2C addresses\r\n"
@@ -131,46 +130,66 @@ bool uartCommand()
 				"canceladv       -  Cancel advertising\r\n"
 				"startadv        -  Start advertising\r\n"
 				"disconnect      -  Disconnects clients\r\n"
+				"gyroread        -  Returns gyro x, y and z\r\n"
+				"outputgyro      -  Periodically output raw gyro data\r\n"
+				"\r\n");
 
-		"\r\n");
+	} else if (comCmd.compare("outputgyro\n") == 0) {					// Output raw gyro data
+		hidService.outputGyro = !hidService.outputGyro;
 
 
-
-
-	} else if (comCmd.compare("readgyro\n") == 0) {					// Trigger a repeated read
-		gyro.MultipleRead();
+	} else if (comCmd.compare("gyroread\n") == 0) {					// Trigger a repeated read
+		if (hidService.JoystickNotifications) {
+			printf("Currently connected\r\n");
+		} else {
+			gyro.DebugRead();
+		}
 
 	} else if (comCmd.compare(0, 8, "readi2c:") == 0) {				// Read i2c register
-		uint8_t regNo;
-		auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo, 16);
-
-		if (res.ec == std::errc()) {
-			uint8_t readData = gyro.ReadData(regNo);
-			uartSendString("I2C Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
+		if (hidService.JoystickNotifications) {
+			printf("Currently connected\r\n");
 		} else {
-			uartSendString("Invalid register\r\n");
+
+			uint8_t regNo;
+			auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo, 16);
+
+			if (res.ec == std::errc()) {
+				uint8_t readData = gyro.ReadData(regNo);
+				uartSendString("I2C Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
+			} else {
+				uartSendString("Invalid register\r\n");
+			}
 		}
 
 	} else if (comCmd.compare(0, 9, "writei2c:") == 0) {			// write i2c register
-		uint8_t regNo, value;
-		auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo, 16);
-
-		if (res.ec == std::errc()) {			// no error
-			auto res = std::from_chars(comCmd.data() + comCmd.find(",") + 1, comCmd.data() + comCmd.size(), value, 16);
-			if (res.ec == std::errc()) {			// no error
-				gyro.WriteCmd(regNo, value);
-				uartSendString("I2C write: Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(value) + "\r\n");
-			} else {
-				uartSendString("Invalid value\r\n");
-			}
+		if (hidService.JoystickNotifications) {
+			printf("Currently connected\r\n");
 		} else {
-			uartSendString("Invalid register\r\n");
+
+			uint8_t regNo, value;
+			auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo, 16);
+
+			if (res.ec == std::errc()) {			// no error
+				auto res = std::from_chars(comCmd.data() + comCmd.find(",") + 1, comCmd.data() + comCmd.size(), value, 16);
+				if (res.ec == std::errc()) {			// no error
+					gyro.WriteCmd(regNo, value);
+					uartSendString("I2C write: Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(value) + "\r\n");
+				} else {
+					uartSendString("Invalid value\r\n");
+				}
+			} else {
+				uartSendString("Invalid register\r\n");
+			}
 		}
 
 	} else if (comCmd.compare("i2cscan\n") == 0) {				// Scan i2c addresses
-		uartSendString("Starting scan ...\n");
-		int result = gyro.ScanAddresses();
-		printf("Finished scan. Found %d\n", result);
+		if (hidService.JoystickNotifications) {
+			printf("Currently connected\r\n");
+		} else {
+			uartSendString("Starting scan ...\n");
+			int result = gyro.ScanAddresses();
+			printf("Finished scan. Found %d\n", result);
+		}
 
 	} else if (comCmd.compare("fwversion\n") == 0) {			// Version of BLE firmware
 		WirelessFwInfo_t fwInfo;

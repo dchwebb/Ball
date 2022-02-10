@@ -1,7 +1,6 @@
 #include "main.h"
 #include "app_common.h"
 #include "stm32_seq.h"
-//#include "compassHandler.h"
 #include "gyroHandler.h"
 
 extern "C" {
@@ -22,12 +21,6 @@ void EXTI0_IRQHandler() {
 
 void EXTI1_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF1;
-//	extern bool compassCapture;
-//	compassCapture = !compassCapture;
-//	if (compassCapture) {
-//		printf("Starting capture ...\r\n");
-//		compass.StartRead();
-//	}
 }
 
 void I2C1_EV_IRQHandler() {

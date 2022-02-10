@@ -1,6 +1,5 @@
 #include "ble.h"
 #include "hids_app.h"
-//#include "compassHandler.h"
 #include "gyroHandler.h"
 
 
@@ -118,10 +117,12 @@ void HidService::UpdateJoystickReportChar()
 	aci_gatt_update_char_value(ServiceHandle, ReportJoystickHandle, 0,	sizeof(joystickReport),	(uint8_t*)&joystickReport);
 }
 
+
 void HidService::UpdateReportMapChar()
 {
 	aci_gatt_update_char_value(ServiceHandle, ReportMapHandle,	0, sizeof(reportMap), reportMap);
 }
+
 
 void HidService::UpdateHidInformationChar()
 {
@@ -138,7 +139,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	static uint32_t lastPrint = 0;
 
 	if (JoystickNotifications) {
-		if (uwTick - lastPrint > 300) {
+		if (outputGyro && uwTick - lastPrint > 300) {
 			printf("x: %d y: %d z: %d\r\n", x, y, z);
 			lastPrint = uwTick;
 		}
@@ -156,6 +157,7 @@ void HidService::ControlPointWrite(uint16_t data) {
 void HidService::Disconnect() {
 	JoystickNotifications = false;
 }
+
 
 bool HidService::EventHandler(hci_event_pckt* event_pckt)
 {
@@ -177,7 +179,7 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 
 			if (attribute_modified->Attr_Data[0] == 1) {
 				hidService.JoystickNotifications = true;
-				gyro.StartRead();
+				gyro.ContinualRead();
 			} else {
 				hidService.JoystickNotifications = false;
 			}

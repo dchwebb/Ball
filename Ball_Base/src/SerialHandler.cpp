@@ -93,7 +93,7 @@ bool SerialHandler::Command()
 				"offset:x=?         -  X/Y/Z offset (more negative if falling)\r\n"
 				"calibrate          -  Recenter and calibrate gyro offsets\r\n"
 				"recenter           -  Recenter all channels\r\n"
-				"gyro               -  Periodically output raw gyro data\r\n"
+				"outputgyro         -  Periodically output raw gyro data\r\n"
 				"\r\n"
 
 #if (USB_DEBUG)
@@ -184,7 +184,7 @@ bool SerialHandler::Command()
 			hidApp.Calibrate();
 		}
 
-	} else if (comCmd.compare("gyro\n") == 0) {					// Output raw gyro data
+	} else if (comCmd.compare("outputgyro\n") == 0) {					// Output raw gyro data
 		hidApp.outputGyro = !hidApp.outputGyro;
 
 	} else {

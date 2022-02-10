@@ -11,11 +11,13 @@ public:
 	uint32_t ScanAddresses();
 	uint8_t ReadData(uint8_t reg);
 	void WriteCmd(uint8_t reg, uint8_t val);
-	void MultipleRead();
-	void StartRead();
+	void DebugRead();
+	void ContinualRead();
 private:
 	bool multipleRead {false};
+
 	void WriteAddr(uint8_t reg);
+	void StartRead();
 };
 
 extern Gyro gyro;

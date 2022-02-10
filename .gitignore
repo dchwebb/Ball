@@ -35,3 +35,5 @@ Hardware/Ball_Base_Components-backups/*
 *.out
 *.app
 
+Hardware/#auto_saved_files#
+Hardware/_autosave-Ball_Base_Components.kicad_sch

@@ -27,9 +27,13 @@ void HidApp::Calibrate()
 	position3D.x = 2047;
 	position3D.y = 2047;
 	position3D.z = 2047;
-
+	calibX = 0;
+	calibY = 0;
+	calibZ = 0;
 	calibrateCounter = calibrateCount;
 }
+
+
 
 
 void HidApp::HidNotification(uint8_t* payload, uint8_t len)
@@ -43,15 +47,24 @@ void HidApp::HidNotification(uint8_t* payload, uint8_t len)
 	}
 
 	if (calibrateCounter > 0) {
-		--calibrateCounter;
+//		calibDebug[10-calibrateCounter].x = hidPayload[0];
+//		calibDebug[10-calibrateCounter].y = hidPayload[1];
+//		calibDebug[10-calibrateCounter].z = hidPayload[2];
+
 		calibX += hidPayload[0];
 		calibY += hidPayload[1];
 		calibZ += hidPayload[2];
 
+		int32_t div = (calibrateCount - calibrateCounter) + 1;
+
+		APP_DBG_MSG("%ld: x: %ld y: %ld z: %ld\r\n", div, calibX / div, calibY / div, calibZ / div);
+
+		--calibrateCounter;
+
 		if (calibrateCounter == 0) {
-			offsetX = static_cast<float>(calibX) / calibrateCount;
-			offsetY = static_cast<float>(calibY) / calibrateCount;
-			offsetZ = static_cast<float>(calibZ) / calibrateCount;
+			offsetX = static_cast<float>(calibX / calibrateCount);
+			offsetY = static_cast<float>(calibY / calibrateCount);
+			offsetZ = static_cast<float>(calibZ / calibrateCount);
 			APP_DBG_MSG("New Offsets x: %3.3f y: %3.3f z: %d\r\n", offsetX, offsetY, static_cast<int16_t>(offsetZ));
 		}
 	} else {
