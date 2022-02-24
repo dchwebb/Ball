@@ -1,4 +1,4 @@
-19912487150277799
+19914132856726997
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -49447,6 +49447,13 @@ SMD SMT crystal hand-soldering
 0
 2
 2
+Custom_Footprints
+Crystal_SMD_ECS_2236-4Pin_2.5x2.0mm
+Abracon Miniature Ceramic Smd Crystal ABM10 http://www.abracon.com/Resonators/ABM10.pdf
+SMD SMT crystal Abracon ABM10
+0
+4
+4
 Custom_Footprints
 D_SOD-123_custom
 SOD-123
