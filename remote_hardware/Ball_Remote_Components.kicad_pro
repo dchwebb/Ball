@@ -44,8 +44,8 @@
         "silk_text_thickness": 0.15,
         "silk_text_upright": false,
         "zones": {
-          "45_degree_only": true,
-          "min_clearance": 0.0
+          "45_degree_only": false,
+          "min_clearance": 0.508
         }
       },
       "diff_pair_dimensions": [
@@ -354,7 +354,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "Ball_Base_Components.kicad_pro",
+    "filename": "Ball_Remote_Components.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -387,13 +387,13 @@
         "microvia_drill": 0.1,
         "name": "Power_Large",
         "nets": [
-          "+12V",
-          "+3.3VA",
+          "+2V8",
           "+3V3",
-          "-12V",
+          "/BATT_+",
+          "/Battery_Level",
+          "/USB_VIN",
           "GND",
-          "VCC",
-          "VEE"
+          "VCC"
         ],
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",

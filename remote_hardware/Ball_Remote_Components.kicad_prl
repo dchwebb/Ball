@@ -1,9 +1,11 @@
 {
   "board": {
-    "active_layer": 37,
+    "active_layer": 0,
     "active_layer_preset": "",
     "auto_track_width": false,
-    "hidden_nets": [],
+    "hidden_nets": [
+      "GND"
+    ],
     "high_contrast_mode": 0,
     "net_color_mode": 1,
     "opacity": {
@@ -18,9 +20,9 @@
       "footprints": true,
       "graphics": true,
       "keepouts": true,
-      "lockedItems": false,
+      "lockedItems": true,
       "otherItems": true,
-      "pads": false,
+      "pads": true,
       "text": true,
       "tracks": true,
       "vias": true,
@@ -62,11 +64,11 @@
       35,
       36
     ],
-    "visible_layers": "ffdfeff_ffffffff",
+    "visible_layers": "ffdfeff_fffffffd",
     "zone_display_mode": 1
   },
   "meta": {
-    "filename": "Ball_Base_Components.kicad_prl",
+    "filename": "Ball_Remote_Components.kicad_prl",
     "version": 3
   },
   "project": {
