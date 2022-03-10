@@ -4038,7 +4038,7 @@
     (property "Value" "LIPO_Battery" (id 1) (at 71.12 196.7229 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "" (id 2) (at 67.945 195.961 90)
+    (property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" (id 2) (at 67.945 195.961 90)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 67.945 195.961 90)
@@ -4876,7 +4876,7 @@
       (reference "AE1") (unit 1) (value "Antenna_Shield") (footprint "Custom_Footprints:NN01_102")
     )
     (path "/a6fd9f5a-6ad9-4d5c-8a6d-0031eb96245d"
-      (reference "BT1") (unit 1) (value "LIPO_Battery") (footprint "")
+      (reference "BT1") (unit 1) (value "LIPO_Battery") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
     )
     (path "/faf79758-9b77-449a-ba1b-1552dfbbaa16"
       (reference "C1") (unit 1) (value "100nF") (footprint "Capacitor_SMD:C_0603_1608Metric")
