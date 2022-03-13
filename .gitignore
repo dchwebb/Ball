@@ -1,7 +1,7 @@
 Ball_Base/Debug/*
 Ball_Remote/Debug/*
 Hardware/Ball_Base_Components-backups/*
-remote_hardware/Ball_Remote_Components-backups
+Hardware/Ball_Remote_Components-backups
 
 # Prerequisites
 *.d
