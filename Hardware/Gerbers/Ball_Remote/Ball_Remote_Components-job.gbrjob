@@ -5,17 +5,17 @@
       "Application": "Pcbnew",
       "Version": "(6.0.4)"
     },
-    "CreationDate": "2022-03-21T17:18:23+00:00"
+    "CreationDate": "2022-03-21T16:24:48+00:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
-      "Name": "Ball_Solder_Stencil",
-      "GUID": "42616c6c-5f53-46f6-9c64-65725f537465",
+      "Name": "Ball_Remote_Components",
+      "GUID": "42616c6c-5f52-4656-9d6f-74655f436f6d",
       "Revision": "rev?"
     },
     "Size": {
-      "X": 250.1,
-      "Y": 120.1
+      "X": 75.2,
+      "Y": 75.2
     },
     "LayerNumber": 4,
     "BoardThickness": 1.5927,
@@ -27,33 +27,73 @@
       "Layers": "Outer",
       "PadToPad": 0.2,
       "PadToTrack": 0.2,
-      "TrackToTrack": 0.2
+      "TrackToTrack": 0.2,
+      "MinLineWidth": 0.2,
+      "TrackToRegion": 0.508,
+      "RegionToRegion": 0.508
     },
     {
       "Layers": "Inner",
       "PadToPad": 0.0,
       "PadToTrack": 0.0,
-      "TrackToTrack": 0.2
+      "TrackToTrack": 0.2,
+      "TrackToRegion": 0.508,
+      "RegionToRegion": 0.508
     }
   ],
   "FilesAttributes": [
     {
-      "Path": "Ball_Solder_Stencil-F_Cu.gbr",
+      "Path": "Ball_Remote_Components-F_Cu.gbr",
       "FileFunction": "Copper,L1,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "Ball_Solder_Stencil-F_Paste.gbr",
+      "Path": "Ball_Remote_Components-In1_Cu.gbr",
+      "FileFunction": "Copper,L2,Inr",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Ball_Remote_Components-In2_Cu.gbr",
+      "FileFunction": "Copper,L3,Inr",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Ball_Remote_Components-B_Cu.gbr",
+      "FileFunction": "Copper,L4,Bot",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Ball_Remote_Components-F_Paste.gbr",
       "FileFunction": "SolderPaste,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "Ball_Solder_Stencil-F_Mask.gbr",
+      "Path": "Ball_Remote_Components-B_Paste.gbr",
+      "FileFunction": "SolderPaste,Bot",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Ball_Remote_Components-F_Silkscreen.gbr",
+      "FileFunction": "Legend,Top",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Ball_Remote_Components-B_Silkscreen.gbr",
+      "FileFunction": "Legend,Bot",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Ball_Remote_Components-F_Mask.gbr",
       "FileFunction": "SolderMask,Top",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "Ball_Solder_Stencil-Edge_Cuts.gbr",
+      "Path": "Ball_Remote_Components-B_Mask.gbr",
+      "FileFunction": "SolderMask,Bot",
+      "FilePolarity": "Negative"
+    },
+    {
+      "Path": "Ball_Remote_Components-Edge_Cuts.gbr",
       "FileFunction": "Profile",
       "FilePolarity": "Positive"
     }

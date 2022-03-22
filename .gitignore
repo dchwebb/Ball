@@ -2,6 +2,7 @@ Ball_Base/Debug/*
 Ball_Remote/Debug/*
 Hardware/Ball_Base_Components-backups/*
 Hardware/Ball_Remote_Components-backups
+Hardware/Ball_Base_Panel-backups/
 
 # Prerequisites
 *.d
@@ -39,3 +40,4 @@ Hardware/Ball_Remote_Components-backups
 Hardware/#auto_saved_files#
 Hardware/_autosave-Ball_Base_Components.kicad_sch
 remote_hardware/_autosave-Ball_Remote_Components.kicad_pcb
+
