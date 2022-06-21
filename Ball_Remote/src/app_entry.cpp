@@ -114,13 +114,13 @@ void shci_notify_asynch_evt(void* pdata)
 }
 
 
-//void shci_cmd_resp_release(uint32_t flag)
-//{
-//	UTIL_SEQ_SetEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
-//}
-//
-//
-//void shci_cmd_resp_wait(uint32_t timeout)
-//{
-//	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
-//}
+void shci_cmd_resp_release(uint32_t flag)
+{
+	UTIL_SEQ_SetEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
+}
+
+
+void shci_cmd_resp_wait(uint32_t timeout)
+{
+	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID);
+}

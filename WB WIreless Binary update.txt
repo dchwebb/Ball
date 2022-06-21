@@ -1,0 +1,2 @@
+- Binary locations
+C:\Users\Dominic\STM32Cube\Repository\STM32Cube_FW_WB_V1.13.3\Projects\STM32WB_Copro_Wireless_Binaries\STM32WB3x

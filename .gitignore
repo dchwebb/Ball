@@ -5,6 +5,10 @@ Hardware/Ball_Remote_Components-backups
 Hardware/Ball_Base_Panel-backups/
 Hardware/Production_Files/
 
+Ball_Base_WB35/Debug/
+Ball_Remote_WB35/Debug/
+Ball_Remote_2/
+
 # Prerequisites
 *.d
 

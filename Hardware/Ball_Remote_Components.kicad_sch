@@ -3806,7 +3806,7 @@
     (property "Reference" "C16" (id 0) (at 41.275 91.44 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "16pF" (id 1) (at 40.005 93.345 0)
+    (property "Value" "" (id 1) (at 40.005 93.345 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Capacitor_SMD:C_0603_1608Metric" (id 2) (at 42.545 93.98 0)
@@ -4506,7 +4506,7 @@
     (property "Reference" "C17" (id 0) (at 50.8 91.44 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
-    (property "Value" "16pF" (id 1) (at 51.435 93.345 0)
+    (property "Value" "" (id 1) (at 51.435 93.345 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Footprint" "Capacitor_SMD:C_0603_1608Metric" (id 2) (at 49.53 93.98 0)
@@ -5163,10 +5163,10 @@
       (reference "C15") (unit 1) (value "100pF") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/590a4ace-48fb-4f4a-888d-cb64d1d49ec8"
-      (reference "C16") (unit 1) (value "16pF") (footprint "Capacitor_SMD:C_0603_1608Metric")
+      (reference "C16") (unit 1) (value "20pF") (footprint "Capacitor_SMD:C_0603_1608Metric")
     )
     (path "/c5015d8e-772d-4539-bdc3-01884b4e5a2c"
-      (reference "C17") (unit 1) (value "16pF") (footprint "Capacitor_SMD:C_0603_1608Metric")
+      (reference "C17") (unit 1) (value "20pF") (footprint "Capacitor_SMD:C_0603_1608Metric")
     )
     (path "/d86a617d-114d-4fd7-a3c8-43b5be3b3585"
       (reference "C18") (unit 1) (value "1uF") (footprint "Capacitor_SMD:C_0603_1608Metric")
