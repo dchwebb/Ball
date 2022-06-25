@@ -80,6 +80,8 @@ void Gyro::ProcessResults()
 // Sets the register address
 void Gyro::WriteAddr(uint8_t reg)
 {
+	uint32_t timer = 0;
+
 	I2C1->CR1 &= ~I2C_CR1_TCIE;						// Disable Transfer complete interrupt (as this clears TC flag)
 	I2C1->CR1 &= ~I2C_CR1_RXDMAEN;					// Disable DMA transmission
 
@@ -87,10 +89,11 @@ void Gyro::WriteAddr(uint8_t reg)
 	MODIFY_REG(I2C1->CR2, I2C_CR2_NBYTES_Msk, 1 << I2C_CR2_NBYTES_Pos);		// Send 1 byte
 	I2C1->CR2 |= I2C_CR2_START;						// Will continue sending address until ACK
 
-	while ((I2C1->ISR & I2C_ISR_TXIS) == 0);		// Wait until ready
+	while ((I2C1->ISR & I2C_ISR_TXIS) == 0 && ++timer < 10000);		// Wait until ready
 	I2C1->TXDR = reg;								// Set register address
 
-	while ((I2C1->ISR & I2C_ISR_TC) == 0);			// Wait until transmit complete
+	timer = 0;
+	while ((I2C1->ISR & I2C_ISR_TC) == 0 && ++timer < 10000);			// Wait until transmit complete
 //	I2C1->CR1 |= I2C_CR1_TCIE;						// Activate Transfer complete interrupt
 }
 

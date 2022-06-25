@@ -27,6 +27,7 @@ void APPE_Init()
 
 	HW_TS_Init(hw_ts_InitMode_Full, &hrtc); 	// Initialize the TimerServer
 
+
 	// Initialize transport layers
 	TL_Init();	// Reference table initialization
 

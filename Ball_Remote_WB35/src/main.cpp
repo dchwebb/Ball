@@ -35,7 +35,7 @@ int main(void)
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
 
 #ifndef USEBASEBOARD
-	gyro.Setup();					// Setup address and settings for gyroscope
+//	gyro.Setup();					// Setup address and settings for gyroscope
 #endif
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, 0, Button1_Task);

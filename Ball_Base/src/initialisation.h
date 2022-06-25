@@ -2,7 +2,7 @@
 #include "stm32wb55xx.h"
 
 #define SYSTICK 1000						// 1ms
-#define USEDONGLE true
+#define USEDONGLE false
 
 extern "C" {
 extern volatile uint32_t uwTick;

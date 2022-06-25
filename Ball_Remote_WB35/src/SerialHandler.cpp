@@ -75,9 +75,19 @@ bool SerialHandler::Command()
 	} else if (comCmd.compare("info\n") == 0) {		// Print diagnostic information
 		extern bool coprocessorFailure;
 
+		// Get Battery level: 4096 / 2.8V = 1462; voltage divider calculated to scale by 1.73 (values corrected by measurement)
+		ADC1->ISR &= ~ADC_ISR_EOC;
+		ADC1->CR |= ADC_CR_ADSTART;
+		while ((ADC1->ISR & ADC_ISR_EOC) != ADC_ISR_EOC) {}
+		float voltage = (static_cast<float>(ADC1->DR) / 1390.0f) * 1.73f;
+
 		sprintf(printBuffer, "\r\nMountjoy Ball Remote v1.0 - Current Settings:\r\n\r\n"
+				"Battery: %f V\r\n"
+				"Battery ADC: %u V\r\n"
 				"Wireless Stack: %s\r\n",
-				coprocessorFailure ? "Off" : "Running");
+				voltage,
+				ADC1->DR,
+				(coprocessorFailure ? "Off" : "Running"));
 
 		usb->SendString(printBuffer);
 

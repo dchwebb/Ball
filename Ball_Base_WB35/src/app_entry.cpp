@@ -48,7 +48,7 @@ void APPE_Init()
 	tl_mm_config.AsynchEvtPoolSize = POOL_SIZE;
 	TL_MM_Init(&tl_mm_config);
 
-	TL_Enable();
+	HW_IPCC_Enable();
 
 	// From now, the application is waiting for the ready event (VS_HCI_C2_Ready) received on the system channel before starting the Stack
 	// This system event is received with APPE_SysUserEvtRx()

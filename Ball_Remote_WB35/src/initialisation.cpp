@@ -5,10 +5,67 @@ static void InitIPCC();
 static void InitSysTick();
 static void InitRTC();
 static void InitGPIO();
+static void InitADC();
 
 #define IPCC_ALL_RX_BUF 0x0000003FU /*!< Mask for all RX buffers. */
 #define IPCC_ALL_TX_BUF 0x003F0000U /*!< Mask for all TX buffers. */
 
+
+uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference to current connection failure
+
+void SystemClock_Config()
+{
+	FLASH->ACR |= FLASH_ACR_PRFTEN;					// Flash prefetch enable
+	FLASH->SR &= ~FLASH_SR_OPERR;					// Clear Flash Option Validity flag
+
+	// Read HSE_Tuning from OTP and set HSE capacitor tuning
+//	OTP_ID0_t* p_otp = (OTP_ID0_t*) OTP_Read(0);
+//	if (p_otp) {
+//		RCC->HSECR = 0xCAFECAFE;					// HSE control unlock key
+//		MODIFY_REG(RCC->HSECR, RCC_HSECR_HSETUNE, p_otp->hse_tuning << RCC_HSECR_HSETUNE_Pos);
+//	}
+	RCC->HSECR = 0xCAFECAFE;						// HSE control unlock key
+	MODIFY_REG(RCC->HSECR, RCC_HSECR_HSETUNE, hse_tuning << RCC_HSECR_HSETUNE_Pos);
+
+
+	PWR->CR1 |= PWR_CR1_DBP; 						// Disable backup domain write protection: Enable access to the RTC registers
+
+	RCC->CR |= RCC_CR_HSEON;						// Turn on external oscillator
+	while ((RCC->CR & RCC_CR_HSERDY) == 0);			// Wait till HSE is ready
+
+	RCC->CR |= RCC_CR_HSION;						// Turn on high speed internal oscillator
+	while ((RCC->CR & RCC_CR_HSIRDY) == 0);			// Wait till HSI is ready
+
+	RCC->BDCR |= RCC_BDCR_LSEON;					// Turn on low speed external oscillator
+	while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0);		// Wait till LSE is ready
+
+	// Activate PLL: HSE = 32MHz / 4(M) * 32(N) / 4(R) = 64MHz
+	RCC->PLLCFGR |= LL_RCC_PLLSOURCE_HSE;			// Set PLL source to HSE
+	RCC->PLLCFGR |= LL_RCC_PLLM_DIV_4;				// Set PLL M divider to 4
+	MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLLN, 32 << RCC_PLLCFGR_PLLN_Pos);		// Set PLL N multiplier to 32
+	RCC->PLLCFGR |= LL_RCC_PLLR_DIV_4;				// Set PLL R divider to 4
+	RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN;				// Enable PLL R Clock
+
+	RCC->CR |= RCC_CR_PLLON;						// Turn on PLL
+	while ((RCC->CR & RCC_CR_PLLRDY) == 0);			// Wait till PLL is ready
+
+	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 3);	// Increase Flash latency to 3 Wait States (see manual p.77)
+	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 3);
+
+//	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);		// 10: HSE selected as system clock
+//	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until HSE is selected
+
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_PLL);		// 11: PLL selected as system clock
+	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until PLL is selected
+
+	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
+
+	// Peripheral clocks already set to default: RTC, USART, LPUSART
+	//RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				// RF system wakeup clock source selection: 01: LSE oscillator clock
+	RCC->CSR |=  RCC_CSR_RFWKPSEL_0 | RCC_CSR_RFWKPSEL_1;				// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
+
+}
+/*
 void SystemClock_Config()
 {
 	FLASH->ACR |= FLASH_ACR_PRFTEN;					// Flash prefetch enable
@@ -55,6 +112,7 @@ void SystemClock_Config()
 
 	RCC->CR |= RCC_CR_MSIPLLEN;						// Multispeed internal RC oscillator - used for USB?
 }
+*/
 
 
 void InitHardware()
@@ -78,10 +136,45 @@ void InitHardware()
 
 
 	InitGPIO();
+	InitADC();
 
 #ifndef USEBASEBOARD
-	InitI2C();
+//	InitI2C();
 #endif
+}
+
+
+static void InitADC()
+{
+	// For measuring battery level on PA1 ADC1_IN6
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;			// GPIO Ports Clock Enable
+	GPIOA->MODER |= GPIO_MODER_MODE1;				// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+
+	RCC->AHB2ENR |= RCC_AHB2ENR_ADCEN;				// Enable ADC
+	RCC->CCIPR |= RCC_CCIPR_ADCSEL;					// 00: None; 01: PLLSAI1 R clock; 10: PLL P clock; 11: System clock
+
+	ADC1_COMMON->CCR |= ADC_CCR_PRESC_1;			// 0010: input ADC clock divided by 4
+
+	ADC1->CR &= ~ADC_CR_DEEPPWD;					// Deep power down: 0: ADC not in deep-power down	1: ADC in deep-power-down (default reset state)
+	ADC1->CR |= ADC_CR_ADVREGEN;					// Enable ADC internal voltage regulator
+//
+//	// Wait until voltage regulator settled
+//	volatile uint32_t wait_loop_index = (SystemCoreClock / (100000UL * 2UL));
+//	while (wait_loop_index != 0UL) {
+//		wait_loop_index--;
+//	}
+	while ((ADC1->CR & ADC_CR_ADVREGEN) != ADC_CR_ADVREGEN) {}
+
+	ADC1->SQR1 |= 6 << ADC_SQR1_SQ1_Pos;
+	ADC1->SMPR1 |= 0b010 << ADC_SMPR1_SMP6_Pos;
+
+	// Start calibration
+	ADC1->CR &= ~ADC_CR_ADCALDIF;					// Calibration in single ended mode
+	ADC1->CR |= ADC_CR_ADCAL;
+	while ((ADC1->CR & ADC_CR_ADCAL) == ADC_CR_ADCAL) {};
+
+	ADC1->CR |= ADC_CR_ADEN;						// Enable ADC
+	while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) {}
 }
 
 
@@ -101,7 +194,7 @@ static void InitGPIO()
 	NVIC_EnableIRQ(EXTI4_IRQn);
 
 
-	GPIOA->MODER &= ~(GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1 | GPIO_MODER_MODE3_1);			// Configure LED pins : PA3 LED_BLUE_Pin
+	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;			// Configure LED pins : PA3 LED_BLUE_Pin
 
 
 	/*
@@ -169,6 +262,7 @@ static void InitIPCC()
 static void InitRTC()
 {
 	RCC->BDCR |= RCC_BDCR_RTCEN;					// Enable RTC
+	RCC->BDCR |= RCC_BDCR_RTCSEL_0;					// Set RTC Clock to source to LSE
 
 	RTC->WPR = 0xCAU;								// Disable the write protection for RTC registers - see p.919
 	RTC->WPR = 0x53U;
@@ -179,7 +273,7 @@ static void InitRTC()
 #ifdef USEBASEBOARD
 	RCC->BDCR |= RCC_BDCR_RTCSEL_1;					// Set RTC Clock to source to LSI
 	RTC->PRER = (255 << RTC_PRER_PREDIV_S_Pos) | (124 << RTC_PRER_PREDIV_A_Pos);		// Set prescaler for 32kHz input clock (1Hz = 32k / (124[PREDIV_A] + 1) * (255[PREDIV_S] + 1)
-#elif
+#else
 	RCC->BDCR |= RCC_BDCR_RTCSEL_0;					// Set RTC Clock to source to LSE
 #endif
 	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;			// CPU1 RTC APB clock enable
