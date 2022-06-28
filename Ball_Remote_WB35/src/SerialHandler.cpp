@@ -1,14 +1,16 @@
 #include "SerialHandler.h"
-#include "gyroHandler.h"
+#include "gyroSPI.h"
 #include "app_ble.h"
 #include "hids_app.h"
-#include "ble_hal_aci.h"
 #include <stdio.h>
+
 extern "C" {
 #include "shci.h"
+#include "ble_hal_aci.h"
 }
 #include "stm32_seq.h"
 #include <charconv>
+
 
 int32_t SerialHandler::ParseInt(const std::string cmd, const char precedingChar, int low = 0, int high = 0) {
 	int32_t val = -1;
@@ -96,7 +98,7 @@ bool SerialHandler::Command()
 
 		usb->SendString("Mountjoy Ball Remote\r\n"
 				"\r\nSupported commands:\r\n"
-				"readi2c:HH      -  Read I2C register at 0xHH\r\n"
+				"readspi:HH      -  Read I2C register at 0xHH\r\n"
 				"writei2c:RR,VV  -  Write value 0xVV to I2C register 0xRR\r\n"
 				"i2cscan         -  Scan for valid I2C addresses\r\n"
 				"fwversion       -  Read firmware version\r\n"
@@ -107,6 +109,7 @@ bool SerialHandler::Command()
 				"disconnect      -  Disconnects clients\r\n"
 				"gyroread        -  Returns gyro x, y and z\r\n"
 				"outputgyro      -  Periodically output raw gyro data\r\n"
+				"rssi            -  Get RSSI value\r\n"
 				"\r\n"
 
 #if (USB_DEBUG)
@@ -129,10 +132,10 @@ bool SerialHandler::Command()
 		if (hidService.JoystickNotifications) {
 			usb->SendString("Currently connected\r\n");
 		} else {
-			gyro.DebugRead();
+			//gyro.DebugRead();
 		}
 
-	} else if (comCmd.compare(0, 8, "readi2c:") == 0) {				// Read i2c register
+	} else if (comCmd.compare(0, 8, "readspi:") == 0) {				// Read spi register
 		if (hidService.JoystickNotifications) {
 			usb->SendString("Currently connected\r\n");
 		} else {
@@ -169,13 +172,22 @@ bool SerialHandler::Command()
 			}
 		}
 
-	} else if (comCmd.compare("i2cscan\n") == 0) {				// Scan i2c addresses
-		if (hidService.JoystickNotifications) {
-			usb->SendString("Currently connected\r\n");
+//	} else if (comCmd.compare("i2cscan\n") == 0) {				// Scan i2c addresses
+//		if (hidService.JoystickNotifications) {
+//			usb->SendString("Currently connected\r\n");
+//		} else {
+//			usb->SendString("Starting scan ...\n");
+//			int result = gyro.ScanAddresses();
+//			usb->SendString("Finished scan. Found " + std::to_string(result) + "\n");
+//		}
+
+	} else if (comCmd.compare("rssi\n") == 0) {			// RSSI value
+
+		uint8_t rssi = 0;
+		if (aci_hal_read_raw_rssi(&rssi) == 0) {
+			printf("RSSI Value: %d\r\n", rssi);
 		} else {
-			usb->SendString("Starting scan ...\n");
-			int result = gyro.ScanAddresses();
-			usb->SendString("Finished scan. Found " + std::to_string(result) + "\n");
+			printf("Error reading RSSI Value\r\n");
 		}
 
 	} else if (comCmd.compare("fwversion\n") == 0) {			// Version of BLE firmware

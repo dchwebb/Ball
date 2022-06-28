@@ -295,9 +295,9 @@
 
 #define CFG_BLE_MAX_COC_INITIATOR_NBR   (32)
 
-#define CFG_BLE_MIN_TX_POWER            (0)
+#define CFG_BLE_MIN_TX_POWER            (20)
 
-#define CFG_BLE_MAX_TX_POWER            (0)
+#define CFG_BLE_MAX_TX_POWER            (20)
 
 /******************************************************************************
  * Transport Layer

@@ -6,6 +6,7 @@ static void InitSysTick();
 static void InitRTC();
 static void InitGPIO();
 static void InitADC();
+static void InitSPI();
 
 #define IPCC_ALL_RX_BUF 0x0000003FU /*!< Mask for all RX buffers. */
 #define IPCC_ALL_TX_BUF 0x003F0000U /*!< Mask for all TX buffers. */
@@ -137,10 +138,36 @@ void InitHardware()
 
 	InitGPIO();
 	InitADC();
+	InitSPI();
 
 #ifndef USEBASEBOARD
 //	InitI2C();
 #endif
+}
+
+
+static void InitSPI()
+{
+	// Configure SPI 1 to communicate with gyroscope:  PB4 MISO; PB5 MOSI; PB3 CLK; PA15 CS (all Alternate Function 5)
+	RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;				// Enable SPI Clock
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;			// GPIO Ports Clock Enable
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+
+	GPIOA->MODER &= ~GPIO_MODER_MODE15_0;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+	GPIOB->MODER &= ~(GPIO_MODER_MODE3_0 | GPIO_MODER_MODE4_0 | GPIO_MODER_MODE5_0);
+	GPIOA->AFR[1] |= (5 << GPIO_AFRH_AFSEL15_Pos);	// AF 5
+	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL3_Pos);
+	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL4_Pos);
+	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL5_Pos);
+	GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD4;				// PB4 is pulled up by default (also used as JTAG reset)
+
+	SPI1->CR1 |= SPI_CR1_MSTR;						// Master mode
+	SPI1->CR2 |= SPI_CR2_DS;						// Set data size to 16 bit
+	SPI1->CR2 |= SPI_CR2_SSOE;						// NSS (CS) output enable
+	SPI1->CR2 |= SPI_CR2_NSSP;						// Pulse Chip select line on communication
+
+	SPI1->CR1 |= 0b011 << SPI_CR1_BR_Pos;			// 011: fPCLK/16 = 64Mhz/16 = 4MB/s APB2 clock currently 64MHz (FIXME this should be slower in final version)
+	SPI1->CR1 |= SPI_CR1_SPE;
 }
 
 
@@ -157,12 +184,6 @@ static void InitADC()
 
 	ADC1->CR &= ~ADC_CR_DEEPPWD;					// Deep power down: 0: ADC not in deep-power down	1: ADC in deep-power-down (default reset state)
 	ADC1->CR |= ADC_CR_ADVREGEN;					// Enable ADC internal voltage regulator
-//
-//	// Wait until voltage regulator settled
-//	volatile uint32_t wait_loop_index = (SystemCoreClock / (100000UL * 2UL));
-//	while (wait_loop_index != 0UL) {
-//		wait_loop_index--;
-//	}
 	while ((ADC1->CR & ADC_CR_ADVREGEN) != ADC_CR_ADVREGEN) {}
 
 	ADC1->SQR1 |= 6 << ADC_SQR1_SQ1_Pos;
@@ -206,35 +227,6 @@ static void InitGPIO()
 	//EXTI->EMR1 |= EXTI_EMR1_EM4;
 	PWR->CR4 &= ~PWR_CR4_WP4;		// Wake-Up pin polarity (0=rising 1 = falling edge)
 	PWR->CR3 |= PWR_CR3_EWUP4;		// Enable WKUP4 on PA2
-}
-
-
-void InitPWMTimer()
-{
-	// TIM2: Channel 1 Output: *PA0, PA5, (PA15); Channel 2: *PA1, PB3; Channel 3: [PA2 used for WKUP4], PB10; Channel 4: PA3, PB11
-
-	// Enable channel 1, 2 PWM output pins on PA0, PA1
-	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
-	GPIOA->MODER &= ~(GPIO_MODER_MODE0_0 | GPIO_MODER_MODE1_0);			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
-	GPIOA->AFR[0] |= (GPIO_AFRL_AFSEL0_0 | GPIO_AFRL_AFSEL1_0);			// Timer 2 Output channel is AF1
-
-	// Timing calculations: Clock = 32MHz / (PSC + 1) = 4m counts per second
-	// ARR = number of counts per PWM tick = 4096
-	// 4m / ARR = 976.6Hz of PWM square wave with 4096 levels of output
-	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
-	TIM2->CCMR1 |= (TIM_CCMR1_OC1PE | TIM_CCMR1_OC2PE);					// Output compare 1 and 2 preload enable
-	TIM2->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;					// 0110: PWM mode 1 - In upcounting, channel 1 is active as long as TIMx_CNT<TIMx_CCR1
-	TIM2->CCMR1 |= TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_2;					// 0110: PWM mode 1 - In upcounting, channel 1 is active as long as TIMx_CNT<TIMx_CCR1
-
-	TIM2->CCR1 = 0x800;								// PWM level set in ble_hid.cpp
-	TIM2->ARR = 0xFFF;								// Total number of PWM ticks = 4096
-	TIM2->PSC = 1;									// Should give ~4kHz
-	TIM2->CR1 |= TIM_CR1_ARPE;						// 1: TIMx_ARR register is buffered
-	TIM2->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC2E);					// Capture mode enabled / OC1 signal is output on the corresponding output pin
-	TIM2->EGR |= TIM_EGR_UG;						// 1: Re-initialize the counter and generates an update of the registers
-	TIM2->CR1 |= TIM_CR1_CEN;						// Enable counter
-
-
 }
 
 
