@@ -34,7 +34,7 @@ uint8_t GyroSPI::ReadData(uint8_t reg)
 {
 	// This pulses the CS pin after 8 bits - possibly use 16 bit format and see if data is returned in second half of word
 	while ((SPI1->SR & SPI_SR_RXNE) == SPI_SR_RXNE) {
-		volatile uint16_t dummy = SPI1->DR;
+		[[maybe_unused]] volatile uint16_t dummy = SPI1->DR;
 	}
 
 #ifdef SPI_8BIT

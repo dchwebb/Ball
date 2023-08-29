@@ -85,7 +85,7 @@ bool SerialHandler::Command()
 
 		sprintf(printBuffer, "\r\nMountjoy Ball Remote v1.0 - Current Settings:\r\n\r\n"
 				"Battery: %f V\r\n"
-				"Battery ADC: %u V\r\n"
+				"Battery ADC: %lu V\r\n"
 				"Wireless Stack: %s\r\n",
 				voltage,
 				ADC1->DR,

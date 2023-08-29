@@ -82,7 +82,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 	switch (event_pckt->evt) {
 		case HCI_DISCONNECTION_COMPLETE_EVT_CODE:
 		{
-			auto disconnection_complete_event = (hci_disconnection_complete_event_rp0*) event_pckt->data;
+			[[maybe_unused]] auto disconnection_complete_event = (hci_disconnection_complete_event_rp0*) event_pckt->data;
 
 			connectionHandle = 0xFFFF;
 			connectionStatus = ConnStatus::Idle;

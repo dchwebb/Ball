@@ -8,8 +8,8 @@ static void InitGPIO();
 static void InitADC();
 static void InitSPI();
 
-#define IPCC_ALL_RX_BUF 0x0000003FU /*!< Mask for all RX buffers. */
-#define IPCC_ALL_TX_BUF 0x003F0000U /*!< Mask for all TX buffers. */
+#define IPCC_ALL_RX_BUF 0x0000003FU 				// Mask for all RX buffers
+#define IPCC_ALL_TX_BUF 0x003F0000U 				// Mask for all TX buffers
 
 
 uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference to current connection failure
