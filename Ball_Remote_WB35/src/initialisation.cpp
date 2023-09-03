@@ -160,6 +160,7 @@ static void InitSPI()
 	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL4_Pos);
 	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL5_Pos);
 	GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD4;				// PB4 is pulled up by default (also used as JTAG reset)
+	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD15;				// PA15 is pulled up by default (also used as JTDI)
 
 	SPI1->CR1 |= SPI_CR1_MSTR;						// Master mode
 	SPI1->CR2 |= SPI_CR2_DS;						// Set data size to 16 bit

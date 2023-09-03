@@ -5,6 +5,7 @@ static void InitIPCC();
 static void InitSysTick();
 static void InitRTC();
 static void InitGPIO();
+static void InitSPI();
 
 #define IPCC_ALL_RX_BUF 0x0000003FU /*!< Mask for all RX buffers. */
 #define IPCC_ALL_TX_BUF 0x003F0000U /*!< Mask for all TX buffers. */
@@ -73,8 +74,61 @@ void InitHardware()
 
 
 	InitGPIO();
-	InitI2C();
+	//InitI2C();
+	InitSPI();
 }
+
+
+
+static void InitSPI()
+{
+	// Configure SPI 1 to communicate with gyroscope:  PB4 MISO; PA7 (PB5 on production) MOSI; PA1 (PB3 on production) CLK; PA15 CS (all Alternate Function 5)
+	RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;				// Enable SPI Clock
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;			// GPIO Ports Clock Enable
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;			// DMA Mux Clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;				// DMA 1 Clock
+
+	// Initialize SPI DMA peripheral
+	DMA1_Channel1->CCR &= ~DMA_CCR_EN;
+	DMA1_Channel1->CCR &= ~DMA_CCR_CIRC;			// Disable Circular mode to keep refilling buffer
+	DMA1_Channel1->CCR |= DMA_CCR_MINC;				// Memory in increment mode
+	DMA1_Channel1->CCR &= ~DMA_CCR_PSIZE_0;			// Peripheral size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
+	DMA1_Channel1->CCR &= ~DMA_CCR_MSIZE_0;			// Memory size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
+	DMA1_Channel1->CCR |= DMA_CCR_PL_0;				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
+	DMA1_Channel1->CCR &= ~DMA_CCR_DIR;				// data transfer direction: 00: peripheral-to-memory; 01: memory-to-peripheral; 10: memory-to-memory				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
+
+	DMA1->IFCR |= 0xF << DMA_IFCR_CGIF1_Pos;		// clear all five interrupts for this stream
+
+	DMAMUX1_Channel0->CCR |= 6; 					// DMA request MUX input 6 = SPI1_RX (See p.348)
+	DMAMUX1_ChannelStatus->CFR |= DMAMUX_CFR_CSOF0; // Channel 0 Clear synchronization overrun event flag
+
+
+	GPIOA->MODER &= ~(GPIO_MODER_MODE1_0 | GPIO_MODER_MODE7_0);			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+	GPIOB->MODER &= ~(GPIO_MODER_MODE3_0 | GPIO_MODER_MODE4_0 | GPIO_MODER_MODE5_0);
+
+	GPIOA->AFR[0] |= (5 << GPIO_AFRL_AFSEL1_Pos);	// CLK
+	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL4_Pos);	// MISO
+	GPIOA->AFR[0] |= (5 << GPIO_AFRL_AFSEL7_Pos);	// MOSI
+
+//	GPIOA->MODER &= ~GPIO_MODER_MODE15;				// CS to output mode
+//	GPIOA->MODER |= GPIO_MODER_MODE15_0;
+//	GPIOA->ODR |= GPIO_ODR_OD15;					// Set high
+	GPIOA->AFR[1] |= (5 << GPIO_AFRH_AFSEL15_Pos);	// CS AF 5
+
+
+	GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD4;				// PB4 is pulled up by default (also used as JTAG reset)
+	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD15;				// PA15 is pulled up by default (also used as JTDI)
+
+	SPI1->CR1 |= SPI_CR1_MSTR;						// Master mode
+	SPI1->CR2 |= (8 << SPI_CR2_DS_Pos);				// Set data size to 16 bit
+	SPI1->CR2 |= SPI_CR2_SSOE;						// NSS (CS) output enable
+	SPI1->CR2 |= SPI_CR2_NSSP;						// Pulse Chip select line on communication
+
+	SPI1->CR1 |= 0b011 << SPI_CR1_BR_Pos;			// 011: fPCLK/16 = 64Mhz/16 = 4MB/s APB2 clock currently 64MHz (FIXME this should be slower in final version)
+	SPI1->CR1 |= SPI_CR1_SPE;
+}
+
 
 
 static void InitGPIO()
@@ -123,7 +177,7 @@ static void InitGPIO()
 	PWR->CR3 |= PWR_CR3_EWUP4;		// Enable WKUP4 on PA2
 }
 
-
+/*
 void InitPWMTimer()
 {
 	// TIM2: Channel 1 Output: *PA0, PA5, (PA15); Channel 2: *PA1, PB3; Channel 3: [PA2 used for WKUP4], PB10; Channel 4: PA3, PB11
@@ -151,7 +205,7 @@ void InitPWMTimer()
 
 
 }
-
+*/
 
 static void InitIPCC()
 {

@@ -132,7 +132,8 @@ bool SerialHandler::Command()
 		if (hidService.JoystickNotifications) {
 			usb->SendString("Currently connected\r\n");
 		} else {
-			//gyro.DebugRead();
+			gyro.DebugRead();
+			printf("x: %d, y:%d, z: %d\n", gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
 		}
 
 	} else if (comCmd.compare(0, 8, "readspi:") == 0) {				// Read spi register

@@ -1,6 +1,6 @@
 #include "ble.h"
 #include "hids_app.h"
-#include "gyroHandler.h"
+#include "gyroSPI.h"
 
 
 HidService hidService;

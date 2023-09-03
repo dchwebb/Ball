@@ -6,7 +6,7 @@
 #include "initialisation.h"
 #include "app_entry.h"
 #include "uartHandler.h"
-#include "gyroHandler.h"
+#include "gyroSPI.h"
 
 void Button1_Task(void) {
 	printf("Button 1 pressed\r\n");

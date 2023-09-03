@@ -310,4 +310,4 @@ VP_TINY_LPM_VS_TINY_LPM.Mode=TINY_LPM_Enabled
 VP_TINY_LPM_VS_TINY_LPM.Signal=TINY_LPM_VS_TINY_LPM
 board=P-NUCLEO-WB55-Nucleo
 boardIOC=true
-isbadioc=true
+isbadioc=false

@@ -4,6 +4,7 @@ Hardware/Ball_Base_Components-backups/*
 Hardware/Ball_Remote_Components-backups
 Hardware/Ball_Base_Panel-backups/
 Hardware/Production_Files/
+Hardware/Adafruit_Gyro_Module-backups/
 
 Ball_Base_WB35/Debug/
 Ball_Remote_WB35/Debug/
@@ -47,3 +48,5 @@ Hardware/_autosave-Ball_Base_Components.kicad_sch
 remote_hardware/_autosave-Ball_Remote_Components.kicad_pcb
 
 
+
+*.lck

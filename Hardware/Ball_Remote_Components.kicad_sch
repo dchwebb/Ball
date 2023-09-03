@@ -2995,6 +2995,11 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid d924ceda-d46e-4585-8cd6-2255d1316552)
   )
+  (text "v1 Errata:\nIMU MOSI and MISO signals switched (see STM32F429 Discovery schematic)"
+    (at 180.34 172.72 0)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid e8dc0829-d8b6-4f9c-90ad-2b2870971bd5)
+  )
   (text "Crystal load capacitors\nare integrated on chip\n(see AN5165)"
     (at 18.415 86.36 0)
     (effects (font (size 1 1)) (justify left bottom))
