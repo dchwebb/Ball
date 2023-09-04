@@ -147,6 +147,11 @@ bool uartCommand()
 			printf("x: %d, y:%d, z: %d\n", gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
 		}
 
+	} else if (comCmd.compare("contread\n") == 0) {					// Trigger a repeated read
+		gyro.ContinualRead();
+		printf("x: %d, y:%d, z: %d\n", gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
+
+
 	} else if (comCmd.compare(0, 8, "readspi:") == 0) {				// Read spi register
 		if (hidService.JoystickNotifications) {
 			printf("Currently connected\r\n");
@@ -173,7 +178,7 @@ bool uartCommand()
 
 			if (res.ec == std::errc()) {
 				uint8_t readData = gyro.ReadData(regNo);
-				uartSendString("I2C Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
+				uartSendString("SPI Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
 			} else {
 				uartSendString("Invalid register\r\n");
 			}

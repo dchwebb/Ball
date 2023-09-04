@@ -111,19 +111,20 @@ static void InitSPI()
 	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL4_Pos);	// MISO
 	GPIOA->AFR[0] |= (5 << GPIO_AFRL_AFSEL7_Pos);	// MOSI
 
-//	GPIOA->MODER &= ~GPIO_MODER_MODE15;				// CS to output mode
-//	GPIOA->MODER |= GPIO_MODER_MODE15_0;
-//	GPIOA->ODR |= GPIO_ODR_OD15;					// Set high
-	GPIOA->AFR[1] |= (5 << GPIO_AFRH_AFSEL15_Pos);	// CS AF 5
+	GPIOA->MODER &= ~GPIO_MODER_MODE15;				// CS to output mode
+	GPIOA->MODER |= GPIO_MODER_MODE15_0;
+	GPIOA->ODR |= GPIO_ODR_OD15;					// Set high
+//	GPIOA->AFR[1] |= (5 << GPIO_AFRH_AFSEL15_Pos);	// CS AF 5
 
 
 	GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD4;				// PB4 is pulled up by default (also used as JTAG reset)
 	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD15;				// PA15 is pulled up by default (also used as JTDI)
 
 	SPI1->CR1 |= SPI_CR1_MSTR;						// Master mode
-	SPI1->CR2 |= (8 << SPI_CR2_DS_Pos);				// Set data size to 16 bit
-	SPI1->CR2 |= SPI_CR2_SSOE;						// NSS (CS) output enable
-	SPI1->CR2 |= SPI_CR2_NSSP;						// Pulse Chip select line on communication
+	SPI1->CR1 |= SPI_CR1_SSI;						// Internal slave select
+	SPI1->CR1 |= SPI_CR1_SSM;						// Software CS management
+//	SPI1->CR2 |= SPI_CR2_SSOE;						// NSS (CS) output enable
+//	SPI1->CR2 |= SPI_CR2_NSSP;						// Pulse Chip select line on communication
 
 	SPI1->CR1 |= 0b011 << SPI_CR1_BR_Pos;			// 011: fPCLK/16 = 64Mhz/16 = 4MB/s APB2 clock currently 64MHz (FIXME this should be slower in final version)
 	SPI1->CR1 |= SPI_CR1_SPE;

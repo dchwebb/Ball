@@ -18,6 +18,9 @@ public:
 	} gyroData;
 
 private:
+	static constexpr uint16_t readGyro = (1 << 15);
+	static constexpr uint16_t incrAddr = (1 << 14);
+
 	bool multipleRead {false};
 
 	void StartRead();
