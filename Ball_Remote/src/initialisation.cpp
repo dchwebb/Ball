@@ -114,8 +114,9 @@ static void InitSPI()
 	GPIOA->MODER &= ~GPIO_MODER_MODE15;				// CS to output mode
 	GPIOA->MODER |= GPIO_MODER_MODE15_0;
 	GPIOA->ODR |= GPIO_ODR_OD15;					// Set high
+//	GPIOA->MODER &= ~GPIO_MODER_MODE15_0;
 //	GPIOA->AFR[1] |= (5 << GPIO_AFRH_AFSEL15_Pos);	// CS AF 5
-
+//	GPIOA->PUPDR |= GPIO_PUPDR_PUPD15_0;
 
 	GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD4;				// PB4 is pulled up by default (also used as JTAG reset)
 	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD15;				// PA15 is pulled up by default (also used as JTDI)
