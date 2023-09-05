@@ -1,7 +1,7 @@
 #include "main.h"
 #include "app_common.h"
 #include "stm32_seq.h"
-#include "gyroHandler.h"
+#include "gyroSPI.h"
 #include "USB.h"
 
 extern "C" {
@@ -19,10 +19,12 @@ void EXTI4_IRQHandler() {
 	UTIL_SEQ_SetTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
 }
 
-//void I2C1_EV_IRQHandler() {
-//	I2C1->CR2 |= I2C_CR2_STOP;			// Clear the Transfer complete interrupt (STOP bit cleared when next START issued)
-//	gyro.ProcessResults();
-//}
+
+void TIM2_IRQHandler() {
+	TIM2->SR &= ~TIM_SR_UIF;
+	gyro.OutputGyro();
+
+}
 
 void HSEM_IRQHandler() {
 	HAL_HSEM_IRQHandler();

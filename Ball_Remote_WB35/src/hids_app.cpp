@@ -138,13 +138,14 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 
 	static uint32_t lastPrint = 0;
 
-	if (JoystickNotifications) {
-		if (outputGyro && uwTick - lastPrint > 300) {
-			printf("x: %d y: %d z: %d\r\n", x, y, z);
-			lastPrint = uwTick;
-		}
-		UpdateJoystickReportChar();
+	if (outputGyro && uwTick - lastPrint > 300) {
+		printf("x: %d y: %d z: %d\r\n", x, y, z);
+		lastPrint = uwTick;
 	}
+
+//	if (JoystickNotifications) {
+		UpdateJoystickReportChar();
+//	}
 }
 
 
@@ -156,6 +157,7 @@ void HidService::ControlPointWrite(uint16_t data) {
 
 void HidService::Disconnect() {
 	JoystickNotifications = false;
+	gyro.ContinualRead(false);
 }
 
 
@@ -179,9 +181,10 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 
 			if (attribute_modified->Attr_Data[0] == 1) {
 				hidService.JoystickNotifications = true;
-				gyro.ContinualRead();
+				gyro.ContinualRead(true);
 			} else {
 				hidService.JoystickNotifications = false;
+				gyro.ContinualRead(false);
 			}
 		}
 
@@ -201,6 +204,8 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 			aci_gatt_allow_read(read_req->Connection_Handle);
 		}
 		if (read_req->Attribute_Handle == (hidService.ReportJoystickHandle + ValueOffset)) {
+			gyro.GyroRead();
+			JoystickNotification(gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
 			handled = true;
 			aci_gatt_allow_read(read_req->Connection_Handle);
 		}

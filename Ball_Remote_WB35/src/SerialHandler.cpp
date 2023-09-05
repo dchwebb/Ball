@@ -98,9 +98,8 @@ bool SerialHandler::Command()
 
 		usb->SendString("Mountjoy Ball Remote\r\n"
 				"\r\nSupported commands:\r\n"
-				"readspi:HH      -  Read I2C register at 0xHH\r\n"
-				"writei2c:RR,VV  -  Write value 0xVV to I2C register 0xRR\r\n"
-				"i2cscan         -  Scan for valid I2C addresses\r\n"
+				"readspi:HH      -  Read gyro register at 0xHH\r\n"
+				"writespi:RR,VV  -  Write value 0xVV to gyro register 0xRR\r\n"
 				"fwversion       -  Read firmware version\r\n"
 				"sleep           -  Enter sleep mode\r\n"
 				"shutdown        -  Enter shutdown mode\r\n"
@@ -126,13 +125,16 @@ bool SerialHandler::Command()
 
 	} else if (comCmd.compare("outputgyro\n") == 0) {					// Output raw gyro data
 		hidService.outputGyro = !hidService.outputGyro;
+		if (!hidService.JoystickNotifications) {					// If not outputting to BLE client start timer interrupt
+			gyro.ContinualRead(hidService.outputGyro);
+		}
 
 
 	} else if (comCmd.compare("gyroread\n") == 0) {					// Trigger a repeated read
 		if (hidService.JoystickNotifications) {
-			usb->SendString("Currently connected\r\n");
+			printf("Currently connected\r\n");
 		} else {
-			gyro.DebugRead();
+			gyro.GyroRead();
 			printf("x: %d, y:%d, z: %d\n", gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
 		}
 
@@ -145,14 +147,14 @@ bool SerialHandler::Command()
 			auto res = std::from_chars(comCmd.data() + comCmd.find(":") + 1, comCmd.data() + comCmd.size(), regNo, 16);
 
 			if (res.ec == std::errc()) {
-				uint8_t readData = gyro.ReadData(regNo);
+				uint8_t readData = gyro.ReadRegister(regNo);
 				usb->SendString("I2C Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
 			} else {
 				usb->SendString("Invalid register\r\n");
 			}
 		}
 
-	} else if (comCmd.compare(0, 9, "writei2c:") == 0) {			// write i2c register
+	} else if (comCmd.compare(0, 9, "writespi:") == 0) {			// write i2c register
 		if (hidService.JoystickNotifications) {
 			usb->SendString("Currently connected\r\n");
 		} else {
@@ -173,14 +175,6 @@ bool SerialHandler::Command()
 			}
 		}
 
-//	} else if (comCmd.compare("i2cscan\n") == 0) {				// Scan i2c addresses
-//		if (hidService.JoystickNotifications) {
-//			usb->SendString("Currently connected\r\n");
-//		} else {
-//			usb->SendString("Starting scan ...\n");
-//			int result = gyro.ScanAddresses();
-//			usb->SendString("Finished scan. Found " + std::to_string(result) + "\n");
-//		}
 
 	} else if (comCmd.compare("rssi\n") == 0) {			// RSSI value
 

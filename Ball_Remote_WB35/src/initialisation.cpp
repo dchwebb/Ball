@@ -7,6 +7,7 @@ static void InitRTC();
 static void InitGPIO();
 static void InitADC();
 static void InitSPI();
+static void InitGyroTimer();
 
 #define IPCC_ALL_RX_BUF 0x0000003FU 				// Mask for all RX buffers
 #define IPCC_ALL_TX_BUF 0x003F0000U 				// Mask for all TX buffers
@@ -66,54 +67,6 @@ void SystemClock_Config()
 	RCC->CSR |=  RCC_CSR_RFWKPSEL_0 | RCC_CSR_RFWKPSEL_1;				// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
 
 }
-/*
-void SystemClock_Config()
-{
-	FLASH->ACR |= FLASH_ACR_PRFTEN;					// Flash prefetch enable
-	FLASH->SR &= ~FLASH_SR_OPERR;					// Clear Flash Option Validity flag
-
-	// Read HSE_Tuning from OTP and set HSE capacitor tuning
-	OTP_ID0_t* p_otp = (OTP_ID0_t*) OTP_Read(0);
-	if (p_otp) {
-		RCC->HSECR = 0xCAFECAFE;		// HSE control unlock key
-		MODIFY_REG(RCC->HSECR, RCC_HSECR_HSETUNE, p_otp->hse_tuning << RCC_HSECR_HSETUNE_Pos);
-	}
-
-	PWR->CR1 |= PWR_CR1_DBP; 						// Disable backup domain write protection: Enable access to the RTC registers
-
-	RCC->PLLCFGR |= RCC_PLLCFGR_PLLSRC_0;			// PLL source is MSI
-
-	RCC->CR |= RCC_CR_HSEON;						// Turn on external oscillator
-	while ((RCC->CR & RCC_CR_HSERDY) == 0);			// Wait till HSE is ready
-
-	RCC->CR |= RCC_CR_HSION;						// Turn on high speed internal oscillator
-	while ((RCC->CR & RCC_CR_HSIRDY) == 0);			// Wait till HSI is ready
-
-#ifdef USEBASEBOARD
-	RCC->CSR |= RCC_CSR_LSI1ON;
-	while ((RCC->CSR & RCC_CSR_LSI1RDY) == 0);		// Wait till LSI is ready
-#elif
-	RCC->BDCR |= RCC_BDCR_LSEON;					// Turn on low speed external oscillator
-	while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0);		// Wait till LSE is ready
-#endif
-
-	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 1);	// Increase Flash latency as using clock greater than 18MHz (see manual p.77)
-	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 1);
-
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);		// 10: HSE selected as system clock
-	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until HSE is selected
-
-	SysTick->LOAD  = 32000 - 1;						// set reload register
-	SysTick->VAL = 0;								// Load the SysTick Counter Value
-
-	// Peripheral clocks already set to default: RTC, USART, LPUSART
-	RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				// RF system wakeup clock source selection: 01: LSE oscillator clock
-	RCC->SMPSCR |= RCC_SMPSCR_SMPSDIV_0;			// SMPS prescaler - FIXME not planning to use (see p214)
-	RCC->SMPSCR &= ~RCC_SMPSCR_SMPSSEL_Msk;			// 00: HSI16 selected as SMPS step-down converter clock
-
-	RCC->CR |= RCC_CR_MSIPLLEN;						// Multispeed internal RC oscillator - used for USB?
-}
-*/
 
 
 void InitHardware()
@@ -139,10 +92,8 @@ void InitHardware()
 	InitGPIO();
 	InitADC();
 	InitSPI();
+	InitGyroTimer();
 
-#ifndef USEBASEBOARD
-//	InitI2C();
-#endif
 }
 
 
@@ -153,19 +104,26 @@ static void InitSPI()
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;			// GPIO Ports Clock Enable
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
 
-	GPIOA->MODER &= ~GPIO_MODER_MODE15_0;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 	GPIOB->MODER &= ~(GPIO_MODER_MODE3_0 | GPIO_MODER_MODE4_0 | GPIO_MODER_MODE5_0);
-	GPIOA->AFR[1] |= (5 << GPIO_AFRH_AFSEL15_Pos);	// AF 5
-	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL3_Pos);
-	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL4_Pos);
-	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL5_Pos);
+	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL3_Pos);	// CLK
+	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL4_Pos);	// MISO
+	GPIOB->AFR[0] |= (5 << GPIO_AFRL_AFSEL5_Pos);	// MOSI
 	GPIOB->PUPDR &= ~GPIO_PUPDR_PUPD4;				// PB4 is pulled up by default (also used as JTAG reset)
+
+	GPIOA->MODER &= ~GPIO_MODER_MODE15;				// CS to output mode
+	GPIOA->MODER |= GPIO_MODER_MODE15_0;
+	GPIOA->ODR |= GPIO_ODR_OD15;					// Set high
 	GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD15;				// PA15 is pulled up by default (also used as JTDI)
+//	GPIOA->MODER &= ~GPIO_MODER_MODE15_0;
+//	GPIOA->AFR[1] |= (5 << GPIO_AFRH_AFSEL15_Pos);	// CS AF 5
+//	GPIOA->PUPDR |= GPIO_PUPDR_PUPD15_0;
+
 
 	SPI1->CR1 |= SPI_CR1_MSTR;						// Master mode
-	SPI1->CR2 |= SPI_CR2_DS;						// Set data size to 16 bit
-	SPI1->CR2 |= SPI_CR2_SSOE;						// NSS (CS) output enable
-	SPI1->CR2 |= SPI_CR2_NSSP;						// Pulse Chip select line on communication
+	SPI1->CR1 |= SPI_CR1_SSI;						// Internal slave select
+	SPI1->CR1 |= SPI_CR1_SSM;						// Software CS management
+//	SPI1->CR2 |= SPI_CR2_SSOE;						// NSS (CS) output enable
+//	SPI1->CR2 |= SPI_CR2_NSSP;						// Pulse Chip select line on communication
 
 	SPI1->CR1 |= 0b011 << SPI_CR1_BR_Pos;			// 011: fPCLK/16 = 64Mhz/16 = 4MB/s APB2 clock currently 64MHz (FIXME this should be slower in final version)
 	SPI1->CR1 |= SPI_CR1_SPE;
@@ -218,12 +176,6 @@ static void InitGPIO()
 
 	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;			// Configure LED pins : PA3 LED_BLUE_Pin
 
-
-	/*
-	// Init debug pin PB8
-	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
-	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
-*/
 	// Enable EXTI WKUP4 on PA2 to wake up from shutdown
 	//EXTI->EMR1 |= EXTI_EMR1_EM4;
 	PWR->CR4 &= ~PWR_CR4_WP4;		// Wake-Up pin polarity (0=rising 1 = falling edge)
@@ -283,65 +235,20 @@ static void InitSysTick()
 {
 	SysTick_Config(SystemCoreClock / SYSTICK);		// gives 1ms
 	NVIC_SetPriority(SysTick_IRQn, 0);
-
-	// Currently systick increments uwTick at 1 kHz
-//	SysTick->LOAD  = 32000 - 1UL;					// set reload register
-//	SysTick->VAL = 0UL;								// Load the SysTick Counter Value
-//	NVIC_SetPriority(SysTick_IRQn, 0);
-//	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
-//			SysTick_CTRL_TICKINT_Msk  |
-//			SysTick_CTRL_ENABLE_Msk;    			// Enable SysTick IRQ and SysTick Timer
-
 }
 
 
-void InitI2C()
+//	Setup Timer 2 on an interrupt to trigger gyro output
+void InitGyroTimer()
 {
-	//	Enable GPIO and I2C clocks
-	RCC->APB1ENR1 |= RCC_APB1ENR1_I2C1EN;			// I2C1 Peripheral Clocks Enable
-	RCC->CCIPR &= ~RCC_CCIPR_I2C1SEL;				// 00: PCLK ; 01: System clock; 10: HSI16 clock
-	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;			// GPIO port clock
-	RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;			// DMA Mux Clock
-	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;				// DMA 1 Clock
+	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;			// Enable Timer 3
+	TIM2->PSC = 34;									// Set prescaler
+	TIM2->ARR = 2000; 								// Set auto reload register - 64Mhz / 33 / 2000 = ~1kHz
 
-	// Initialize I2C DMA peripheral
-	DMA1_Channel1->CCR &= ~DMA_CCR_EN;
-	DMA1_Channel1->CCR &= ~DMA_CCR_CIRC;			// Disable Circular mode to keep refilling buffer
-	DMA1_Channel1->CCR |= DMA_CCR_MINC;				// Memory in increment mode
-	DMA1_Channel1->CCR &= ~DMA_CCR_PSIZE_0;			// Peripheral size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
-	DMA1_Channel1->CCR &= ~DMA_CCR_MSIZE_0;			// Memory size: 00 = 8 bit; 01 = 16 bit; 10 = 32 bit
-	DMA1_Channel1->CCR |= DMA_CCR_PL_0;				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
-	DMA1_Channel1->CCR &= ~DMA_CCR_DIR;				// data transfer direction: 00: peripheral-to-memory; 01: memory-to-peripheral; 10: memory-to-memory				// Priority: 00 = low; 01 = Medium; 10 = High; 11 = Very High
+	TIM2->DIER |= TIM_DIER_UIE;						// DMA/interrupt enable register
+	TIM2->EGR |= TIM_EGR_UG;						// Re-initializes counter and generates update of registers
 
-	DMA1->IFCR |= 0xF << DMA_IFCR_CGIF1_Pos;		// clear all five interrupts for this stream
+	NVIC_SetPriority(TIM2_IRQn, 2);					// Lower is higher priority
 
-	DMAMUX1_Channel0->CCR |= 10; 					// DMA request MUX input 10 = I2C1_RX (See p.348)
-	DMAMUX1_ChannelStatus->CFR |= DMAMUX_CFR_CSOF0; // Channel 0 Clear synchronization overrun event flag
-
-	// PB8: I2C1_SCL [alternate function AF4]
-	GPIOB->OTYPER |= GPIO_OTYPER_OT8;				// Set pin output to Open Drain
-	GPIOB->MODER &= ~GPIO_MODER_MODE8_0;			// 10: Alternate function mode
-	GPIOB->AFR[1] |= 4 << GPIO_AFRH_AFSEL8_Pos;		// Alternate Function 4 (I2C1)
-
-	// PB9: I2C1_SDA [alternate function AF4]
-	GPIOB->OTYPER |= GPIO_OTYPER_OT9;				// Set pin output to Open Drain
-	GPIOB->MODER &= ~GPIO_MODER_MODE9_0;			// 10: Alternate function mode
-	GPIOB->AFR[1] |= 4 << GPIO_AFRH_AFSEL9_Pos;		// Alternate Function 4 (I2C1)
-
-	// Timings taken from HAL for 100kHz:
-	// Timing calculations: I2C frequency: 1 / ((SCLL + 1) + (SCLH + 1)) * (PRESC + 1) * 1/I2CCLK)
-	// [eg 1 / ((256 + 237) * 8 * 1/32MHz) = 100kHz] (Will actually be slightly slower as there are also sync times to be accounted for)
-	I2C1->TIMINGR |= 0x7 << I2C_TIMINGR_PRESC_Pos;	// Timing prescaler
-	I2C1->TIMINGR |= 0x2 << I2C_TIMINGR_SDADEL_Pos;	// Data Hold Time
-	I2C1->TIMINGR |= 0x4 << I2C_TIMINGR_SCLDEL_Pos;	// Data Setup Time
-	I2C1->TIMINGR |= 0x13 << I2C_TIMINGR_SCLL_Pos;	// SCLL low period
-	I2C1->TIMINGR |= 0x0F << I2C_TIMINGR_SCLH_Pos;	// SCLH high period
-
-	I2C1->CR1 &= ~I2C_CR1_NOSTRETCH;				// Clock stretching disable: Must be cleared in master mode
-
-	NVIC_SetPriority(I2C1_EV_IRQn, 4);				// Enable I2C interrupts: Lower is higher priority
-	NVIC_EnableIRQ(I2C1_EV_IRQn);
-
-	I2C1->CR1 |= I2C_CR1_PE;						// Peripheral enable
 }
 

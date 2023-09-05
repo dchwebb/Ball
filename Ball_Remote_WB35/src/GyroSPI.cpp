@@ -2,74 +2,96 @@
 #include "hids_app.h"
 #include <stdio.h>
 
-GyroSPI gyro;
+GyroSPI gyro;		// For use with ST L3GD20
 
-// For use with ST L3GD20
-// PB8: I2C1_SCL; PB9: I2C1_SDA
-
-// The I2C register address should cycle from 3 to 8 for sequential reads from the gyro registers;
-// However there seems to be an issue as currently configured where after reading 6 registers the pointer jumps an extra place
-// Botch fix is to read 11 times - this will then wrap to the next start point without having to reset registers
-#define I2CCOUNT 11
-volatile int8_t gyroBuffer[I2CCOUNT];
 
 void GyroSPI::Setup()
 {
-	WriteCmd(0x20, 0x6F);							// CTRL_REG1: DR = 01 (200 Hz ODR); BW = 10 (50 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+	WriteCmd(0x20, 0x6F);									// CTRL_REG1: DR = 01 (200 Hz ODR); BW = 10 (50 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+
+	// Configure read settings
+	SPI1->CR2 &= ~SPI_CR2_DS;								// Set data size to 8 bit
+	SPI1->CR2 |= SPI_CR2_FRXTH;								// Set FIFO threshold to 8 bits
 }
+
 
 // Writes data to a register
 void GyroSPI::WriteCmd(uint8_t reg, uint8_t val)
 {
 	// 16 bit command format: ~RW | ~MS | AD5 | ... | AD0 | DI7 | ... | DI0
 	// MS bit: 0 = address remains unchanged in multiple read/write commands
-	uint16_t cmd = (reg << 8) | val;
-	SPI1->CR2 |= SPI_CR2_DS;						// Set data size to 16 bit
-	SPI1->DR = cmd;
+
+	SPI1->CR2 |= SPI_CR2_DS;								// Set data size to 16 bit
+	GPIOA->ODR &= ~GPIO_ODR_OD15;							// Set CS low
+
+	SPI1->DR = (reg << 8) | val;
+	while ((SPI1->SR & SPI_SR_BSY) != 0) {}
+
+	GPIOA->ODR |= GPIO_ODR_OD15;							// Set CS high
+	SPI1->CR2 &= ~SPI_CR2_DS;								// Set data size to 8 bit
 }
 
 
-void GyroSPI::DebugRead() {
-	// Triggers a one-off read of gyro x, y and z registers for debugging
-	const uint8_t regStart = 0x28;
+uint8_t GyroSPI::ReadRegister(uint8_t reg)
+{
+	GPIOA->ODR &= ~GPIO_ODR_OD15;							// Set CS low
+
+	*spi8BitWrite = readGyro | reg; 						// set RW bit to 1 to indicate read
+	*spi8BitWrite = 0;										// Dummy write to trigger read - add to FIFO
+	ClearReadBuffer();										// Clear RX buffer while data is sending
+
+	while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
+	[[maybe_unused]] volatile uint8_t dummy = SPI1->DR;		// Clear dummy read
+
+	while ((SPI1->SR & SPI_SR_RXNE) == 0) {}				// Wait for RX data to be ready
+	GPIOA->ODR |= GPIO_ODR_OD15;							// Set CS high
+
+	return SPI1->DR;
+}
+
+
+void GyroSPI::GyroRead()
+{
+	// Read x/y/z registers continuously - after first command to read and increment address, each byte read is triggered with a byte write
 	uint8_t gyroBuffer[6];
+
+	GPIOA->ODR &= ~GPIO_ODR_OD15;							// Set CS low
+	*spi8BitWrite = readGyro | incrAddr | dataRegStart;		// Send instruction to trigger reads
+	*spi8BitWrite = 0;										// Add dummy write to FIFO to trigger first read
+	ClearReadBuffer();										// Clear RX buffer while data is sending
+
+	while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
+	[[maybe_unused]] volatile uint8_t dummy = SPI1->DR;		// Clear dummy read
+
 	for (uint8_t i = 0; i < 6; ++i) {
-		uint16_t cmd  = (1 << 15) | ((regStart + i) << 8); 					// set RW bit to 1 to indicate read
-		SPI1->DR = cmd;
+		*spi8BitWrite = 0;									// Dummy write to trigger next read
 		while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
 		gyroBuffer[i] = SPI1->DR;
 	}
-	gyroData.x = (gyroBuffer[0] << 8) | gyroBuffer[1];
-	gyroData.y = (gyroBuffer[2] << 8) | gyroBuffer[3];
-	gyroData.z = (gyroBuffer[4] << 8) | gyroBuffer[5];
+
+	GPIOA->ODR |= GPIO_ODR_OD15;							// Set CS high
+
+	uint16_t* buff16bit = (uint16_t*)gyroBuffer;
+	gyroData.x = buff16bit[0];
+	gyroData.y = buff16bit[1];
+	gyroData.z = buff16bit[2];
 }
 
 
-// Read data from the selected register address
-uint8_t GyroSPI::ReadData(uint8_t reg)
+void GyroSPI::OutputGyro()
 {
-	// This pulses the CS pin after 8 bits - possibly use 16 bit format and see if data is returned in second half of word
-	while ((SPI1->SR & SPI_SR_RXNE) == SPI_SR_RXNE) {
-		[[maybe_unused]] volatile uint16_t dummy = SPI1->DR;
+	GyroRead();
+	hidService.JoystickNotification(gyroData.x, gyroData.y, gyroData.z);
+}
+
+
+void GyroSPI::ContinualRead(bool on)
+{
+	// Initiate Timer to output continual readings
+	if (on) {
+		TIM2->CR1 |= TIM_CR1_CEN;
+		NVIC_EnableIRQ(TIM2_IRQn);
+	} else {
+		TIM2->CR1 &= ~TIM_CR1_CEN;
 	}
-
-#ifdef SPI_8BIT
-	SPI1->CR2 &= ~SPI_CR2_DS_3;						// Set data size to 8 bit
-	uint8_t cmd  = (1 << 7) | reg; 					// set RW bit to 1 to indicate read
-	SPI1->DR = cmd;
-	while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
-	return SPI1->DR;
-#else
-	uint16_t cmd  = (1 << 15) | (reg << 8); 					// set RW bit to 1 to indicate read
-	SPI1->DR = cmd;
-	while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
-	return SPI1->DR;
-
-#endif
-}
-
-
-void GyroSPI::ContinualRead()
-{
-
 }

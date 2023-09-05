@@ -8,7 +8,11 @@ extern "C" {
 // To enable USB for printf commands (To print floats enable 'Use float with printf from newlib-nano' MCU Build Settings)
 size_t _write(int handle, const unsigned char* buf, size_t bufSize)
 {
-	return usb.SendString(buf, bufSize);
+	if (usb.devState == USBHandler::DeviceState::Configured) {
+		return usb.SendString(buf, bufSize);
+	} else {
+		return 0;
+	}
 }
 }
 
@@ -42,7 +46,7 @@ inline void SetRxStatus(uint8_t ep, uint16_t status)		// Set endpoint receive st
 void USBHandler::ReadPMA(uint16_t pma, uint16_t bytes)
 {
 	// It looks like there is an error in the WB55 register map header - PMA address given as 0x40006018; should be 0x40006c00 (p.70)
-	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMA_ADDR + pma);		// Eg 0x40006018 **wb55 0x40006c18
+	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMAADDR + pma);		// Eg 0x40006018 **wb55 0x40006c18
 
 	for (int i = 0; i < (bytes + 1) / 2; i++) {
 		reinterpret_cast<volatile uint16_t*>(rxBuff)[i] = *pmaBuff++;				// pma buffer can only be read in 16 bit words
@@ -58,7 +62,7 @@ void USBHandler::ReadPMA(uint16_t pma, uint16_t bytes)
 
 void USBHandler::WritePMA(uint16_t pma, uint16_t bytes)
 {
-	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMA_ADDR + pma);
+	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMAADDR + pma);
 
 	for (int i = 0; i < (bytes + 1) / 2; i++) {
 		pmaBuff[i] = reinterpret_cast<const uint16_t*>(txBuff)[i];
@@ -74,7 +78,7 @@ void USBHandler::ProcessSetupPacket()
 	usbDebug[usbDebugNo].Request = req;
 #endif
 	// Previously USBD_StdDevReq
-	if ((req.bmRequest & USB_REQ_RECIPIENT_MASK) == RequestRecipientDevice && (req.bmRequest & USB_REQ_TYPE_MASK) == RequestTypeStandard) {
+	if ((req.bmRequest & recipientMask) == RequestRecipientDevice && (req.bmRequest & requestTypeMask) == RequestTypeStandard) {
 		switch (static_cast<Request>(req.bRequest)) {
 		case Request::GetDescriptor:
 			GetDescriptor();
@@ -107,9 +111,9 @@ void USBHandler::ProcessSetupPacket()
 		}
 
 	// Previously USBD_StdItfReq
-	} else if ((req.bmRequest & USB_REQ_RECIPIENT_MASK) == RequestRecipientInterface && (req.bmRequest & USB_REQ_TYPE_MASK) == RequestTypeClass) {
+	} else if ((req.bmRequest & recipientMask) == RequestRecipientInterface && (req.bmRequest & requestTypeMask) == RequestTypeClass) {
 		if (req.wLength != 0) {
-			if ((req.bmRequest & USB_REQ_DIRECTION_MASK) != 0)	{		// Device to host
+			if ((req.bmRequest & requestDirectionMask) != 0)	{		// Device to host
 				// CDC request 0xA1, 0x21, 0x0, 0x0, 0x7		GetLineCoding 0xA1 0x21 0 Interface 7; Data: Line Coding Data Structure
 				// 0xA1 [1|01|00001] Device to host | Class | Interface
 				txBuffSize = req.wLength;
@@ -135,7 +139,7 @@ void USBHandler::ProcessSetupPacket()
 // EPStartXfer setup and starts a transfer over an EP
 void USBHandler::EPStartXfer(Direction direction, uint8_t endpoint, uint32_t len)
 {
-	uint8_t epIndex = (endpoint & 0xF);
+	uint8_t epIndex = (endpoint & epAddrMask);
 
 	if (direction == Direction::in) {						// IN endpoint
 		if (len > maxPacket) {

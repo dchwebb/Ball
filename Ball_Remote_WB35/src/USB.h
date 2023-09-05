@@ -28,8 +28,8 @@ typedef struct {
 	volatile uint16_t reserved;
 } USB_EPR_TypeDef;
 
-#define USB_PMA_ADDR 0x40006C00			// this in incorrect for WB55 in header
-#define USB_PMA  ((USB_PMA_TypeDef*) USB_PMA_ADDR)
+
+#define USB_PMA  ((USB_PMA_TypeDef*) USB_PMAADDR)
 #define USB_EPR  ((USB_EPR_TypeDef*)(&USB->EP0R))
 
 // Bit definition for USB_COUNT0_RX register
@@ -45,13 +45,8 @@ typedef struct {
 #define USB_COUNT0_TX_COUNT0_TX_Msk              (0x3FFUL << USB_COUNT0_TX_COUNT0_TX_Pos)/*!< 0x000003FF */
 #define USB_COUNT0_TX_COUNT0_TX                  USB_COUNT0_TX_COUNT0_TX_Msk   /*!< Transmission Byte Count 0 */
 
-#define USB_REQ_RECIPIENT_MASK			0x03
-#define USB_REQ_DIRECTION_MASK			0x80
-#define USB_REQ_TYPE_MASK				0x60
-#define EP_ADDR_MASK					0x0F
 
 #define USBD_VID						0x483		// Vendor ID - use STMicro
-#define USBD_LANGID						1033		// Language - en-US
 #define USBD_PID						22352		// Product ID
 
 #define LOBYTE(x)  (static_cast<uint8_t>(x & 0x00FFU))
@@ -60,6 +55,7 @@ typedef struct {
 class USBHandler {
 public:
 	enum EndPoint {CDC_In = 0x81, CDC_Out = 0x1, CDC_Cmd = 0x82};
+	enum class DeviceState {Suspended, Addressed, Configured} devState;
 
 	void USBInterruptHandler();
 	void InitUSB();
@@ -76,6 +72,11 @@ private:
 	static constexpr const char* manufacturerString = "Mountjoy Modular";
 	static constexpr const char* productString      = "Mountjoy Ball Remote";
 	static constexpr const char* cdcString          = "Mountjoy Ball Remote CDC";
+
+	static constexpr uint32_t recipientMask = 0x03;
+	static constexpr uint32_t requestTypeMask = 0x60;
+	static constexpr uint32_t  requestDirectionMask = 0x80;
+	static constexpr uint32_t epAddrMask = 0x0F;
 
 	enum EndPointType {Control = 0, Isochronous = 1, Bulk = 2, Interrupt = 3};
 	enum Descriptor {DeviceDescriptor = 0x1, ConfigurationDescriptor = 0x2, StringDescriptor = 0x3, InterfaceDescriptor = 0x4, EndpointDescriptor = 0x5, DeviceQualifierDescriptor = 0x6, IadDescriptor = 0xb, BosDescriptor = 0xF};
@@ -104,8 +105,6 @@ private:
 	uint32_t txRemaining;			// If transfer is larger than maximum packet size store remaining byte count
 	uint8_t cmdOpCode;				// stores class specific operation codes (eg CDC set line config)
 	uint8_t devAddress = 0;			// Temporarily hold the device address as it cannot stored in the register until the 0 address response has been handled
-
-	enum class DeviceState {Suspended, Addressed, Configured} devState;
 
 	struct usbRequest {
 		uint8_t bmRequest;
@@ -279,11 +278,12 @@ private:
 	};
 
 	// USB lang indentifier descriptor
+	static constexpr uint16_t languageIDString = 1033;
 	const uint8_t USBD_LangIDDesc[4] = {
 			0x04,
 			StringDescriptor,
-			LOBYTE(USBD_LANGID),
-			HIBYTE(USBD_LANGID)
+			LOBYTE(languageIDString),
+			HIBYTE(languageIDString)
 	};
 
 	uint8_t unicodeString[128];
