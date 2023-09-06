@@ -41,6 +41,7 @@ int main(void)
 		HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_SET);
 		MX_APPE_Process();
 		serial.Command();			// Check for incoming CDC commands
+		basService.TimedRead();		// Updates battery level every few seconds if changed
 	}
 }
 

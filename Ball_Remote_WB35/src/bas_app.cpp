@@ -78,13 +78,28 @@ float BasService::GetBatteryLevel()
 	// Get Battery level as voltage
 	// voltage divider scales 5V > 2.9V (charging); 4.3V > 2.46V (Fully charged); 3.2V > 1.85V (battery lowest usable level)
 	// ADC 4096 / 2.8V = 1462; calculated to scale by 1.73 (values corrected by measurement)
-	ADC1->ISR &= ~ADC_ISR_EOC;
-	ADC1->CR |= ADC_CR_ADSTART;
-	while ((ADC1->ISR & ADC_ISR_EOC) != ADC_ISR_EOC) {}
-	float voltage = (static_cast<float>(ADC1->DR) / 1390.0f) * 1.73f;
 
-	Level = static_cast<uint8_t>(std::clamp((voltage - 1.8f) * 40.0f, 0.0f, 100.0f));		// convert voltage to 0 - 100 range for 1.8V - 4.3
+	float voltage = (static_cast<float>(ADC1->DR) / 1381.0f) * 1.73f;
+	Level = static_cast<uint8_t>(std::clamp((voltage - 1.8f) * 40.0f, 0.0f, 100.0f));		// convert voltage to 0 - 100 range for 1.8V - 4.3V
 	return voltage;
+}
+
+
+void BasService::TimedRead()
+{
+	// Called in main loop - checks battery level every 5 seconds and updates characteristic if required
+	if (lastRead + 5000 < uwTick) {
+		lastRead = uwTick;
+
+		uint8_t oldLevel = Level;
+		GetBatteryLevel();
+
+		if (Level != oldLevel) {
+			UpdateChar();
+		}
+
+		ADC1->CR |= ADC_CR_ADSTART;			// Trigger next ADC read
+	}
 }
 
 

@@ -150,6 +150,9 @@ static void InitADC()
 
 	ADC1->CR |= ADC_CR_ADEN;						// Enable ADC
 	while ((ADC1->ISR & ADC_ISR_ADRDY) == 0) {}
+
+	ADC1->CR |= ADC_CR_ADSTART;						// Trigger next ADC read
+
 }
 
 
