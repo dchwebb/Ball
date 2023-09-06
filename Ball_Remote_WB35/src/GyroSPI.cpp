@@ -37,8 +37,8 @@ uint8_t GyroSPI::ReadRegister(uint8_t reg)
 	GPIOA->ODR &= ~GPIO_ODR_OD15;							// Set CS low
 
 	*spi8BitWrite = readGyro | reg; 						// set RW bit to 1 to indicate read
-	*spi8BitWrite = 0;										// Dummy write to trigger read - add to FIFO
 	ClearReadBuffer();										// Clear RX buffer while data is sending
+	*spi8BitWrite = 0;										// Dummy write to trigger read - add to FIFO
 
 	while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
 	[[maybe_unused]] volatile uint8_t dummy = SPI1->DR;		// Clear dummy read
@@ -57,8 +57,8 @@ void GyroSPI::GyroRead()
 
 	GPIOA->ODR &= ~GPIO_ODR_OD15;							// Set CS low
 	*spi8BitWrite = readGyro | incrAddr | dataRegStart;		// Send instruction to trigger reads
-	*spi8BitWrite = 0;										// Add dummy write to FIFO to trigger first read
 	ClearReadBuffer();										// Clear RX buffer while data is sending
+	*spi8BitWrite = 0;										// Add dummy write to FIFO to trigger first read
 
 	while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
 	[[maybe_unused]] volatile uint8_t dummy = SPI1->DR;		// Clear dummy read

@@ -295,8 +295,8 @@
 
 #define CFG_BLE_MAX_COC_INITIATOR_NBR   (32)
 
+// -127 to 20 - Power in dB
 #define CFG_BLE_MIN_TX_POWER            (20)
-
 #define CFG_BLE_MAX_TX_POWER            (20)
 
 /******************************************************************************

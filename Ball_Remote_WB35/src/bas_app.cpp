@@ -1,7 +1,7 @@
 #include "ble.h"
 #include "stm32_seq.h"
 #include "bas_app.h"
-
+#include <algorithm>
 
 BasService basService;
 
@@ -41,8 +41,10 @@ void BasService::Init()
 void BasService::AppInit()
 {
 	UTIL_SEQ_RegTask(1 << CFG_TASK_BAS_LEVEL, UTIL_SEQ_RFU, SendNotification);		// FIXME - not currently using
-	basService.BatteryNotifications = false;			// Initialise notification info
-	basService.Level = 0x42;								// Initialize Level
+	basService.BatteryNotifications = false;				// Initialise notification info
+
+	GetBatteryLevel();
+
 	UpdateChar();
 }
 
@@ -68,6 +70,21 @@ void BasService::SetLevel(uint8_t level)
 	} else {
 		APP_DBG_MSG("- BAS: Notifications disabled (set to %d)\r\n", level);
 	}
+}
+
+
+float BasService::GetBatteryLevel()
+{
+	// Get Battery level as voltage
+	// voltage divider scales 5V > 2.9V (charging); 4.3V > 2.46V (Fully charged); 3.2V > 1.85V (battery lowest usable level)
+	// ADC 4096 / 2.8V = 1462; calculated to scale by 1.73 (values corrected by measurement)
+	ADC1->ISR &= ~ADC_ISR_EOC;
+	ADC1->CR |= ADC_CR_ADSTART;
+	while ((ADC1->ISR & ADC_ISR_EOC) != ADC_ISR_EOC) {}
+	float voltage = (static_cast<float>(ADC1->DR) / 1390.0f) * 1.73f;
+
+	Level = static_cast<uint8_t>(std::clamp((voltage - 1.8f) * 40.0f, 0.0f, 100.0f));		// convert voltage to 0 - 100 range for 1.8V - 4.3
+	return voltage;
 }
 
 
@@ -110,4 +127,5 @@ bool BasService::EventHandler(hci_event_pckt* event_pckt)
 
 	return handled;
 }
+
 

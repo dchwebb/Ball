@@ -1,14 +1,15 @@
 #include "SerialHandler.h"
-#include "gyroSPI.h"
-#include "app_ble.h"
-#include "hids_app.h"
-#include <stdio.h>
 
 extern "C" {
 #include "shci.h"
 #include "ble_hal_aci.h"
+#include "ble_hci_le.h"
 }
+#include "gyroSPI.h"
 #include "stm32_seq.h"
+#include "app_ble.h"
+#include "hids_app.h"
+#include "bas_app.h"
 #include <charconv>
 
 
@@ -77,18 +78,10 @@ bool SerialHandler::Command()
 	} else if (comCmd.compare("info\n") == 0) {		// Print diagnostic information
 		extern bool coprocessorFailure;
 
-		// Get Battery level: 4096 / 2.8V = 1462; voltage divider calculated to scale by 1.73 (values corrected by measurement)
-		ADC1->ISR &= ~ADC_ISR_EOC;
-		ADC1->CR |= ADC_CR_ADSTART;
-		while ((ADC1->ISR & ADC_ISR_EOC) != ADC_ISR_EOC) {}
-		float voltage = (static_cast<float>(ADC1->DR) / 1390.0f) * 1.73f;
-
 		sprintf(printBuffer, "\r\nMountjoy Ball Remote v1.0 - Current Settings:\r\n\r\n"
 				"Battery: %f V\r\n"
-				"Battery ADC: %lu V\r\n"
 				"Wireless Stack: %s\r\n",
-				voltage,
-				ADC1->DR,
+				basService.GetBatteryLevel(),
 				(coprocessorFailure ? "Off" : "Running"));
 
 		usb->SendString(printBuffer);
@@ -176,13 +169,16 @@ bool SerialHandler::Command()
 		}
 
 
-	} else if (comCmd.compare("rssi\n") == 0) {			// RSSI value
-
-		uint8_t rssi = 0;
-		if (aci_hal_read_raw_rssi(&rssi) == 0) {
-			printf("RSSI Value: %d\r\n", rssi);
+	} else if (comCmd.compare("rssi\n") == 0) {					// RSSI value
+		if (bleApp.connectionStatus != BleApp::ConnStatus::Connected) {
+			printf("Not connected\r\n");
 		} else {
-			printf("Error reading RSSI Value\r\n");
+			int8_t rssi = 0;
+			if (hci_read_rssi(bleApp.connectionHandle, (uint8_t*)&rssi) == 0) {
+				printf("RSSI Value: %d dBm\r\n", rssi);
+			} else {
+				printf("Error reading RSSI Value\r\n");
+			}
 		}
 
 	} else if (comCmd.compare("fwversion\n") == 0) {			// Version of BLE firmware

@@ -2977,7 +2977,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid a5601d2d-9a3f-406d-acfc-c102b623ba77)
   )
-  (text "Voltage divider provides\ninhibit signal to voltage \nregulator when battery < 3.2V \nand scales 5V to 2.9V max \nfor battery level ADC"
+  (text "Voltage divider provides\ninhibit signal to voltage \nregulator when battery < 3.2V \nand scales battery level ADC:\n5V > 2.9V, 3.2V > 1.85V"
     (at 247.65 135.255 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid b4d519c1-ed59-444c-b430-e0c935696b33)

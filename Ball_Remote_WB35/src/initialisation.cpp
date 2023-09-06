@@ -9,8 +9,8 @@ static void InitADC();
 static void InitSPI();
 static void InitGyroTimer();
 
-#define IPCC_ALL_RX_BUF 0x0000003FU 				// Mask for all RX buffers
-#define IPCC_ALL_TX_BUF 0x003F0000U 				// Mask for all TX buffers
+//#define IPCC_ALL_RX_BUF 0x0000003FU 				// Mask for all RX buffers
+//#define IPCC_ALL_TX_BUF 0x003F0000U 				// Mask for all TX buffers
 
 
 uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference to current connection failure
@@ -185,6 +185,7 @@ static void InitGPIO()
 
 static void InitIPCC()
 {
+	// Inter-processor communication controller (IPCC) is used for communicating data between two processors
 	RCC->AHB3ENR |= RCC_AHB3ENR_IPCCEN;				// Enable IPCC Clock
 
 	IPCC->C1SCR = 0x3F;								// Clear processor 1 all IPCC channels
