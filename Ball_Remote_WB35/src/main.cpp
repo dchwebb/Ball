@@ -22,7 +22,7 @@ void Button2_Task(void) {
 
 bool sleep = false;
 SerialHandler serial(usb);
-bool coprocessorFailure = false;
+
 
 int main(void)
 {
@@ -31,7 +31,7 @@ int main(void)
 
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
 	usb.InitUSB();
-	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
+	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE
 
 	gyro.Setup();					// Setup address and settings for gyroscope
 

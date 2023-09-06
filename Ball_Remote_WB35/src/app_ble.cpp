@@ -54,7 +54,9 @@ void BleApp::Init()
 
 	auto result = SHCI_C2_BLE_Init(&ble_init_cmd_packet);		// Starts the BLE Stack on CPU2
 	if (result != SHCI_Success) {
-		Error_Handler();
+		coprocessorFailure = true;
+		return;
+		//Error_Handler();
 	}
 
 	HciGapGattInit();							// Initialization of HCI & GATT & GAP layer

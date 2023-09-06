@@ -76,13 +76,12 @@ bool SerialHandler::Command()
 		}
 
 	} else if (comCmd.compare("info\n") == 0) {		// Print diagnostic information
-		extern bool coprocessorFailure;
 
 		sprintf(printBuffer, "\r\nMountjoy Ball Remote v1.0 - Current Settings:\r\n\r\n"
 				"Battery: %f V\r\n"
 				"Wireless Stack: %s\r\n",
 				basService.GetBatteryLevel(),
-				(coprocessorFailure ? "Off" : "Running"));
+				(bleApp.coprocessorFailure ? "Off" : "Running"));
 
 		usb->SendString(printBuffer);
 

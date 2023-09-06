@@ -9,9 +9,6 @@ static void InitADC();
 static void InitSPI();
 static void InitGyroTimer();
 
-//#define IPCC_ALL_RX_BUF 0x0000003FU 				// Mask for all RX buffers
-//#define IPCC_ALL_TX_BUF 0x003F0000U 				// Mask for all TX buffers
-
 
 uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference to current connection failure
 
@@ -88,12 +85,10 @@ void InitHardware()
 	LL_EXTI_DisableIT_0_31(~0);
 	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
 
-
 	InitGPIO();
 	InitADC();
 	InitSPI();
 	InitGyroTimer();
-
 }
 
 
@@ -200,7 +195,6 @@ static void InitIPCC()
 	NVIC_SetPriority(IPCC_C1_TX_IRQn, 0);
 	NVIC_EnableIRQ(IPCC_C1_TX_IRQn);
 
-
 	IPCC->C1CR |= (IPCC_CR_RXOIE | IPCC_CR_TXFIE);	// Activate the interrupts
 }
 
@@ -250,6 +244,5 @@ void InitGyroTimer()
 	TIM2->EGR |= TIM_EGR_UG;						// Re-initializes counter and generates update of registers
 
 	NVIC_SetPriority(TIM2_IRQn, 2);					// Lower is higher priority
-
 }
 

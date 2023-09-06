@@ -14,6 +14,7 @@ public:
 	uint16_t connectionHandle = 0xFFFF;									// When disconnected handle is set to 0xFFFF
 	ConnStatus connectionStatus = ConnStatus::Idle;
 	LowPowerMode lowPowerMode {LowPowerMode::Stop};
+	bool coprocessorFailure = false;
 
 	void Init();
 	void ServiceControlCallback(hci_event_pckt* pckt);
