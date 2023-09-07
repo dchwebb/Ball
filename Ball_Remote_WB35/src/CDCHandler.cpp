@@ -1,6 +1,6 @@
 #include "USB.h"
 #include "CDCHandler.h"
-
+#include <charconv>
 extern "C" {
 #include "shci.h"
 #include "ble_hal_aci.h"
@@ -11,14 +11,8 @@ extern "C" {
 #include "app_ble.h"
 #include "hids_app.h"
 #include "bas_app.h"
-#include <charconv>
 
 
-std::string HexByte(const uint16_t& v) {
-	char buf[50];
-	sprintf(buf, "%X", v);
-	return std::string(buf);
-}
 
 // Check if a command has been received from USB, parse and action as required
 void CDCHandler::ProcessCommand()
@@ -106,7 +100,7 @@ void CDCHandler::ProcessCommand()
 
 			if (res.ec == std::errc()) {
 				uint8_t readData = gyro.ReadRegister(regNo);
-				usb->SendString("I2C Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(readData) + "\r\n");
+				printf("I2C Register: %#04x Value: %#04x\r\n", regNo, readData);
 			} else {
 				usb->SendString("Invalid register\r\n");
 			}
@@ -124,7 +118,7 @@ void CDCHandler::ProcessCommand()
 				auto res = std::from_chars(cmd.data() + cmd.find(",") + 1, cmd.data() + cmd.size(), value, 16);
 				if (res.ec == std::errc()) {			// no error
 					gyro.WriteCmd(regNo, value);
-					usb->SendString("I2C write: Register: 0x" + HexByte(regNo) + " Value: 0x" + HexByte(value) + "\r\n");
+					printf("SPI write: Register: %#04x Value: %#04x\r\n", regNo, value);
 				} else {
 					usb->SendString("Invalid value\r\n");
 				}
@@ -180,6 +174,7 @@ void CDCHandler::ProcessCommand()
 
 	cmdPending = false;
 }
+
 
 void CDCHandler::DataIn()
 {
@@ -273,24 +268,24 @@ float CDCHandler::ParseFloat(const std::string_view cmd, const char precedingCha
 const uint8_t CDCHandler::Descriptor[] = {
 	// IAD Descriptor - Interface association descriptor for CDC class
 	0x08,									// bLength (8 bytes)
-	USBClass::IadDescriptor,						// bDescriptorType
-	USBClass::CDCCmdInterface,					// bFirstInterface
+	USBClass::IadDescriptor,				// bDescriptorType
+	USBClass::CDCCmdInterface,				// bFirstInterface
 	0x02,									// bInterfaceCount
 	0x02,									// bFunctionClass (Communications and CDC Control)
 	0x02,									// bFunctionSubClass
 	0x01,									// bFunctionProtocol
-	USBClass::CommunicationClass,				// String Descriptor
+	USBClass::CommunicationClass,			// String Descriptor
 
 	// Interface Descriptor
 	0x09,									// bLength: Interface Descriptor size
-	USBClass::InterfaceDescriptor,				// bDescriptorType: Interface
-	USBClass::CDCCmdInterface,					// bInterfaceNumber: Number of Interface
+	USBClass::InterfaceDescriptor,			// bDescriptorType: Interface
+	USBClass::CDCCmdInterface,				// bInterfaceNumber: Number of Interface
 	0x00,									// bAlternateSetting: Alternate setting
 	0x01,									// bNumEndpoints: 1 endpoint used
 	0x02,									// bInterfaceClass: Communication Interface Class
 	0x02,									// bInterfaceSubClass: Abstract Control Model
 	0x01,									// bInterfaceProtocol: Common AT commands
-	USBClass::CommunicationClass,				// iInterface
+	USBClass::CommunicationClass,			// iInterface
 
 	// Header Functional Descriptor
 	0x05,									// bLength: Endpoint Descriptor size
@@ -321,9 +316,9 @@ const uint8_t CDCHandler::Descriptor[] = {
 
 	// Endpoint 2 Descriptor
 	0x07,									// bLength: Endpoint Descriptor size
-	USBClass::EndpointDescriptor,				// bDescriptorType: Endpoint
-	USBClass::CDC_Cmd,							// bEndpointAddress
-	USBClass::Interrupt,							// bmAttributes: Interrupt
+	USBClass::EndpointDescriptor,			// bDescriptorType: Endpoint
+	USBClass::CDC_Cmd,						// bEndpointAddress
+	USBClass::Interrupt,					// bmAttributes: Interrupt
 	0x08,									// wMaxPacketSize
 	0x00,
 	0x10,									// bInterval
@@ -332,8 +327,8 @@ const uint8_t CDCHandler::Descriptor[] = {
 
 	// Data class interface descriptor
 	0x09,									// bLength: Endpoint Descriptor size
-	USBClass::InterfaceDescriptor,				// bDescriptorType:
-	USBClass::CDCDataInterface,					// bInterfaceNumber: Number of Interface
+	USBClass::InterfaceDescriptor,			// bDescriptorType:
+	USBClass::CDCDataInterface,				// bInterfaceNumber: Number of Interface
 	0x00,									// bAlternateSetting: Alternate setting
 	0x02,									// bNumEndpoints: Two endpoints used
 	0x0A,									// bInterfaceClass: CDC
@@ -343,19 +338,19 @@ const uint8_t CDCHandler::Descriptor[] = {
 
 	// Endpoint OUT Descriptor
 	0x07,									// bLength: Endpoint Descriptor size
-	USBClass::EndpointDescriptor,				// bDescriptorType: Endpoint
-	USBClass::CDC_Out,							// bEndpointAddress
-	USBClass::Bulk,								// bmAttributes: Bulk
-	LOBYTE(USBClass::ep_maxPacket),				// wMaxPacketSize:
+	USBClass::EndpointDescriptor,			// bDescriptorType: Endpoint
+	USBClass::CDC_Out,						// bEndpointAddress
+	USBClass::Bulk,							// bmAttributes: Bulk
+	LOBYTE(USBClass::ep_maxPacket),			// wMaxPacketSize:
 	HIBYTE(USBClass::ep_maxPacket),
 	0x00,									// bInterval: ignore for Bulk transfer
 
 	// Endpoint IN Descriptor
 	0x07,									// bLength: Endpoint Descriptor size
-	USBClass::EndpointDescriptor,				// bDescriptorType: Endpoint
-	USBClass::CDC_In,							// bEndpointAddress
-	USBClass::Bulk,								// bmAttributes: Bulk
-	LOBYTE(USBClass::ep_maxPacket),				// wMaxPacketSize:
+	USBClass::EndpointDescriptor,			// bDescriptorType: Endpoint
+	USBClass::CDC_In,						// bEndpointAddress
+	USBClass::Bulk,							// bmAttributes: Bulk
+	LOBYTE(USBClass::ep_maxPacket),			// wMaxPacketSize:
 	HIBYTE(USBClass::ep_maxPacket),
 	0x00,									// bInterval: ignore for Bulk transfer
 };

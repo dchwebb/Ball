@@ -8,19 +8,8 @@
 #include "USB.h"
 #include "gyroSPI.h"
 
-void Button1_Task(void) {
-	printf("Button 1 pressed\r\n");
-	hidService.JoystickNotification(5, 0, 0);
-}
-void Button2_Task(void) {
-	printf("Button 2 pressed\r\n");
-	static uint8_t battery = 50;
-
-	basService.SetLevel(battery++);
-}
 
 bool sleep = false;
-//CDCHandler serial(usb);
 
 
 int main(void)
@@ -34,7 +23,6 @@ int main(void)
 
 	gyro.Setup();					// Setup address and settings for gyroscope
 
-	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, 0, Button1_Task);
 
 	while (1) {
 		HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_SET);

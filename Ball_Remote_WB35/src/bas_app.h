@@ -16,7 +16,6 @@ private:
 
 	void AppInit();
 	tBleStatus UpdateChar();
-	static void SendNotification();
 };
 
 extern BasService basService;

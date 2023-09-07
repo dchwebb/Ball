@@ -16,7 +16,7 @@ void USB_LP_IRQHandler() {
 
 void EXTI4_IRQHandler() {
 	EXTI->PR1 = EXTI_PR1_PIF4;
-	UTIL_SEQ_SetTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
+	// FIXME Button pressed
 }
 
 
