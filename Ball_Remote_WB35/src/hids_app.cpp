@@ -1,7 +1,7 @@
 #include "ble.h"
 #include "hids_app.h"
 #include "gyroSPI.h"
-
+#include "stm32_seq.h"
 
 HidService hidService;
 
@@ -108,13 +108,22 @@ void HidService::AppInit()
 	joystickReport.x = 0;
 	joystickReport.y = 0;
 	joystickReport.z = 0;
+
+	// Use the sequencer to update the report char so that to avoid write conflicts
+	UTIL_SEQ_RegTask(1 << CFG_TASK_JOYSTICK_NOTIFICATION, 0, UpdateJoystickReportChar);
 	UpdateJoystickReportChar();
 }
 
 
 void HidService::UpdateJoystickReportChar()
 {
-	aci_gatt_update_char_value(ServiceHandle, ReportJoystickHandle, 0,	sizeof(joystickReport),	(uint8_t*)&joystickReport);
+	// Will trigger a notification to be sent if client is subscribed (called from sequencer)
+	aci_gatt_update_char_value(
+			hidService.ServiceHandle,
+			hidService.ReportJoystickHandle, 0,
+			sizeof(hidService.joystickReport),
+			(uint8_t*)&hidService.joystickReport
+			);
 }
 
 
@@ -143,9 +152,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 		lastPrint = uwTick;
 	}
 
-//	if (JoystickNotifications) {
-		UpdateJoystickReportChar();
-//	}
+	UTIL_SEQ_SetTask(1 << CFG_TASK_JOYSTICK_NOTIFICATION, CFG_SCH_PRIO_0);
 }
 
 
@@ -204,10 +211,10 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 			aci_gatt_allow_read(read_req->Connection_Handle);
 		}
 		if (read_req->Attribute_Handle == (hidService.ReportJoystickHandle + ValueOffset)) {
+			aci_gatt_allow_read(read_req->Connection_Handle);
+			handled = true;
 			gyro.GyroRead();
 			JoystickNotification(gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
-			handled = true;
-			aci_gatt_allow_read(read_req->Connection_Handle);
 		}
 		if (read_req->Attribute_Handle == (hidService.HidInformationHandle + ValueOffset)) {
 			handled = true;

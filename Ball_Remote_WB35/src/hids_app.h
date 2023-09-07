@@ -35,7 +35,7 @@ private:
 	uint16_t ReportMapHandle;
 
 	void AppInit();
-	void UpdateJoystickReportChar();
+	static void UpdateJoystickReportChar();
 	void UpdateReportMapChar();
 	void UpdateHidInformationChar();
 	void ControlPointWrite(uint16_t data);

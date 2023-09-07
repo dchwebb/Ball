@@ -40,27 +40,24 @@ void BasService::Init()
 
 void BasService::AppInit()
 {
-	BatteryNotifications = false;				// Initialise notification info
+	BatteryNotifications = false;
 	GetBatteryLevel();
-	UpdateChar();
+
+	// Use the sequencer to update the report char so that to avoid write conflicts
+	UTIL_SEQ_RegTask(1 << CFG_TASK_BATTERY_NOTIFICATION, 0, UpdateBatteryChar);
+	UpdateBatteryChar();
 }
 
 
-// Update Battery level characteristic value
-tBleStatus BasService::UpdateChar()
+void BasService::UpdateBatteryChar()
 {
-	return aci_gatt_update_char_value(ServiceHandle, BatteryLevelHandle, 0, 2, (uint8_t*)&Level);
-}
-
-
-void BasService::SetLevel(uint8_t level)
-{
-	Level = level;
-	if (BatteryNotifications) {
-		UpdateChar();
-	} else {
-		APP_DBG_MSG("- BAS: Notifications disabled (set to %d)\r\n", level);
-	}
+	// Will trigger a notification to be sent if client is subscribed (called from sequencer)
+	aci_gatt_update_char_value(
+			basService.ServiceHandle,
+			basService.BatteryLevelHandle,
+			0,
+			2,													// Size of battery report
+			(uint8_t*)&basService.Level);
 }
 
 
@@ -71,7 +68,7 @@ float BasService::GetBatteryLevel()
 	// ADC 4096 / 2.8V = 1462; calculated to scale by 1.73 (values corrected by measurement)
 
 	float voltage = (static_cast<float>(ADC1->DR) / 1381.0f) * 1.73f;
-	Level = static_cast<uint8_t>(std::clamp((voltage - 1.8f) * 40.0f, 0.0f, 100.0f));		// convert voltage to 0 - 100 range for 1.8V - 4.3V
+	Level = static_cast<uint8_t>(std::clamp((voltage - 3.2f) * 91.0f, 0.0f, 100.0f));		// convert voltage to 0 - 100 range for 1.8V - 4.3V
 	return voltage;
 }
 
@@ -86,7 +83,7 @@ void BasService::TimedRead()
 		GetBatteryLevel();
 
 		if (Level != oldLevel) {
-			UpdateChar();
+			UTIL_SEQ_SetTask(1 << CFG_TASK_BATTERY_NOTIFICATION, CFG_SCH_PRIO_0);
 		}
 
 		ADC1->CR |= ADC_CR_ADSTART;			// Trigger next ADC read
@@ -109,7 +106,7 @@ bool BasService::EventHandler(hci_event_pckt* event_pckt)
 
 			if (attribute_modified->Attr_Data[0] == 1) {
 				BatteryNotifications = true;
-				UpdateChar();
+				//UpdateBatteryChar();
 			} else {
 				BatteryNotifications = false;
 			}

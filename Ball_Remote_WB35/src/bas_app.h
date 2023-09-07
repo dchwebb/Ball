@@ -4,7 +4,6 @@ struct BasService {
 public:
 	void Init();
 	bool EventHandler(hci_event_pckt* Event);
-	void SetLevel(uint8_t level);
 	float GetBatteryLevel();
 	void TimedRead();
 private:
@@ -15,7 +14,7 @@ private:
 	uint32_t lastRead = 0;					// Last systick time battery level was read
 
 	void AppInit();
-	tBleStatus UpdateChar();
+	static void UpdateBatteryChar();
 };
 
 extern BasService basService;
