@@ -5,7 +5,6 @@
 #include "bas_app.h"
 #include "initialisation.h"
 #include "app_entry.h"
-#include "SerialHandler.h"
 #include "USB.h"
 #include "gyroSPI.h"
 
@@ -21,7 +20,7 @@ void Button2_Task(void) {
 }
 
 bool sleep = false;
-SerialHandler serial(usb);
+//CDCHandler serial(usb);
 
 
 int main(void)
@@ -40,7 +39,7 @@ int main(void)
 	while (1) {
 		HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_SET);
 		MX_APPE_Process();
-		serial.Command();			// Check for incoming CDC commands
+		usb.cdc.ProcessCommand();			// Check for incoming CDC commands
 		basService.TimedRead();		// Updates battery level every few seconds if changed
 	}
 }
