@@ -161,7 +161,7 @@ static void InitGPIO()
 	// GPIO Ports Clock Enable
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
 
-	// Configure GPIO pin : PA4 Connect Button (BUTTON_SW1_Pin)
+	// Configure GPIO pin : PA4 Connect Button
 	GPIOA->MODER &= ~GPIO_MODER_MODE4_Msk;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 	GPIOA->PUPDR |= GPIO_PUPDR_PUPD4_0;				// Activate pull up
 	SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI4_PA;	// Enable external interrupt
@@ -172,7 +172,7 @@ static void InitGPIO()
 	NVIC_EnableIRQ(EXTI4_IRQn);
 
 
-	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;			// Configure LED pins : PA3 LED_BLUE_Pin
+	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;			// Configure LED pins : PA3 Connect LED
 
 	// Enable EXTI WKUP4 on PA2 to wake up from shutdown
 	//EXTI->EMR1 |= EXTI_EMR1_EM4;

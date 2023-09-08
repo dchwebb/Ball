@@ -8,7 +8,7 @@
 
 
 bool sleep = false;
-
+volatile uint32_t uwTick;
 
 int main(void)
 {

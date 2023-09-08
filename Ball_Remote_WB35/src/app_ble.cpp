@@ -94,7 +94,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 
 			EnableAdvertising(ConnStatus::FastAdv);			// restart advertising
 
-			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
+			GPIOA->ODR &= ~GPIO_ODR_OD3;					// Turn off connected LED
 		}
 
 		break;
@@ -112,7 +112,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 				connectionStatus = ConnStatus::Connected;
 				connectionHandle = connCompleteEvent->Connection_Handle;
 
-				HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+				GPIOA->ODR |= GPIO_ODR_OD3;						// Turn on connected LED
 			}
 		}
 		break;

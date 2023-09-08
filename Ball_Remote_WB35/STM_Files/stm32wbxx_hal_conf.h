@@ -37,14 +37,14 @@
 /*#define HAL_CRYP_MODULE_ENABLED   */
 /*#define HAL_COMP_MODULE_ENABLED   */
 /*#define HAL_CRC_MODULE_ENABLED   */
-#define HAL_HSEM_MODULE_ENABLED
+//#define HAL_HSEM_MODULE_ENABLED
 /*#define HAL_I2C_MODULE_ENABLED   */
-#define HAL_IPCC_MODULE_ENABLED
+//#define HAL_IPCC_MODULE_ENABLED
 /*#define HAL_IRDA_MODULE_ENABLED   */
 /*#define HAL_IWDG_MODULE_ENABLED   */
 /*#define HAL_LCD_MODULE_ENABLED   */
 /*#define HAL_LPTIM_MODULE_ENABLED   */
-#define HAL_PCD_MODULE_ENABLED
+//#define HAL_PCD_MODULE_ENABLED
 /*#define HAL_PKA_MODULE_ENABLED   */
 /*#define HAL_QSPI_MODULE_ENABLED   */
 /*#define HAL_RNG_MODULE_ENABLED   */
@@ -55,16 +55,16 @@
 /*#define HAL_SPI_MODULE_ENABLED   */
 /*#define HAL_TIM_MODULE_ENABLED   */
 /*#define HAL_TSC_MODULE_ENABLED   */
-#define HAL_UART_MODULE_ENABLED
+//#define HAL_UART_MODULE_ENABLED
 /*#define HAL_USART_MODULE_ENABLED   */
 /*#define HAL_WWDG_MODULE_ENABLED   */
-#define HAL_EXTI_MODULE_ENABLED
+//#define HAL_EXTI_MODULE_ENABLED
 #define HAL_CORTEX_MODULE_ENABLED
-#define HAL_DMA_MODULE_ENABLED
-#define HAL_FLASH_MODULE_ENABLED
-#define HAL_GPIO_MODULE_ENABLED
-#define HAL_PWR_MODULE_ENABLED
-#define HAL_RCC_MODULE_ENABLED
+//#define HAL_DMA_MODULE_ENABLED
+//#define HAL_FLASH_MODULE_ENABLED
+//#define HAL_GPIO_MODULE_ENABLED
+//#define HAL_PWR_MODULE_ENABLED
+//#define HAL_RCC_MODULE_ENABLED
 
 #define USE_HAL_ADC_REGISTER_CALLBACKS       0u
 #define USE_HAL_COMP_REGISTER_CALLBACKS      0u
@@ -175,7 +175,7 @@
 #define  VDD_VALUE				3300U                   /*!< Value of VDD in mv */
 #define  TICK_INT_PRIORITY            0U      /*!< tick interrupt priority */
 #define  USE_RTOS                     0U
-#define  PREFETCH_ENABLE              1U
+#define  PREFETCH_ENABLE              0U
 #define  INSTRUCTION_CACHE_ENABLE     1U
 #define  DATA_CACHE_ENABLE            1U
 
