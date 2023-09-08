@@ -74,8 +74,8 @@ void InitHardware()
 	// Enable hardware semaphore clock
 	RCC->AHB3ENR |= RCC_AHB3ENR_HSEMEN;
 	while ((RCC->AHB3ENR & RCC_AHB3ENR_HSEMEN) == 0);
-	NVIC_SetPriority(HSEM_IRQn, 1);
-	NVIC_EnableIRQ(HSEM_IRQn);
+//	NVIC_SetPriority(HSEM_IRQn, 1);
+//	NVIC_EnableIRQ(HSEM_IRQn);
 
 	InitIPCC();										// Enable IPCC clock and reset all channels
 	InitRTC();										// Initialise RTC

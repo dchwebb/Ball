@@ -136,7 +136,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+						<entry excluding="STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_ipcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_usb.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_uart.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_uart_ex.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="ST/STM32_WPAN/ble/svc/Src/svc_ctl.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="STM32_WPAN"/>
 						<entry excluding="app_debug.c|stm32_lpm_if.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
@@ -277,7 +277,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+						<entry excluding="STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_ipcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_usb.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_uart.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_uart_ex.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="ST/STM32_WPAN/ble/svc/Src/svc_ctl.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry excluding="app_debug.c|stm32_lpm_if.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
 						<entry excluding="gyroHandler.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>

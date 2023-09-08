@@ -26,8 +26,8 @@ void TIM2_IRQHandler() {
 
 }
 
-void HSEM_IRQHandler() {
-	HAL_HSEM_IRQHandler();
+void HSEM_IRQHandler() {		// This doesn't seem to be being used
+//	HAL_HSEM_IRQHandler();
 }
 
 void RTC_WKUP_IRQHandler() {

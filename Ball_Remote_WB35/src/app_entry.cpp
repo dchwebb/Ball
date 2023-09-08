@@ -3,7 +3,7 @@
 #include "app_ble.h"
 #include "stm32_seq.h"
 #include "shci_tl.h"
-#include "app_debug.h"
+//#include "app_debug.h"
 
 
 RTC_HandleTypeDef hrtc;
