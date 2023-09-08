@@ -57,7 +57,6 @@ void BleApp::Init()
 	if (result != SHCI_Success) {
 		coprocessorFailure = true;
 		return;
-		//Error_Handler();
 	}
 
 	HciGapGattInit();							// Initialization of HCI & GATT & GAP layer

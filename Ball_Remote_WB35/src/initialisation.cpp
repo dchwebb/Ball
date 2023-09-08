@@ -74,7 +74,7 @@ void InitHardware()
 	// Enable hardware semaphore clock
 	RCC->AHB3ENR |= RCC_AHB3ENR_HSEMEN;
 	while ((RCC->AHB3ENR & RCC_AHB3ENR_HSEMEN) == 0);
-	NVIC_SetPriority(HSEM_IRQn, 0);
+	NVIC_SetPriority(HSEM_IRQn, 1);
 	NVIC_EnableIRQ(HSEM_IRQn);
 
 	InitIPCC();										// Enable IPCC clock and reset all channels
@@ -193,9 +193,9 @@ static void InitIPCC()
 	IPCC->C1MR |= 0x3F;								// Mask receive channel occupied interrupt for processor 1
 	IPCC->C2MR |= 0x3F;								// Mask receive channel occupied interrupt for processor 2
 
-	NVIC_SetPriority(IPCC_C1_RX_IRQn, 0);
+	NVIC_SetPriority(IPCC_C1_RX_IRQn, 1);
 	NVIC_EnableIRQ(IPCC_C1_RX_IRQn);
-	NVIC_SetPriority(IPCC_C1_TX_IRQn, 0);
+	NVIC_SetPriority(IPCC_C1_TX_IRQn, 1);
 	NVIC_EnableIRQ(IPCC_C1_TX_IRQn);
 
 	IPCC->C1CR |= (IPCC_CR_RXOIE | IPCC_CR_TXFIE);	// Activate the interrupts

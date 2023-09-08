@@ -10,7 +10,7 @@
 #include "app_entry.h"
 #include "app_common.h"
 
-void Error_Handler(void);
+
 
 #define BUTTON_SW1_Pin GPIO_PIN_4
 #define BUTTON_SW1_GPIO_Port GPIOC
