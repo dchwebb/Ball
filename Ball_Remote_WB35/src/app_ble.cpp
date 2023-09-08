@@ -4,7 +4,6 @@
 #include "stm32_seq.h"
 #include "shci.h"
 
-
 #include "dis_app.h"
 #include "hids_app.h"
 #include "bas_app.h"
@@ -48,7 +47,7 @@ void BleApp::Init()
 			CFG_BLE_MAX_TX_POWER}
 	};
 
-	TransportLayerInit();						// Initialize Ble Transport Layer
+	TransportLayerInit();						// Initialize BLE Transport Layer
 
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
@@ -92,7 +91,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 
 			APP_DBG_MSG("\r\n\r** Disconnection event with client \n");
 
-			EnableAdvertising(ConnStatus::FastAdv);			// restart advertising
+			EnableAdvertising(ConnStatus::FastAdv);			// Restart advertising
 
 			GPIOA->ODR &= ~GPIO_ODR_OD3;					// Turn off connected LED
 		}

@@ -1,5 +1,5 @@
 #pragma once
 
-void MX_APPE_Process();
+void RunPendingTasks();
 void Init_Smps();
 void APPE_Init();

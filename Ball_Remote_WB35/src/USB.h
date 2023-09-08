@@ -13,13 +13,19 @@
 #define USB_DEBUG_COUNT 400
 #endif
 
+static constexpr uint32_t pmaBlocksMask = 0x1F << 10;
+static constexpr uint32_t pmaBlkSizeMask = 0x1 << 15;
 
 // Declare registers for PMA area
 typedef struct {
-  volatile uint16_t ADDR_TX;
-  volatile uint16_t COUNT_TX;
-  volatile uint16_t ADDR_RX;
-  volatile uint16_t COUNT_RX;
+	volatile uint16_t ADDR_TX;
+	volatile uint16_t COUNT_TX;
+	volatile uint16_t ADDR_RX;
+	volatile uint16_t COUNT_RX;
+	uint32_t GetTXCount()	{ return COUNT_TX & 0x3FF; }
+	uint32_t GetRXCount()	{ return COUNT_RX & 0x3FF; }
+	void SetRXBlocks(uint32_t cnt)	{ COUNT_RX = (COUNT_RX & ~pmaBlocksMask) | (cnt << 10); }
+	void SetRXBlkSize(uint32_t cnt)	{ COUNT_RX = (COUNT_RX & ~pmaBlkSizeMask) | (cnt << 15); }
 } USB_PMA_TypeDef;
 
 // Create struct for easy access to endpoint registers
@@ -34,18 +40,9 @@ typedef struct {
 #define USBP     USB
 
 // Bit definition for USB_COUNT0_RX register
-#define USB_COUNT0_RX_COUNT0_RX_Pos              (0U)
-#define USB_COUNT0_RX_COUNT0_RX_Msk              (0x3FFUL << USB_COUNT0_RX_COUNT0_RX_Pos)/*!< 0x000003FF */
-#define USB_COUNT0_RX_COUNT0_RX                  USB_COUNT0_RX_COUNT0_RX_Msk   /*!< Reception Byte Count */
-#define USB_COUNT0_RX_NUM_BLOCK_Pos              (10U)
-#define USB_COUNT0_RX_BLSIZE_Pos                 (15U)
-#define USB_COUNT0_RX_BLSIZE                     USB_COUNT0_RX_BLSIZE_Msk      /*!< BLock SIZE */
-
-//  Bit definition for USB_COUNT0_TX register
-#define USB_COUNT0_TX_COUNT0_TX_Pos              (0U)
-#define USB_COUNT0_TX_COUNT0_TX_Msk              (0x3FFUL << USB_COUNT0_TX_COUNT0_TX_Pos)/*!< 0x000003FF */
-#define USB_COUNT0_TX_COUNT0_TX                  USB_COUNT0_TX_COUNT0_TX_Msk   /*!< Transmission Byte Count 0 */
-
+//#define USB_COUNT0_RX_NUM_BLOCK_Pos              (10U)
+//#define USB_COUNT0_RX_BLSIZE_Pos                 (15U)
+//#define USB_COUNT0_RX_BLSIZE                     USB_COUNT0_RX_BLSIZE_Msk      /*!< BLock SIZE */
 
 
 #define LOBYTE(x)  (static_cast<uint8_t>(x & 0x00FFU))

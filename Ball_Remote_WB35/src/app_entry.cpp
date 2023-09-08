@@ -3,7 +3,6 @@
 #include "app_ble.h"
 #include "stm32_seq.h"
 #include "shci_tl.h"
-//#include "app_debug.h"
 
 
 RTC_HandleTypeDef hrtc;
@@ -81,12 +80,11 @@ static void APPE_SysStatusNotify(SHCI_TL_CmdStatus_t status)
  */
 static void APPE_SysUserEvtRx(void* pPayload)
 {
-	//APPD_EnableCPU2();			// Traces channel initialization
 	bleApp.Init();
 }
 
 
-void MX_APPE_Process(void)
+void RunPendingTasks(void)
 {
 	UTIL_SEQ_Run(UTIL_SEQ_DEFAULT);
 }

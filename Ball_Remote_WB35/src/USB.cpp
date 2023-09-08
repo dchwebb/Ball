@@ -172,7 +172,7 @@ void USBClass::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL
 			if ((USBP->ISTR & USB_ISTR_DIR) == 0) {			// DIR = 0: Direction IN
 				ClearTxInterrupt(0);
 
-				uint16_t txBytes = USB_PMA->COUNT_TX & USB_COUNT0_TX_COUNT0_TX_Msk;
+				uint16_t txBytes = USB_PMA[0].GetTXCount();
 				classByEP[epIndex]->inBuff += txBytes;
 
 				if (classByEP[epIndex]->inBuffRem > ep_maxPacket) {
@@ -193,14 +193,14 @@ void USBClass::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL
 			} else {										// DIR = 1: Setup or OUT interrupt
 
 				if ((USBP->EP0R & USB_EP_SETUP) != 0) {
-					classByEP[0]->outBuffCount = USB_PMA->COUNT_RX & USB_COUNT0_RX_COUNT0_RX_Msk;
+					classByEP[0]->outBuffCount = USB_PMA[0].GetRXCount();
 					ReadPMA(USB_PMA[0].ADDR_RX, classByEP[0]);	// Read setup data into  receive buffer
 					ClearRxInterrupt(0);					// clears 8000 interrupt
 					ProcessSetupPacket();					// Parse setup packet into request, locate data (eg descriptor) and populate TX buffer
 
 				} else {
 					ClearRxInterrupt(0);
-					classByEP[0]->outBuffCount = USB_PMA->COUNT_RX & USB_COUNT0_RX_COUNT0_RX;
+					classByEP[0]->outBuffCount = USB_PMA[0].GetRXCount();
 					if (classByEP[0]->outBuffCount != 0) {
 						ReadPMA(USB_PMA[0].ADDR_RX, classByEP[0]);
 
@@ -222,7 +222,7 @@ void USBClass::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL
 			if ((USB_EPR[epIndex].EPR & USB_EP_CTR_RX) != 0) {
 				ClearRxInterrupt(epIndex);
 
-				classByEP[epIndex]->outBuffCount = USB_PMA[epIndex].COUNT_RX & USB_COUNT0_RX_COUNT0_RX;
+				classByEP[epIndex]->outBuffCount = USB_PMA[epIndex].GetRXCount();
 				if (classByEP[epIndex]->outBuffCount != 0) {
 					ReadPMA(USB_PMA[epIndex].ADDR_RX, classByEP[epIndex]);
 				}
@@ -236,7 +236,7 @@ void USBClass::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL
 				transmitting = false;
 				ClearTxInterrupt(epIndex);
 
-				uint16_t txBytes = USB_PMA[epIndex].COUNT_TX & USB_COUNT0_TX_COUNT0_TX;
+				uint16_t txBytes = USB_PMA[epIndex].GetTXCount();
 				if (classByEP[epIndex]->inBuffSize >= txBytes) {					// Transmitting data larger than buffer size
 					classByEP[epIndex]->inBuffSize -= txBytes;
 					classByEP[epIndex]->inBuff += txBytes;
@@ -340,7 +340,9 @@ void USBClass::ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointT
 
 	} else {
 		USB_PMA[endpoint].ADDR_RX = pmaAddress;						// Offset of PMA used for EP RX
-		USB_PMA[endpoint].COUNT_RX = (1 << USB_COUNT0_RX_BLSIZE_Pos) | (1 << USB_COUNT0_RX_NUM_BLOCK_Pos);		// configure block size = 1 (32 Bytes); number of blocks = 2 (64 bytes)
+		USB_PMA[endpoint].SetRXBlkSize(1);					// configure block size = 1 (32 Bytes)
+		USB_PMA[endpoint].SetRXBlocks(1);					// number of blocks = 2 (64 bytes)
+		//USB_PMA[endpoint].COUNT_RX = (1 << USB_COUNT0_RX_BLSIZE_Pos) | (1 << USB_COUNT0_RX_NUM_BLOCK_Pos);		// configure block size = 1 (32 Bytes); number of blocks = 2 (64 bytes)
 
 		// Clear rx data toggle
 		if ((USB_EPR[endpoint].EPR & USB_EP_DTOG_RX) != 0) {

@@ -23,7 +23,7 @@ int main(void)
 
 
 	while (1) {
-		MX_APPE_Process();
+		RunPendingTasks();			// Run any tasks pending in the sequencer
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
 		basService.TimedRead();		// Updates battery level every few seconds if changed
 	}
