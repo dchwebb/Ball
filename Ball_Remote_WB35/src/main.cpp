@@ -23,7 +23,6 @@ int main(void)
 
 
 	while (1) {
-		HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_SET);
 		MX_APPE_Process();
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
 		basService.TimedRead();		// Updates battery level every few seconds if changed

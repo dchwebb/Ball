@@ -1,4 +1,5 @@
 #include "ble.h"
+#include "dbg_trace.h"
 #include "dis_app.h"
 
 DisService disService;

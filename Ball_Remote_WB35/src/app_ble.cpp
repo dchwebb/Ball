@@ -113,7 +113,6 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 				connectionHandle = connCompleteEvent->Connection_Handle;
 
 				HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);		// Turn off advertising LED
 			}
 		}
 		break;
@@ -257,8 +256,6 @@ void BleApp::EnableAdvertising(ConnStatus newStatus)
 	ret = aci_gap_update_adv_data(sizeof(ad_data), ad_data);
 
 	if (ret == BLE_STATUS_SUCCESS) {
-		HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_SET);
-
 		if (newStatus == ConnStatus::FastAdv)	{
 			APP_DBG_MSG("Start Fast Advertising \n");
 			// Start Timer to STOP ADV - TIMEOUT
@@ -323,7 +320,6 @@ void BleApp::SwitchFastAdvertising()
 void BleApp::CancelAdvertising()
 {
 	if (bleApp.connectionStatus == ConnStatus::FastAdv || bleApp.connectionStatus == ConnStatus::LPAdv) {
-		HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
 		HW_TS_Stop(bleApp.lowPowerAdvTimerId);					// Cancel timer to activate LP Advertising
 
 		tBleStatus result = aci_gap_set_non_discoverable();
@@ -366,8 +362,6 @@ static void SwitchToHSI()
 
 void BleApp::EnterSleepMode()
 {
-	HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_RESET);
-
 	uint32_t primask_bit = __get_PRIMASK();
 	__disable_irq();													// Disable interrupts
 

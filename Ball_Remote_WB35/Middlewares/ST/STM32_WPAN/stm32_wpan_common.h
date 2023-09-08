@@ -6,13 +6,12 @@
  ******************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2018 STMicroelectronics.
- * All rights reserved.</center></h2>
+ * Copyright (c) 2018-2021 STMicroelectronics.
+ * All rights reserved.
  *
- * This software component is licensed by ST under Ultimate Liberty license
- * SLA0044, the "License"; You may not use this file except in compliance with
- * the License. You may obtain a copy of the License at:
- *                             www.st.com/SLA0044
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
  *
  ******************************************************************************
  */
@@ -26,7 +25,7 @@
 extern "C" {
 #endif
 
-#if   defined ( __CC_ARM )
+#if   defined ( __CC_ARM )||defined (__ARMCC_VERSION)
  #define __ASM            __asm                                      /*!< asm keyword for ARM Compiler          */
  #define __INLINE         __inline                                   /*!< inline keyword for ARM Compiler       */
  #define __STATIC_INLINE  static __inline
@@ -109,7 +108,11 @@ extern "C" {
 #define ALIGN(n)             __attribute__((aligned(n)))
 #endif
 
-
+#undef PAUSE
+#define PAUSE( t )           M_BEGIN \
+                               volatile int _i; \
+                               for ( _i = t; _i > 0; _i -- ); \
+                             M_END
 #undef DIVF
 #define DIVF( x, y )         ((x)/(y))
 
@@ -166,5 +169,3 @@ extern "C" {
 #endif
 
 #endif /*__STM32_WPAN_COMMON_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

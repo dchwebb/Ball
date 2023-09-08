@@ -139,7 +139,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="ST/STM32_WPAN/ble/svc/Src/svc_ctl.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="STM32_WPAN"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
+						<entry excluding="app_debug.c|stm32_lpm_if.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Utilities"/>
 						<entry excluding="gyroHandler.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
@@ -279,7 +279,7 @@
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="ST/STM32_WPAN/ble/svc/Src/svc_ctl.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
+						<entry excluding="app_debug.c|stm32_lpm_if.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
 						<entry excluding="gyroHandler.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>

@@ -270,9 +270,6 @@ void UTIL_SEQ_Run( UTIL_SEQ_bm_t Mask_bm )
 	 * before task execution.
 	 */
     CurrentTaskIdx = SEQ_BitPosition(current_task_set & TaskPrio[counter].round_robin);
-    if (CurrentTaskIdx >= 0xFF) {
-    	volatile int x = 1;
-    }
     /*
      * remove from the roun_robin mask the task that has been selected to be executed
      */
