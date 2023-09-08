@@ -1,19 +1,18 @@
 /*****************************************************************************
  * @file    ble_core.h
- * @author  MCD
+ * @author  MDG
  * @brief   This file contains the definitions for BLE stack
  *****************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
- * All rights reserved.</center></h2>
+ * Copyright (c) 2018-2023 STMicroelectronics.
+ * All rights reserved.
  *
- * This software component is licensed by ST under Ultimate Liberty license
- * SLA0044, the "License"; You may not use this file except in compliance with
- * the License. You may obtain a copy of the License at:
- *                             www.st.com/SLA0044
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
  *
- ******************************************************************************
+ *****************************************************************************
  */
 
 #ifndef BLE_CORE_H__
@@ -25,6 +24,7 @@
 
 /* BLE stack API definitions */
 #include "ble_defs.h"
+#include "auto/ble_vs_codes.h"
 #include "auto/ble_gap_aci.h"
 #include "auto/ble_gatt_aci.h"
 #include "auto/ble_hal_aci.h"
@@ -40,5 +40,3 @@
 
 
 #endif /* BLE_CORE_H__ */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE***/

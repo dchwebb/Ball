@@ -4,6 +4,7 @@
 #include "stm32_seq.h"
 #include "shci.h"
 
+
 #include "dis_app.h"
 #include "hids_app.h"
 #include "bas_app.h"
@@ -224,7 +225,6 @@ void BleApp::HciGapGattInit()
 			Security.fixedPin,
 			CFG_BLE_ADDRESS_TYPE
 	);
-
 	// Initialize whitelist
 	if (Security.bondingMode) {
 		aci_gap_configure_whitelist();

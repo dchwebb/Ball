@@ -4,17 +4,16 @@
  * @author  MCD Application Team
  * @brief   Function for managing HCI interface.
  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics. 
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the 
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2018-2021 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
  */
 
 
@@ -162,6 +161,8 @@ int hci_send_req(struct hci_request *p_cmd, uint8_t async)
   NotifyCmdStatus(HCI_TL_CmdBusy);
   local_cmd_status = HCI_TL_CmdBusy;
   opcode = ((p_cmd->ocf) & 0x03ff) | ((p_cmd->ogf) << 10);
+  
+  CmdRspStatusFlag = HCI_TL_CMD_RESP_WAIT;
   SendCmd(opcode, p_cmd->clen, p_cmd->cparam);
 
   while(local_cmd_status == HCI_TL_CmdBusy)
@@ -292,7 +293,6 @@ __WEAK void hci_cmd_resp_wait(uint32_t timeout)
 {
   (void)timeout;
 
-  CmdRspStatusFlag = HCI_TL_CMD_RESP_WAIT;
   while(CmdRspStatusFlag != HCI_TL_CMD_RESP_RELEASE);
 
   return;

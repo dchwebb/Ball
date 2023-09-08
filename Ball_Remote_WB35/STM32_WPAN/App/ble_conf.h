@@ -13,8 +13,8 @@
  * This shall take into account all registered handlers
  * (from either the provided services or the custom services)
  */
-#define BLE_CFG_SVC_MAX_NBR_CB                                                 7
-#define BLE_CFG_CLT_MAX_NBR_CB                                                 0
+//#define BLE_CFG_SVC_MAX_NBR_CB                                                 7
+//#define BLE_CFG_CLT_MAX_NBR_CB                                                 0
 
 // GAP Service - Appearance
 #define BLE_CFG_GAP_APPEARANCE                      (0x03C2)		// Joystick 0x03C3; Mouse 0x03C2

@@ -1,17 +1,16 @@
 /*****************************************************************************
  * @file    ble_bufsize.h
- * @author  MCD
+ * @author  MDG
  * @brief   Definition of BLE stack buffers size
  *****************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
- * All rights reserved.</center></h2>
+ * Copyright (c) 2018-2023 STMicroelectronics.
+ * All rights reserved.
  *
- * This software component is licensed by ST under Ultimate Liberty license
- * SLA0044, the "License"; You may not use this file except in compliance with
- * the License. You may obtain a copy of the License at:
- *                             www.st.com/SLA0044
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
  *
  *****************************************************************************
  */
@@ -78,43 +77,47 @@
 
 /*
  * BLE_FIXED_BUFFER_SIZE_BYTES:
- * A part of the RAM, is dinamically allocated by initilizing all the pointers 
+ * A part of the RAM, is dynamically allocated by initializing all the pointers
  * defined in a global context variable "mem_alloc_ctx_p".
  * This initialization is made in the Dynamic_allocator functions, which 
- * assing a portion of RAM given by the external application to the above
+ * assign a portion of RAM given by the external application to the above
  * mentioned "global pointers".
  *
  * The size of this Dynamic RAM is made of 2 main components: 
  * - a part that is parameters-dependent (num of links, GATT buffers, ...),
- *   and which value is explicited by the following macro;
+ *   and which value is made explicit by the following macro;
  * - a part, that may be considered "fixed", i.e. independent from the above
  *   mentioned parameters.
 */
 #if (BEACON_ONLY != 0)
-#define BLE_FIXED_BUFFER_SIZE_BYTES  4204   /* Beacon only */
+#define BLE_FIXED_BUFFER_SIZE_BYTES  4092   /* Beacon only */
+#elif (LL_ONLY_BASIC != 0)
+#define BLE_FIXED_BUFFER_SIZE_BYTES  5788   /* LL only Basic*/
 #elif (LL_ONLY != 0)
-#define BLE_FIXED_BUFFER_SIZE_BYTES  5824   /* LL only */
+#define BLE_FIXED_BUFFER_SIZE_BYTES  6036   /* LL only Full */
 #elif (SLAVE_ONLY != 0)
-#define BLE_FIXED_BUFFER_SIZE_BYTES  6400   /* Peripheral only */
+#define BLE_FIXED_BUFFER_SIZE_BYTES  6300   /* Peripheral only */
 #elif (BASIC_FEATURES != 0)
-#define BLE_FIXED_BUFFER_SIZE_BYTES  6688   /* Basic Features */
+#define BLE_FIXED_BUFFER_SIZE_BYTES  6632   /* Basic Features */
 #else
-#define BLE_FIXED_BUFFER_SIZE_BYTES  7168   /* Full stack */
+#define BLE_FIXED_BUFFER_SIZE_BYTES  7152   /* Full stack */
 #endif
 
 /*
  * BLE_PER_LINK_SIZE_BYTES: additional memory size used per link
  */
 #if (BEACON_ONLY != 0)
-#define BLE_PER_LINK_SIZE_BYTES       148   /* Beacon only */
+#define BLE_PER_LINK_SIZE_BYTES       112   /* Beacon only */
+#elif (LL_ONLY_BASIC != 0)
+#define BLE_PER_LINK_SIZE_BYTES       244   /* LL only Basic */
 #elif (LL_ONLY != 0)
-#define BLE_PER_LINK_SIZE_BYTES       196   /* LL only */
+#define BLE_PER_LINK_SIZE_BYTES       244   /* LL only Full */
 #elif (SLAVE_ONLY != 0)
-#define BLE_PER_LINK_SIZE_BYTES       328   /* Peripheral only */
+#define BLE_PER_LINK_SIZE_BYTES       344   /* Peripheral only */
 #elif (BASIC_FEATURES != 0)
-#define BLE_PER_LINK_SIZE_BYTES       328   /* Basic Features */
+#define BLE_PER_LINK_SIZE_BYTES       420   /* Basic Features */
 #else
-#define BLE_PER_LINK_SIZE_BYTES       380   /* Full stack */
+#define BLE_PER_LINK_SIZE_BYTES       432   /* Full stack */
 #endif
 
 /*
@@ -131,6 +134,21 @@
           (16 + BLE_FIXED_BUFFER_SIZE_BYTES + \
            (BLE_PER_LINK_SIZE_BYTES * (n_link)) + \
            ((BLE_MEM_BLOCK_SIZE + 12) * (mblocks_count)))
+
+/*
+ * BLE_EXT_ADV_BUFFER_SIZE
+ * additional memory size used for Extended advertising;
+ * It has to be added to BLE_TOTAL_BUFFER_SIZE() if the Extended advertising
+ * feature is used.
+ *
+ * @param set_nbr: Maximum number of advertising sets.
+ * Valid values are from 1 to 8.
+ *
+ * @param data_len: Maximum size of advertising data.
+ * Valid values are from 31 to 1650.
+ */
+#define BLE_EXT_ADV_BUFFER_SIZE(set_nbr, data_len) \
+          (2512 + ((892 + (DIVC(data_len, 207) * 244)) * (set_nbr)))
 
 /*
  * BLE_TOTAL_BUFFER_SIZE_GATT: this macro returns the amount of memory,

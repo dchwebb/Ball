@@ -6,17 +6,15 @@
  ******************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
- * All rights reserved.</center></h2>
+ * Copyright (c) 2018-2021 STMicroelectronics.
+ * All rights reserved.
  *
- * This software component is licensed by ST under BSD 3-Clause license,
- * the "License"; You may not use this file except in compliance with the
- * License. You may obtain a copy of the License at:
- *                        opensource.org/licenses/BSD-3-Clause
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
  *
  ******************************************************************************
  */
-
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32_wpan_common.h"
@@ -79,7 +77,7 @@ static void OutputDbgTrace(TL_MB_PacketType_t packet_type, uint8_t* buffer);
 /* Public Functions Definition ------------------------------------------------------*/
 
 /******************************************************************************
- * GENERAL
+ * GENERAL - refer to AN5289 for functions description.
  ******************************************************************************/
 void TL_Enable( void )
 {
@@ -262,6 +260,7 @@ void TL_THREAD_Init( TL_TH_Config_t *p_Config )
   p_thread_table->clicmdrsp_buffer = p_Config->p_ThreadCliRspBuffer;
   p_thread_table->otcmdrsp_buffer = p_Config->p_ThreadOtCmdRspBuffer;
   p_thread_table->notack_buffer = p_Config->p_ThreadNotAckBuffer;
+  p_thread_table->clinot_buffer = p_Config->p_ThreadCliNotBuffer;
 
   HW_IPCC_THREAD_Init();
 
@@ -320,7 +319,7 @@ void HW_IPCC_THREAD_EvtNot( void )
 
 void HW_IPCC_THREAD_CliEvtNot( void )
 {
-  TL_THREAD_CliNotReceived( (TL_EvtPacket_t*)(TL_RefTable.p_thread_table->clicmdrsp_buffer) );
+  TL_THREAD_CliNotReceived( (TL_EvtPacket_t*)(TL_RefTable.p_thread_table->clinot_buffer) );
 
   return;
 }
@@ -848,4 +847,3 @@ static void OutputDbgTrace(TL_MB_PacketType_t packet_type, uint8_t* buffer)
   return;
 }
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -42,7 +42,7 @@
  * Define Advertising parameters
  */
 #define CFG_ADV_BD_ADDRESS                (0x000000000000)
-#define CFG_BLE_ADDRESS_TYPE              PUBLIC_ADDR /**< Bluetooth address types defined in ble_legacy.h */
+#define CFG_BLE_ADDRESS_TYPE              GAP_PUBLIC_ADDR /**< Bluetooth address types defined in ble_legacy.h */
 
 #define CFG_FAST_CONN_ADV_INTERVAL_MIN    (0x0080)   /**< 80ms */
 #define CFG_FAST_CONN_ADV_INTERVAL_MAX    (0x00A0)  /**< 100ms */

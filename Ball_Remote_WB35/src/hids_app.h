@@ -1,6 +1,7 @@
 #pragma once
 
-#include "ble_legacy.h"
+//#include "ble_legacy.h"
+#include "tl.h"
 
 struct HidService
 {

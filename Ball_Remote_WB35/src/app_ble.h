@@ -3,7 +3,7 @@
 #include "hci_tl.h"
 #include "ble_defs.h"
 #include "app_conf.h"
-#include "ble_legacy.h"
+//#include "ble_legacy.h"
 
 struct BleApp {
 public:

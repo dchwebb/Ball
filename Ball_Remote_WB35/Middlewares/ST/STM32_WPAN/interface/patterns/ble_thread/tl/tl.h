@@ -4,17 +4,16 @@
  * @author  MCD Application Team
  * @brief   Header for tl module
  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2018-2021 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
  */
 
 
@@ -59,9 +58,8 @@ extern "C" {
 #define TL_BLEEVT_CS_OPCODE            (0x0F)
 #define TL_BLEEVT_VS_OPCODE            (0xFF)
 
-#define TL_BLEEVT_CS_PACKET_SIZE       (TL_EVT_HDR_SIZE + sizeof(TL_CsEvt_t))
-#define TL_BLEEVT_CS_BUFFER_SIZE       (sizeof(TL_PacketHeader_t) + TL_BLEEVT_CS_PACKET_SIZE)
-
+#define TL_BLEEVT_CC_PACKET_SIZE       (TL_EVT_HDR_SIZE + sizeof(TL_CcEvt_t))
+#define TL_BLEEVT_CC_BUFFER_SIZE       (sizeof(TL_PacketHeader_t) + TL_BLEEVT_CC_PACKET_SIZE)
 /* Exported types ------------------------------------------------------------*/
 /**< Packet header */
 typedef PACKED_STRUCT
@@ -85,29 +83,32 @@ typedef PACKED_STRUCT
 } TL_CsEvt_t;
 
 /**
- * This the payload of TL_Evt_t for a command complete event
+ * This the payload of TL_Evt_t for a command complete event, only used a pointer
  */
 typedef PACKED_STRUCT
 {
   uint8_t   numcmd;
   uint16_t  cmdcode;
-  uint8_t   payload[1];
+  uint8_t   payload[2];
 } TL_CcEvt_t;
 
 /**
- * This the payload of TL_Evt_t for an asynchronous event
+ * This the payload of TL_Evt_t for an asynchronous event, only used a pointer
  */
 typedef PACKED_STRUCT
 {
   uint16_t  subevtcode;
-  uint8_t   payload[1];
+  uint8_t   payload[2];
 } TL_AsynchEvt_t;
 
+/**
+ * This the payload of TL_Evt_t, only used a pointer
+ */
 typedef PACKED_STRUCT
 {
   uint8_t   evtcode;
   uint8_t   plen;
-  uint8_t   payload[1];
+  uint8_t   payload[2];
 } TL_Evt_t;
 
 typedef PACKED_STRUCT
@@ -185,6 +186,7 @@ typedef struct
   uint8_t *p_ThreadOtCmdRspBuffer;
   uint8_t *p_ThreadCliRspBuffer;
   uint8_t *p_ThreadNotAckBuffer;
+  uint8_t *p_ThreadCliNotBuffer;
 } TL_TH_Config_t;
 
 typedef struct
@@ -234,6 +236,43 @@ typedef struct
   void (* IoBusCallBackUserEvt) (TL_EvtPacket_t *phcievt);
   uint8_t *p_cmdbuffer;
 } TL_SYS_InitConf_t;
+
+/*****************************************************************************************
+ * Event type copied from ble_legacy.h 
+ */
+
+typedef PACKED_STRUCT
+{
+  uint8_t type;
+  uint8_t data[1];
+} hci_uart_pckt;
+
+typedef PACKED_STRUCT
+{
+  uint8_t         evt;
+  uint8_t         plen;
+  uint8_t         data[1];
+} hci_event_pckt;
+
+typedef PACKED_STRUCT
+{
+  uint8_t         subevent;
+  uint8_t         data[1];
+} evt_le_meta_event;
+
+/**
+ * Vendor specific event for BLE core.
+ */
+typedef PACKED_STRUCT
+{
+  uint16_t ecode; /**< One of the BLE core event codes. */
+  uint8_t  data[1];
+} evt_blecore_aci;
+
+/* Bluetooth 48 bit address (in little-endian order).
+ */
+typedef	uint8_t	tBDAddr[6];
+
 
 /* Exported constants --------------------------------------------------------*/
 /* External variables --------------------------------------------------------*/
@@ -331,4 +370,3 @@ void TL_ZIGBEE_SendM4AckToM0Request(void);
 
 #endif /*__TL_H */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
