@@ -1,7 +1,7 @@
 #pragma once
 #include "initialisation.h"
 
-class USBClass;
+class USBMain;
 
 enum class Direction {in, out};
 enum EndPointType {Control = 0, Isochronous = 1, Bulk = 2, Interrupt = 3};
@@ -25,8 +25,8 @@ struct usbRequest {
 // interface for USB class handlers
 class USBHandler {
 public:
-	USBClass* usb;
-	USBHandler(USBClass* usb, uint8_t inEP, uint8_t outEP, int8_t interface);
+	USBMain* usb;
+	USBHandler(USBMain* usb, uint8_t inEP, uint8_t outEP, int8_t interface);
 
 	uint8_t inEP;
 	uint8_t outEP;
@@ -58,7 +58,7 @@ protected:
 
 class EP0Handler : public USBHandler {
 public:
-	EP0Handler(USBClass* usb, const uint8_t inEP, const uint8_t outEP, int8_t interface) : USBHandler(usb, inEP, outEP, interface) {
+	EP0Handler(USBMain* usb, const uint8_t inEP, const uint8_t outEP, int8_t interface) : USBHandler(usb, inEP, outEP, interface) {
 		outBuff = ep0OutBuff;
 	}
 

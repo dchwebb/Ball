@@ -2,13 +2,13 @@
 #include "stm32wbxx_ll_hsem.h"
 
 bool USBDebug = true;		// Used if outputting debug over USB
-USBClass usb;
+USBMain usb;
 
 extern "C" {
 // To enable USB for printf commands (To print floats enable 'Use float with printf from newlib-nano' MCU Build Settings)
 size_t _write(int handle, const unsigned char* buf, size_t bufSize)
 {
-	if (usb.devState == USBClass::DeviceState::Configured) {
+	if (usb.devState == USBMain::DeviceState::Configured) {
 		return usb.SendString(buf, bufSize);
 	} else {
 		return 0;
@@ -44,7 +44,7 @@ inline void SetRxStatus(uint8_t ep, uint16_t status)		// Set endpoint receive st
 }
 
 
-void USBClass::ReadPMA(uint16_t pma, USBHandler* handler)
+void USBMain::ReadPMA(uint16_t pma, USBHandler* handler)
 {
 	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMAADDR + pma);		// Eg 0x40006018
 
@@ -60,7 +60,7 @@ void USBClass::ReadPMA(uint16_t pma, USBHandler* handler)
 }
 
 
-void USBClass::WritePMA(uint16_t pma, uint16_t bytes, USBHandler* handler)
+void USBMain::WritePMA(uint16_t pma, uint16_t bytes, USBHandler* handler)
 {
 	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMAADDR + pma);
 
@@ -70,7 +70,7 @@ void USBClass::WritePMA(uint16_t pma, uint16_t bytes, USBHandler* handler)
 }
 
 
-void USBClass::ProcessSetupPacket()
+void USBMain::ProcessSetupPacket()
 {
 	req.loadData((uint8_t*)classByEP[0]->outBuff);		// Parse the setup request into the req object
 
@@ -124,7 +124,7 @@ void USBClass::ProcessSetupPacket()
 
 
 // EPStartXfer setup and starts a transfer over an EP
-void USBClass::EPStartXfer(const Direction direction, uint8_t endpoint, uint32_t len)
+void USBMain::EPStartXfer(const Direction direction, uint8_t endpoint, uint32_t len)
 {
 	uint8_t epIndex = (endpoint & epAddrMask);
 
@@ -151,7 +151,7 @@ void USBClass::EPStartXfer(const Direction direction, uint8_t endpoint, uint32_t
 }
 
 
-void USBClass::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pcd.c
+void USBMain::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pcd.c
 {
 	// Handle spurious interrupt
 	USBP->ISTR &= ~(USB_ISTR_SOF | USB_ISTR_ESOF);
@@ -287,9 +287,8 @@ void USBClass::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL
 }
 
 
-void USBClass::InitUSB()
+void USBMain::InitUSB()
 {
-
     // PA11 USB_DM; PA12 USB_DP
 	GPIOA->MODER &= ~(GPIO_MODER_MODE11_0 | GPIO_MODER_MODE12_0);
 	GPIOA->AFR[1] |= ((0xA << GPIO_AFRH_AFSEL11_Pos) | (0xA << GPIO_AFRH_AFSEL12_Pos));
@@ -300,7 +299,7 @@ void USBClass::InitUSB()
 	RCC->CRRCR |= RCC_CRRCR_HSI48ON;					// Enable Internal High Speed oscillator for USB
 	while ((RCC->CRRCR & RCC_CRRCR_HSI48RDY) == 0);		// Wait till internal USB oscillator is ready
 
-	RCC->APB1ENR1 |= RCC_APB1ENR1_USBEN;				// USB2OTG (OTG_HS2) Peripheral Clocks Enable
+	RCC->APB1ENR1 |= RCC_APB1ENR1_USBEN;				// USB Clock Enable
 
 	NVIC_SetPriority(USB_LP_IRQn, 3);
 	NVIC_EnableIRQ(USB_LP_IRQn);
@@ -309,11 +308,11 @@ void USBClass::InitUSB()
 	USBP->BTABLE = 0;									// Set Buffer table Address BTABLE_ADDRESS
 	USBP->ISTR = 0;										// Clear pending interrupts
 	USBP->CNTR = USB_CNTR_CTRM  | USB_CNTR_WKUPM | USB_CNTR_SUSPM | USB_CNTR_ERRM | USB_CNTR_RESETM;
-	USBP->BCDR |= USB_BCDR_DPPU;							// Connect internal PU resistor on USB DP line
+	USBP->BCDR |= USB_BCDR_DPPU;						// Connect internal PU resistor on USB DP line
 }
 
 
-void USBClass::ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointType eptype)
+void USBMain::ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointType eptype)
 {
 	endpoint = endpoint & 0xF;
 	uint16_t ep_type = 0;
@@ -339,7 +338,7 @@ void USBClass::ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointT
 		SetTxStatus(endpoint, USB_EP_TX_NAK);
 
 	} else {
-		USB_PMA[endpoint].ADDR_RX = pmaAddress;						// Offset of PMA used for EP RX
+		USB_PMA[endpoint].ADDR_RX = pmaAddress;				// Offset of PMA used for EP RX
 		USB_PMA[endpoint].SetRXBlkSize(1);					// configure block size = 1 (32 Bytes)
 		USB_PMA[endpoint].SetRXBlocks(1);					// number of blocks = 2 (64 bytes)
 		//USB_PMA[endpoint].COUNT_RX = (1 << USB_COUNT0_RX_BLSIZE_Pos) | (1 << USB_COUNT0_RX_NUM_BLOCK_Pos);		// configure block size = 1 (32 Bytes); number of blocks = 2 (64 bytes)
@@ -359,7 +358,7 @@ void USBClass::ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointT
 
 
 // procedure to allow classes to pass configuration data back via endpoint 0 (eg CDC line setup, MSC MaxLUN etc)
-void USBClass::EP0In(const uint8_t* buff, const uint32_t size)
+void USBMain::EP0In(const uint8_t* buff, const uint32_t size)
 {
 	ep0.inBuff = buff;
 	ep0.inBuffRem = size;
@@ -372,7 +371,7 @@ void USBClass::EP0In(const uint8_t* buff, const uint32_t size)
 }
 
 
-void USBClass::GetDescriptor()
+void USBMain::GetDescriptor()
 {
 	uint32_t strSize;
 
@@ -435,10 +434,10 @@ void USBClass::GetDescriptor()
 	if (req.Length == 0) {
 		EPStartXfer(Direction::in, 0, 0);
 	}
-	}
+}
 
 
-uint32_t USBClass::MakeConfigDescriptor()
+uint32_t USBMain::MakeConfigDescriptor()
 {
 	// Construct the configuration descriptor from the various class descriptors with header
 	static constexpr uint8_t descrHeaderSize = 9;
@@ -470,7 +469,7 @@ uint32_t USBClass::MakeConfigDescriptor()
 }
 
 
-uint32_t USBClass::StringToUnicode(const std::string_view desc, uint8_t *unicode)
+uint32_t USBMain::StringToUnicode(const std::string_view desc, uint8_t *unicode)
 {
 	uint32_t idx = 2;
 	for (auto c: desc) {
@@ -481,11 +480,10 @@ uint32_t USBClass::StringToUnicode(const std::string_view desc, uint8_t *unicode
 	unicode[1] = StringDescriptor;
 
 	return idx;
-	}
+}
 
 
-
-void USBClass::SerialToUnicode()
+void USBMain::SerialToUnicode()
 {
 	const uint32_t* uidAddr = (uint32_t*)UID_BASE;			// Location in memory that holds 96 bit Unique device ID register
 
@@ -500,7 +498,7 @@ void USBClass::SerialToUnicode()
 }
 
 
-bool USBClass::ReadInterrupts(uint32_t interrupt)
+bool USBMain::ReadInterrupts(uint32_t interrupt)
 {
 #if (USB_DEBUG)
 	if ((USBP->ISTR & interrupt) == interrupt && usbDebugEvent < USB_DEBUG_COUNT) {
@@ -515,7 +513,7 @@ bool USBClass::ReadInterrupts(uint32_t interrupt)
 }
 
 
-size_t USBClass::SendData(const uint8_t* data, uint16_t len, uint8_t endpoint)
+size_t USBMain::SendData(const uint8_t* data, uint16_t len, uint8_t endpoint)
 {
 	if (devState == DeviceState::Configured && !transmitting) {
 		transmitting = true;
@@ -529,7 +527,7 @@ size_t USBClass::SendData(const uint8_t* data, uint16_t len, uint8_t endpoint)
 }
 
 
-void USBClass::SendString(const char* s)
+void USBMain::SendString(const char* s)
 {
 	uint16_t counter = 0;
 	while (transmitting && counter < 10000) {
@@ -539,13 +537,13 @@ void USBClass::SendString(const char* s)
 }
 
 
-void USBClass::SendString(const std::string& s)
+void USBMain::SendString(const std::string& s)
 {
 	SendString(s.c_str());
 }
 
 
-size_t USBClass::SendString(const unsigned char* s, size_t len)
+size_t USBMain::SendString(const unsigned char* s, size_t len)
 {
 	uint16_t counter = 0;
 	while (transmitting && counter < 10000) {
@@ -583,7 +581,7 @@ std::string HexByte(const uint16_t& v) {
 
 }
 
-void USBClass::OutputDebug()
+void USBMain::OutputDebug()
 {
 	USBDebug = false;
 

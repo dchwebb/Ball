@@ -37,11 +37,24 @@ void CDCHandler::ProcessCommand()
 
 	} else if (cmd.compare("info") == 0) {		// Print diagnostic information
 
+		int8_t rssi = -127;
+		if (bleApp.connectionStatus == BleApp::ConnStatus::Connected) {
+			hci_read_rssi(bleApp.connectionHandle, (uint8_t*)&rssi);
+		}
+
+		WirelessFwInfo_t fwInfo {};
+		SHCI_GetWirelessFwInfo(&fwInfo);
+
 		sprintf(buf, "\r\nMountjoy Ball Remote v1.0 - Current Settings:\r\n\r\n"
-				"Battery: %f V\r\n"
-				"Wireless Stack: %s\r\n",
-				basService.GetBatteryLevel(),
-				(bleApp.coprocessorFailure ? "Off" : "Running"));
+				"Battery: %.2fv  %d%%\r\n"
+				"Wireless Stack: %s\r\n"
+				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
+				"RSSI Value: %d dBm\r\n",
+				basService.GetBatteryLevel(), basService.Level,
+				(bleApp.coprocessorFailure ? "Off" : "Running"),
+				fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
+				fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub,
+				rssi);
 
 		usb->SendString(buf);
 
@@ -82,13 +95,11 @@ void CDCHandler::ProcessCommand()
 		}
 
 
-	} else if (cmd.compare("gyroread") == 0) {					// Trigger a repeated read
-		if (hidService.JoystickNotifications) {
-			printf("Currently connected\r\n");
-		} else {
+	} else if (cmd.compare("gyroread") == 0) {						// Trigger a gyroscope read
+		if (!hidService.JoystickNotifications) {
 			gyro.GyroRead();
-			printf("x: %d, y:%d, z: %d\n", gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
 		}
+		printf("x: %d, y:%d, z: %d\n", gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
 
 	} else if (cmd.compare(0, 8, "readspi:") == 0) {				// Read spi register
 		if (hidService.JoystickNotifications) {
@@ -178,7 +189,7 @@ void CDCHandler::ProcessCommand()
 
 void CDCHandler::DataIn()
 {
-	if (inBuffSize > 0 && inBuffSize % USBClass::ep_maxPacket == 0) {
+	if (inBuffSize > 0 && inBuffSize % USBMain::ep_maxPacket == 0) {
 		inBuffSize = 0;
 		EndPointTransfer(Direction::in, inEP, 0);				// Fixes issue transmitting an exact multiple of max packet size (n x 64)
 	}
@@ -205,11 +216,11 @@ void CDCHandler::DataOut()
 
 void CDCHandler::ActivateEP()
 {
-	EndPointActivate(USBClass::CDC_In,   Direction::in,  EndPointType::Bulk);			// Activate CDC in endpoint
-	EndPointActivate(USBClass::CDC_Out,  Direction::out, EndPointType::Bulk);			// Activate CDC out endpoint
-	EndPointActivate(USBClass::CDC_Cmd,  Direction::in,  EndPointType::Interrupt);		// Activate Command IN EP
+	EndPointActivate(USBMain::CDC_In,   Direction::in,  EndPointType::Bulk);			// Activate CDC in endpoint
+	EndPointActivate(USBMain::CDC_Out,  Direction::out, EndPointType::Bulk);			// Activate CDC out endpoint
+	EndPointActivate(USBMain::CDC_Cmd,  Direction::in,  EndPointType::Interrupt);		// Activate Command IN EP
 
-	EndPointTransfer(Direction::out, USBClass::CDC_Out, USBClass::ep_maxPacket);
+	EndPointTransfer(Direction::out, USBMain::CDC_Out, USBMain::ep_maxPacket);
 }
 
 
@@ -268,57 +279,57 @@ float CDCHandler::ParseFloat(const std::string_view cmd, const char precedingCha
 const uint8_t CDCHandler::Descriptor[] = {
 	// IAD Descriptor - Interface association descriptor for CDC class
 	0x08,									// bLength (8 bytes)
-	USBClass::IadDescriptor,				// bDescriptorType
-	USBClass::CDCCmdInterface,				// bFirstInterface
+	USBMain::IadDescriptor,				// bDescriptorType
+	USBMain::CDCCmdInterface,				// bFirstInterface
 	0x02,									// bInterfaceCount
 	0x02,									// bFunctionClass (Communications and CDC Control)
 	0x02,									// bFunctionSubClass
 	0x01,									// bFunctionProtocol
-	USBClass::CommunicationClass,			// String Descriptor
+	USBMain::CommunicationClass,			// String Descriptor
 
 	// Interface Descriptor
 	0x09,									// bLength: Interface Descriptor size
-	USBClass::InterfaceDescriptor,			// bDescriptorType: Interface
-	USBClass::CDCCmdInterface,				// bInterfaceNumber: Number of Interface
+	USBMain::InterfaceDescriptor,			// bDescriptorType: Interface
+	USBMain::CDCCmdInterface,				// bInterfaceNumber: Number of Interface
 	0x00,									// bAlternateSetting: Alternate setting
 	0x01,									// bNumEndpoints: 1 endpoint used
 	0x02,									// bInterfaceClass: Communication Interface Class
 	0x02,									// bInterfaceSubClass: Abstract Control Model
 	0x01,									// bInterfaceProtocol: Common AT commands
-	USBClass::CommunicationClass,			// iInterface
+	USBMain::CommunicationClass,			// iInterface
 
 	// Header Functional Descriptor
 	0x05,									// bLength: Endpoint Descriptor size
-	USBClass::ClassSpecificInterfaceDescriptor,	// bDescriptorType: CS_INTERFACE
+	USBMain::ClassSpecificInterfaceDescriptor,	// bDescriptorType: CS_INTERFACE
 	0x00,									// bDescriptorSubtype: Header Func Desc
 	0x10,									// bcdCDC: spec release number
 	0x01,
 
 	// Call Management Functional Descriptor
 	0x05,									// bFunctionLength
-	USBClass::ClassSpecificInterfaceDescriptor,	// bDescriptorType: CS_INTERFACE
+	USBMain::ClassSpecificInterfaceDescriptor,	// bDescriptorType: CS_INTERFACE
 	0x01,									// bDescriptorSubtype: Call Management Func Desc
 	0x00,									// bmCapabilities: D0+D1
 	0x01,									// bDataInterface: 1
 
 	// ACM Functional Descriptor
 	0x04,									// bFunctionLength
-	USBClass::ClassSpecificInterfaceDescriptor,	// bDescriptorType: CS_INTERFACE
+	USBMain::ClassSpecificInterfaceDescriptor,	// bDescriptorType: CS_INTERFACE
 	0x02,									// bDescriptorSubtype: Abstract Control Management desc
 	0x02,									// bmCapabilities
 
 	// Union Functional Descriptor
 	0x05,									// bFunctionLength
-	USBClass::ClassSpecificInterfaceDescriptor,	// bDescriptorType: CS_INTERFACE
+	USBMain::ClassSpecificInterfaceDescriptor,	// bDescriptorType: CS_INTERFACE
 	0x06,									// bDescriptorSubtype: Union func desc
 	0x00,									// bMasterInterface: Communication class interface
 	0x01,									// bSlaveInterface0: Data Class Interface
 
 	// Endpoint 2 Descriptor
 	0x07,									// bLength: Endpoint Descriptor size
-	USBClass::EndpointDescriptor,			// bDescriptorType: Endpoint
-	USBClass::CDC_Cmd,						// bEndpointAddress
-	USBClass::Interrupt,					// bmAttributes: Interrupt
+	USBMain::EndpointDescriptor,			// bDescriptorType: Endpoint
+	USBMain::CDC_Cmd,						// bEndpointAddress
+	USBMain::Interrupt,					// bmAttributes: Interrupt
 	0x08,									// wMaxPacketSize
 	0x00,
 	0x10,									// bInterval
@@ -327,8 +338,8 @@ const uint8_t CDCHandler::Descriptor[] = {
 
 	// Data class interface descriptor
 	0x09,									// bLength: Endpoint Descriptor size
-	USBClass::InterfaceDescriptor,			// bDescriptorType:
-	USBClass::CDCDataInterface,				// bInterfaceNumber: Number of Interface
+	USBMain::InterfaceDescriptor,			// bDescriptorType:
+	USBMain::CDCDataInterface,				// bInterfaceNumber: Number of Interface
 	0x00,									// bAlternateSetting: Alternate setting
 	0x02,									// bNumEndpoints: Two endpoints used
 	0x0A,									// bInterfaceClass: CDC
@@ -338,20 +349,20 @@ const uint8_t CDCHandler::Descriptor[] = {
 
 	// Endpoint OUT Descriptor
 	0x07,									// bLength: Endpoint Descriptor size
-	USBClass::EndpointDescriptor,			// bDescriptorType: Endpoint
-	USBClass::CDC_Out,						// bEndpointAddress
-	USBClass::Bulk,							// bmAttributes: Bulk
-	LOBYTE(USBClass::ep_maxPacket),			// wMaxPacketSize:
-	HIBYTE(USBClass::ep_maxPacket),
+	USBMain::EndpointDescriptor,			// bDescriptorType: Endpoint
+	USBMain::CDC_Out,						// bEndpointAddress
+	USBMain::Bulk,							// bmAttributes: Bulk
+	LOBYTE(USBMain::ep_maxPacket),			// wMaxPacketSize:
+	HIBYTE(USBMain::ep_maxPacket),
 	0x00,									// bInterval: ignore for Bulk transfer
 
 	// Endpoint IN Descriptor
 	0x07,									// bLength: Endpoint Descriptor size
-	USBClass::EndpointDescriptor,			// bDescriptorType: Endpoint
-	USBClass::CDC_In,						// bEndpointAddress
-	USBClass::Bulk,							// bmAttributes: Bulk
-	LOBYTE(USBClass::ep_maxPacket),			// wMaxPacketSize:
-	HIBYTE(USBClass::ep_maxPacket),
+	USBMain::EndpointDescriptor,			// bDescriptorType: Endpoint
+	USBMain::CDC_In,						// bEndpointAddress
+	USBMain::Bulk,							// bmAttributes: Bulk
+	LOBYTE(USBMain::ep_maxPacket),			// wMaxPacketSize:
+	HIBYTE(USBMain::ep_maxPacket),
 	0x00,									// bInterval: ignore for Bulk transfer
 };
 

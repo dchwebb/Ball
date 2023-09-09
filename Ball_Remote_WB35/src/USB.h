@@ -39,16 +39,10 @@ typedef struct {
 #define USB_EPR  ((USB_EPR_TypeDef*)(&USBP->EP0R))
 #define USBP     USB
 
-// Bit definition for USB_COUNT0_RX register
-//#define USB_COUNT0_RX_NUM_BLOCK_Pos              (10U)
-//#define USB_COUNT0_RX_BLSIZE_Pos                 (15U)
-//#define USB_COUNT0_RX_BLSIZE                     USB_COUNT0_RX_BLSIZE_Msk      /*!< BLock SIZE */
-
-
 #define LOBYTE(x)  (static_cast<uint8_t>(x & 0x00FFU))
 #define HIBYTE(x)  (static_cast<uint8_t>((x & 0xFF00U) >> 8))
 
-class USBClass {
+class USBMain {
 	friend class USBHandler;
 public:
 	enum Interface {NoInterface = -1, CDCCmdInterface = 0, CDCDataInterface = 1, interfaceCount = 2};
@@ -74,7 +68,7 @@ public:
 	uint32_t StringToUnicode(const std::string_view desc, uint8_t* unicode);
 
 	EP0Handler  ep0  = EP0Handler(this, 0, 0, NoInterface);
-	CDCHandler  cdc  = CDCHandler(this,  USBClass::CDC_In,  USBClass::CDC_Out,  CDCCmdInterface);
+	CDCHandler  cdc  = CDCHandler(this,  USBMain::CDC_In,  USBMain::CDC_Out,  CDCCmdInterface);
 
 	bool classPendingData = false;			// Set when class setup command received and data pending
 	bool transmitting;
@@ -104,7 +98,7 @@ private:
 	uint32_t MakeConfigDescriptor();
 	void SerialToUnicode();
 
-	std::array<USBHandler*, 2>classesByInterface;		// Lookup tables to get appropriate class handlers (set in handler constructor)
+	std::array<USBHandler*, 2>classesByInterface;	// Lookup tables to get appropriate class handlers (set in handler constructor)
 	std::array<USBHandler*, 2>classByEP;
 	usbRequest req;
 
@@ -136,8 +130,8 @@ private:
 			0x00,								// bcdDevice rel. 2.00
 			0x02,
 			Manufacturer,						// Index of manufacturer  string
-			Product,					// Index of product string
-			Serial,						// Index of serial number string
+			Product,							// Index of product string
+			Serial,								// Index of serial number string
 			0x01								// bNumConfigurations
 	};
 
@@ -186,4 +180,4 @@ public:
 };
 
 
-extern USBClass usb;
+extern USBMain usb;
