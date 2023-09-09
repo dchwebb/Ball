@@ -6,8 +6,7 @@
 
 extern "C" {
 void SysTick_Handler() {
-	uwTick++;
-	//HAL_IncTick();
+	++SysTickVal;
 }
 
 void USB_LP_IRQHandler() {
@@ -22,8 +21,9 @@ void EXTI4_IRQHandler() {
 
 void TIM2_IRQHandler() {
 	TIM2->SR &= ~TIM_SR_UIF;
+	GPIOB->ODR |= GPIO_ODR_OD8;
 	gyro.OutputGyro();
-
+	GPIOB->ODR &= ~GPIO_ODR_OD8;
 }
 
 void HSEM_IRQHandler() {		// This doesn't seem to be being used

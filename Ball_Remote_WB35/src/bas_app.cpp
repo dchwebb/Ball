@@ -76,15 +76,15 @@ float BasService::GetBatteryLevel()
 void BasService::TimedRead()
 {
 	// Called in main loop - checks battery level every 5 seconds and updates characteristic if required
-	if (lastRead + 5000 < uwTick) {
-		lastRead = uwTick;
+	if (lastRead + 5000 < SysTickVal) {
+		lastRead = SysTickVal;
 
 		uint8_t oldLevel = Level;
 		GetBatteryLevel();
 
-		if (Level != oldLevel || lastSent + 10000 < uwTick) {				// FIXME - force a resend of battery every 10 seconds (make longer in production)
+		if (Level != oldLevel || lastSent + 10000 < SysTickVal) {				// FIXME - force a resend of battery every 10 seconds (make longer in production)
 			UTIL_SEQ_SetTask(1 << CFG_TASK_BATTERY_NOTIFICATION, CFG_SCH_PRIO_0);
-			lastSent = uwTick;
+			lastSent = SysTickVal;
 		}
 
 		ADC1->CR |= ADC_CR_ADSTART;			// Trigger next ADC read

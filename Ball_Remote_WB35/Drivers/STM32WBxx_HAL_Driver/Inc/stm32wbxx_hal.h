@@ -638,7 +638,7 @@ void HAL_DBGMCU_DisableDBGStandbyMode(void);
 /** @addtogroup HAL_Exported_Variables
   * @{
   */
-extern __IO uint32_t uwTick;
+extern __IO uint32_t SysTickVal;
 extern uint32_t uwTickPrio;
 extern HAL_TickFreqTypeDef uwTickFreq;
 /**

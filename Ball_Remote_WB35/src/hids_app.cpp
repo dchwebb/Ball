@@ -147,9 +147,9 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 
 	static uint32_t lastPrint = 0;
 
-	if (outputGyro && uwTick - lastPrint > 300) {
+	if (outputGyro && SysTickVal - lastPrint > 300) {
 		printf("x: %d y: %d z: %d\r\n", x, y, z);
-		lastPrint = uwTick;
+		lastPrint = SysTickVal;
 	}
 
 	UTIL_SEQ_SetTask(1 << CFG_TASK_JOYSTICK_NOTIFICATION, CFG_SCH_PRIO_0);

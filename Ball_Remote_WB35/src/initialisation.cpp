@@ -10,22 +10,23 @@ static void InitSPI();
 static void InitGyroTimer();
 
 
-uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference to current connection failure
+uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference
 
 void SystemClock_Config()
 {
 	FLASH->ACR |= FLASH_ACR_PRFTEN;					// Flash prefetch enable
 	FLASH->SR &= ~FLASH_SR_OPERR;					// Clear Flash Option Validity flag
 
+/*
 	// Read HSE_Tuning from OTP and set HSE capacitor tuning
-//	OTP_ID0_t* p_otp = (OTP_ID0_t*) OTP_Read(0);
-//	if (p_otp) {
-//		RCC->HSECR = 0xCAFECAFE;					// HSE control unlock key
-//		MODIFY_REG(RCC->HSECR, RCC_HSECR_HSETUNE, p_otp->hse_tuning << RCC_HSECR_HSETUNE_Pos);
-//	}
+	OTP_ID0_t* p_otp = (OTP_ID0_t*) OTP_Read(0);
+	if (p_otp) {
+		RCC->HSECR = 0xCAFECAFE;					// HSE control unlock key
+		MODIFY_REG(RCC->HSECR, RCC_HSECR_HSETUNE, p_otp->hse_tuning << RCC_HSECR_HSETUNE_Pos);
+	}
 	RCC->HSECR = 0xCAFECAFE;						// HSE control unlock key
 	MODIFY_REG(RCC->HSECR, RCC_HSECR_HSETUNE, hse_tuning << RCC_HSECR_HSETUNE_Pos);
-
+*/
 
 	PWR->CR1 |= PWR_CR1_DBP; 						// Disable backup domain write protection: Enable access to the RTC registers
 
@@ -51,18 +52,13 @@ void SystemClock_Config()
 	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 3);	// Increase Flash latency to 3 Wait States (see manual p.77)
 	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 3);
 
-//	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);		// 10: HSE selected as system clock
-//	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until HSE is selected
-
 	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_PLL);		// 11: PLL selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until PLL is selected
 
 	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
 
 	// Peripheral clocks already set to default: RTC, USART, LPUSART
-	//RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				// RF system wakeup clock source selection: 01: LSE oscillator clock
 	RCC->CSR |=  RCC_CSR_RFWKPSEL_0 | RCC_CSR_RFWKPSEL_1;				// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
-
 }
 
 
@@ -160,6 +156,7 @@ static void InitGPIO()
 {
 	// GPIO Ports Clock Enable
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
+	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
 
 	// Configure GPIO pin : PA4 Connect Button
 	GPIOA->MODER &= ~GPIO_MODER_MODE4_Msk;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
@@ -178,6 +175,9 @@ static void InitGPIO()
 	//EXTI->EMR1 |= EXTI_EMR1_EM4;
 	PWR->CR4 &= ~PWR_CR4_WP4;		// Wake-Up pin polarity (0=rising 1 = falling edge)
 	PWR->CR3 |= PWR_CR3_EWUP4;		// Enable WKUP4 on PA2
+
+	// Configure pin PB8 for debug output
+	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;
 }
 
 
@@ -240,8 +240,8 @@ static void InitSysTick()
 void InitGyroTimer()
 {
 	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;			// Enable Timer 3
-	TIM2->PSC = 34;									// Set prescaler
-	TIM2->ARR = 2000; 								// Set auto reload register - 64Mhz / 33 / 2000 = ~1kHz
+	TIM2->PSC = 31;									// Set prescaler
+	TIM2->ARR = 1999; 								// Set auto reload register - Clk / PSC + 1 / ARR + 1 = 64Mhz / 32 / 2000 = 1kHz
 
 	TIM2->DIER |= TIM_DIER_UIE;						// DMA/interrupt enable register
 	TIM2->EGR |= TIM_EGR_UG;						// Re-initializes counter and generates update of registers

@@ -8,7 +8,7 @@
 
 
 bool sleep = false;
-volatile uint32_t uwTick;
+volatile uint32_t SysTickVal;
 
 int main(void)
 {

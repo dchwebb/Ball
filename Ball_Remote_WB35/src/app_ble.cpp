@@ -136,14 +136,14 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 					break;
 
 				case ACI_GAP_PASS_KEY_REQ_VSEVT_CODE:
-					aci_gap_pass_key_resp(connectionHandle, CFG_FIXED_PIN);
+					aci_gap_pass_key_resp(connectionHandle, Security.fixedPin);
 					break;
 
 				case ACI_GAP_NUMERIC_COMPARISON_VALUE_VSEVT_CODE: {
 					auto evt_numeric_value = (aci_gap_numeric_comparison_value_event_rp0*)blecore_evt->data;
 					uint32_t numeric_value = evt_numeric_value->Numeric_Value;
 					APP_DBG_MSG("numeric_value = %ld\n", numeric_value);
-					aci_gap_numeric_comparison_value_confirm_yesno(connectionHandle, YES);
+					aci_gap_numeric_comparison_value_confirm_yesno(connectionHandle, true);
 					break;
 				}
 
@@ -190,14 +190,26 @@ void BleApp::HciGapGattInit()
 	// Write Encryption root key used to derive LTK and CSRK
 	aci_hal_write_config_data(CONFIG_DATA_ER_OFFSET, CONFIG_DATA_ER_LEN, EncryptionRootKey);
 
-	aci_hal_set_tx_power_level(1, CFG_TX_POWER);	// Set TX Power to 0dBm.
+	aci_hal_set_tx_power_level(0, TransmitPower);	// Set TX Power to 0dBm.
 	aci_gatt_init();								// Initialize GATT interface
 
 	// Initialize GAP interface
-	const char* name = CFG_GAP_DEVICE_NAME;
-	aci_gap_init(GAP_PERIPHERAL_ROLE, 0, CFG_GAP_DEVICE_NAME_LENGTH, &gap_service_handle, &gap_dev_name_char_handle, &gap_appearance_char_handle);
+	aci_gap_init(
+			GAP_PERIPHERAL_ROLE,
+			0,
+			GapDeviceName.length(),
+			&gap_service_handle,
+			&gap_dev_name_char_handle,
+			&gap_appearance_char_handle
+			);
 
-	if (aci_gatt_update_char_value(gap_service_handle, gap_dev_name_char_handle, 0, strlen(name), (uint8_t*)name)) {
+	if (aci_gatt_update_char_value(
+			gap_service_handle,
+			gap_dev_name_char_handle,
+			0,
+			GapDeviceName.length(),
+			(uint8_t*)std::string(GapDeviceName).c_str())
+		) {
 		APP_DBG_MSG("Device Name aci_gatt_update_char_value failed.\n");
 	}
 
@@ -214,13 +226,13 @@ void BleApp::HciGapGattInit()
 	// Initialize authentication
 	aci_gap_set_authentication_requirement(Security.bondingMode,
 			Security.mitmMode,
-			CFG_SC_SUPPORT,
-			CFG_KEYPRESS_NOTIFICATION_SUPPORT,
+			Security.secureSupport,
+			Security.keypressNotificationSupport,
 			Security.encryptionKeySizeMin,
 			Security.encryptionKeySizeMax,
 			Security.useFixedPin,
 			Security.fixedPin,
-			CFG_BLE_ADDRESS_TYPE
+			Security.BLEAddressType
 	);
 	// Initialize whitelist
 	if (Security.bondingMode) {
@@ -242,14 +254,14 @@ void BleApp::EnableAdvertising(ConnStatus newStatus)
 	if ((newStatus == ConnStatus::LPAdv) && ((connectionStatus == ConnStatus::FastAdv) || (connectionStatus == ConnStatus::LPAdv))) {
 		ret = aci_gap_set_non_discoverable();
 		if (ret == BLE_STATUS_SUCCESS) {
-			APP_DBG_MSG("Stopped Advertising \n");
+			APP_DBG_MSG("Stopped Fast Advertising \n");
 		} else {
 			APP_DBG_MSG("Stop Advertising Failed , result: %d \n", ret);
 		}
 	}
 	connectionStatus = newStatus;
 
-	ret = aci_gap_set_discoverable(ADV_TYPE, MinInterval, MaxInterval, CFG_BLE_ADDRESS_TYPE, ADV_FILTER, 0, 0, 0, 0, 0, 0);
+	ret = aci_gap_set_discoverable((uint8_t)AdvertisingType::Indirect, MinInterval, MaxInterval, Security.BLEAddressType, HCI_ADV_FILTER_NO, 0, 0, 0, 0, 0, 0);
 
 	// Update Advertising data
 	ret = aci_gap_update_adv_data(sizeof(ad_data), ad_data);

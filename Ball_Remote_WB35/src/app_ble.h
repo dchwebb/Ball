@@ -3,7 +3,7 @@
 #include "hci_tl.h"
 #include "ble_defs.h"
 #include "app_conf.h"
-//#include "ble_legacy.h"
+#include <string>
 
 struct BleApp {
 public:
@@ -21,6 +21,10 @@ public:
 	static void DisconnectRequest();
 private:
 	enum class SleepState {CancelAdv, GoToSleep, Awake};
+	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
+	enum class AdvertisingType : uint8_t {Indirect = 0, DirectIndirect = 1, ScanIndirect = 2, NonConnInd = 3, DirectIndirectLDC = 4};
+	enum class GapAddress : uint8_t {Public = 0, StaticRandom = 1, ResolvablePrivate = 2, NonResolvablePrivate = 3} ;
+	enum class SecureSupport : uint8_t {NotSupported = 0, Optional = 1, Mandatory = 2};
 
 	// Advertising Data: Length | Type | Data
 	const uint8_t ad_data[25] = {
@@ -30,6 +34,8 @@ private:
 		7, AD_TYPE_MANUFACTURER_SPECIFIC_DATA, 0x01, 0x83, 0xDE, 0xAD, 0xBE, 0xEF
 	};
 
+	static constexpr uint8_t TransmitPower = 16;				 		// PA_Level Power amplifier output level (0-35)
+
 	static constexpr uint8_t IdentityRootKey[16] = CFG_BLE_IRK;			// Identity root key used to derive LTK and CSRK
 	static constexpr uint8_t EncryptionRootKey[16] = CFG_BLE_ERK;		// Encryption root key used to derive LTK and CSRK
 	static constexpr uint32_t FastAdvTimeout = (30 * 1000 * 1000 / CFG_TS_TICK_VAL); 	// 30s
@@ -37,19 +43,23 @@ private:
 	static constexpr uint16_t FastAdvIntervalMax = 160;
 	static constexpr uint16_t LPAdvIntervalMin = 1600;					// Intervals for low power advertising
 	static constexpr uint16_t LPAdvIntervalMax = 4000;
+	static constexpr std::string_view GapDeviceName = "Ball_Remote";
 
 	uint8_t bd_addr_udn[bdAddrSize];
 	uint8_t lowPowerAdvTimerId;
 	SleepState sleepState {SleepState::Awake};
 
 	struct  {
-		uint8_t ioCapability = CFG_IO_CAPABILITY;						// IO capability of the device
-		uint8_t mitmMode = CFG_MITM_PROTECTION;							// Man In the Middle protection required?
-		uint8_t bondingMode = CFG_BONDING_MODE;							// bonding mode of the device
-		uint8_t useFixedPin = CFG_USED_FIXED_PIN;						// 0 = use fixed pin; 1 = request for passkey
-		uint8_t encryptionKeySizeMin = CFG_ENCRYPTION_KEY_SIZE_MIN;		// minimum encryption key size requirement
-		uint8_t encryptionKeySizeMax = CFG_ENCRYPTION_KEY_SIZE_MAX;		// maximum encryption key size requirement
-		uint32_t fixedPin = CFG_FIXED_PIN;								// Fixed pin for pairing process if Use_Fixed_Pin = 1
+		uint8_t ioCapability = (uint8_t)IOCapability::NoIO;				// IO capability of the device
+		uint8_t mitmMode = false;										// Man In the Middle protection required?
+		uint8_t bondingMode = true;										// bonding mode of the device
+		uint8_t useFixedPin = false;									// 0 = use fixed pin; 1 = request for passkey
+		uint8_t encryptionKeySizeMin = 8;								// minimum encryption key size requirement
+		uint8_t encryptionKeySizeMax = 16;								// maximum encryption key size requirement
+		uint8_t secureSupport = (uint8_t)SecureSupport::Optional; 		// LE Secure connections support
+		uint8_t keypressNotificationSupport = false;					// No support for keyboard
+		uint8_t BLEAddressType = (uint8_t)GapAddress::Public;			// BLE Address Type
+		uint32_t fixedPin = 111111;										// Fixed pin for pairing process if Use_Fixed_Pin = 1
 	} Security;
 
 	void EnableAdvertising(ConnStatus status);

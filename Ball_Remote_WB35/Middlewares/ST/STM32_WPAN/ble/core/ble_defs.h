@@ -517,12 +517,12 @@
 
 /* Advertising Type
  */
-#define ADV_IND                                        0
-#define ADV_DIRECT_IND                                 1
-#define ADV_SCAN_IND                                   2
-#define ADV_NONCONN_IND                                3
-#define ADV_DIRECT_IND_LDC                             4
-#define SCAN_RSP                                       4
+//#define ADV_IND                                        0
+//#define ADV_DIRECT_IND                                 1
+//#define ADV_SCAN_IND                                   2
+//#define ADV_NONCONN_IND                                3
+//#define ADV_DIRECT_IND_LDC                             4
+//#define SCAN_RSP                                       4
 
 /* Advertising channels
  */
