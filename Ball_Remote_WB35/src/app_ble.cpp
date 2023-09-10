@@ -26,26 +26,34 @@ void BleApp::Init()
 			{{0,0,0}},                          // Header unused
 			{0,                                 // pBleBufferAddress not used
 			0,                         			// BleBufferSize not used
-			CFG_BLE_NUM_GATT_ATTRIBUTES,
-			CFG_BLE_NUM_GATT_SERVICES,
+			NumberOfGATTAttributes,
+			NumberOfGATTServices,
 			CFG_BLE_ATT_VALUE_ARRAY_SIZE,
 			CFG_BLE_NUM_LINK,
-			CFG_BLE_DATA_LENGTH_EXTENSION,
+			DataLengthExtension,
 			CFG_BLE_PREPARE_WRITE_LIST_SIZE,
 			CFG_BLE_MBLOCK_COUNT,
 			CFG_BLE_MAX_ATT_MTU,
-			CFG_BLE_SLAVE_SCA,
-			CFG_BLE_MASTER_SCA,
-			CFG_BLE_LSE_SOURCE,
-			CFG_BLE_MAX_CONN_EVENT_LENGTH,
-			CFG_BLE_HSE_STARTUP_TIME,
-			CFG_BLE_VITERBI_MODE,
+			SlaveSleepClockAccuracy,
+			MasterSleepClockAccuracy,
+			LowSpeedWakeUpClk,
+			MaxConnEventLength,
+			HseStartupTime,
+			ViterbiEnable,
 			CFG_BLE_OPTIONS,
-			0,
-			CFG_BLE_MAX_COC_INITIATOR_NBR,
-			CFG_BLE_MIN_TX_POWER,
-			CFG_BLE_MAX_TX_POWER}
+			0,									// Hw Version - unused and reserved
+			MaxCOChannels,
+			MinTransmitPower,
+			MaxTransmitPower,
+			RXModelConfig,
+			MaxAdvertisingSets,
+			MaxAdvertisingDataLength,
+			TXPathCompensation,
+			RXPathCompensation,
+			BLECoreVersion,
+			CFG_BLE_OPTIONS_EXT}
 	};
+
 
 	TransportLayerInit();						// Initialize BLE Transport Layer
 
@@ -89,7 +97,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 			connectionStatus = ConnStatus::Idle;
 			hidService.Disconnect();
 
-			APP_DBG_MSG("\r\n\r** Disconnection event with client \n");
+			APP_DBG_MSG("\r\n\r** Client Disconnected\n");
 
 			EnableAdvertising(ConnStatus::FastAdv);			// Restart advertising
 
@@ -111,7 +119,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 				connectionStatus = ConnStatus::Connected;
 				connectionHandle = connCompleteEvent->Connection_Handle;
 
-				GPIOA->ODR |= GPIO_ODR_OD3;						// Turn on connected LED
+				GPIOA->ODR |= GPIO_ODR_OD3;					// Turn on connected LED
 			}
 		}
 		break;
@@ -217,8 +225,8 @@ void BleApp::HciGapGattInit()
 		APP_DBG_MSG("Appearance aci_gatt_update_char_value failed.\n");
 	}
 
-	// Initialize Default PHY
-	hci_le_set_default_phy(ALL_PHYS_PREFERENCE, TX_2M_PREFERRED, RX_2M_PREFERRED);
+	// Initialize Default PHY - specify preference for 1 or 2Mbit Phy for TX and RX
+	hci_le_set_default_phy(PreferAllPhy, Prefer2MbitPhy, Prefer2MbitPhy);
 
 	// Initialize IO capability
 	aci_gap_set_io_capability(Security.ioCapability);
@@ -291,7 +299,7 @@ uint8_t* BleApp::GetBdAddress()
 	// bit[47:24] : 24 bits (OUI) equal to the company ID
 	// bit[23:16] : Device ID.
 	// bit[15:0]  : The last 16 bits from the UDN
-	// Note: In order to use the Public Address in a final product, a dedicated 24 bit company ID (OUI) shall be bought.
+	// Note: In order to use the Public Address in a final product, a dedicated 24 bit company ID (OUI) must be bought.
 	bd_addr_udn[0] = (uint8_t)(udn & 0x000000FF);
 	bd_addr_udn[1] = (uint8_t)((udn & 0x0000FF00) >> 8);
 	bd_addr_udn[2] = (uint8_t)device_id;
