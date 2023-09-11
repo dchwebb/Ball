@@ -15,11 +15,11 @@ void BasService::Init()
 			(Service_UUID_t*)&uuid,
 			PRIMARY_SERVICE,
 			4,										// Max_Attribute_Records
-			&(ServiceHandle));
-	APP_DBG_MSG("- BAS: Registered BAS Service handle: 0x%X\n", ServiceHandle);
+			&(serviceHandle));
+	APP_DBG_MSG("- BAS: Registered BAS Service handle: 0x%X\n", serviceHandle);
 
 	uuid = BATTERY_LEVEL_CHAR_UUID;
-	hciCmdResult = aci_gatt_add_char(ServiceHandle,
+	hciCmdResult = aci_gatt_add_char(serviceHandle,
 			UUID_TYPE_16,
 			(Char_UUID_t*)&uuid,
 			4,										// Char value length
@@ -28,8 +28,8 @@ void BasService::Init()
 			GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,
 			10, 									// encryKeySize
 			CHAR_VALUE_LEN_CONSTANT,
-			&(BatteryLevelHandle));
-	APP_DBG_MSG("- BAS: Registered Battery Level characteristic handle: 0x%X\n", BatteryLevelHandle);
+			&(batteryLevelHandle));
+	APP_DBG_MSG("- BAS: Registered Battery Level characteristic handle: 0x%X\n", batteryLevelHandle);
 
 	if (hciCmdResult != BLE_STATUS_SUCCESS) {
 		APP_DBG_MSG("- BAS: Error registering characteristics: 0x%X\n", hciCmdResult);
@@ -40,11 +40,11 @@ void BasService::Init()
 
 void BasService::AppInit()
 {
-	BatteryNotifications = false;
+	batteryNotifications = false;
 	GetBatteryLevel();
 
 	// Use the sequencer to update the report char so that to avoid write conflicts
-	UTIL_SEQ_RegTask(1 << CFG_TASK_BATTERY_NOTIFICATION, 0, UpdateBatteryChar);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_BatteryNotification, 0, UpdateBatteryChar);
 	UpdateBatteryChar();
 }
 
@@ -53,8 +53,8 @@ void BasService::UpdateBatteryChar()
 {
 	// Will trigger a notification to be sent if client is subscribed (called from sequencer)
 	aci_gatt_update_char_value(
-			basService.ServiceHandle,
-			basService.BatteryLevelHandle,
+			basService.serviceHandle,
+			basService.batteryLevelHandle,
 			0,
 			2,													// Size of battery report
 			(uint8_t*)&basService.Level);
@@ -83,7 +83,7 @@ void BasService::TimedRead()
 		GetBatteryLevel();
 
 		if (Level != oldLevel || lastSent + 10000 < SysTickVal) {				// FIXME - force a resend of battery every 10 seconds (make longer in production)
-			UTIL_SEQ_SetTask(1 << CFG_TASK_BATTERY_NOTIFICATION, CFG_SCH_PRIO_0);
+			UTIL_SEQ_SetTask(1 << CFG_TASK_BatteryNotification, CFG_SCH_PRIO_0);
 			lastSent = SysTickVal;
 		}
 
@@ -102,14 +102,14 @@ bool BasService::EventHandler(hci_event_pckt* event_pckt)
 	case ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE:
 	{
 		auto attribute_modified = (aci_gatt_attribute_modified_event_rp0*)blecore_evt->data;
-		if (attribute_modified->Attr_Handle == (BatteryLevelHandle + 2)) {		// 2 = Offset of descriptor from characteristic handle
+		if (attribute_modified->Attr_Handle == (batteryLevelHandle + 2)) {		// 2 = Offset of descriptor from characteristic handle
 			handled = true;
 
 			if (attribute_modified->Attr_Data[0] == 1) {
-				BatteryNotifications = true;
+				batteryNotifications = true;
 				//UpdateBatteryChar();
 			} else {
-				BatteryNotifications = false;
+				batteryNotifications = false;
 			}
 		}
 		break;
@@ -118,7 +118,7 @@ bool BasService::EventHandler(hci_event_pckt* event_pckt)
 	case ACI_GATT_READ_PERMIT_REQ_VSEVT_CODE:
 	{
 		auto read_req = (aci_gatt_read_permit_req_event_rp0*)blecore_evt->data;
-		if (read_req->Attribute_Handle == (BatteryLevelHandle + 1)) {		// 1 = Offset of value from characteristic handle
+		if (read_req->Attribute_Handle == (batteryLevelHandle + 1)) {		// 1 = Offset of value from characteristic handle
 			handled = true;
 			aci_gatt_allow_read(read_req->Connection_Handle);
 		}

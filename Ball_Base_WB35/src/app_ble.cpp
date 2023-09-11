@@ -235,6 +235,10 @@ void BleApp::ServiceControlCallback(void* pckt)
 									ar->shortName = std::string ((char*)&adv_report_data[k + 2], adlength - 1);
 									break;
 
+								case AD_TYPE_COMPLETE_LOCAL_NAME:
+									ar->shortName = std::string ((char*)&adv_report_data[k + 2], adlength - 1);
+									break;
+
 								case AD_TYPE_TX_POWER_LEVEL:
 									break;
 

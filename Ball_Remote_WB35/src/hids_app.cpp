@@ -110,7 +110,7 @@ void HidService::AppInit()
 	joystickReport.z = 0;
 
 	// Use the sequencer to update the report char so that to avoid write conflicts
-	UTIL_SEQ_RegTask(1 << CFG_TASK_JOYSTICK_NOTIFICATION, 0, UpdateJoystickReportChar);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_JoystickNotification, 0, UpdateJoystickReportChar);
 	UpdateJoystickReportChar();
 }
 
@@ -152,7 +152,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 		lastPrint = SysTickVal;
 	}
 
-	UTIL_SEQ_SetTask(1 << CFG_TASK_JOYSTICK_NOTIFICATION, CFG_SCH_PRIO_0);
+	UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
 }
 
 

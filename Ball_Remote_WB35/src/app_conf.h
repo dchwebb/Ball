@@ -198,8 +198,8 @@ typedef enum {
 	CFG_TASK_GoToSleep,
 	CFG_TASK_EnterSleepMode,
     CFG_TASK_HCI_ASYNCH_EVT_ID,
-	CFG_TASK_JOYSTICK_NOTIFICATION,
-	CFG_TASK_BATTERY_NOTIFICATION,
+	CFG_TASK_JoystickNotification,
+	CFG_TASK_BatteryNotification,
     CFG_LAST_TASK_ID_WITH_HCICMD,                                               // Shall be LAST in the list
 } CFG_Task_Id_With_HCI_Cmd_t;
 
