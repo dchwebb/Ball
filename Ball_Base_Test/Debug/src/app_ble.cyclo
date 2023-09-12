@@ -1,0 +1,36 @@
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_system.h:2221:26:uint32_t LL_FLASH_GetUDN()	1
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_system.h:2233:26:uint32_t LL_FLASH_GetDeviceID()	1
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_system.h:2245:26:uint32_t LL_FLASH_GetSTCompanyID()	1
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_pwr.h:2385:26:uint32_t LL_PWR_IsActiveFlag_C2SB()	2
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_pwr.h:2395:26:uint32_t LL_PWR_IsActiveFlag_C2DS()	2
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_hsem.h:233:26:uint32_t LL_HSEM_1StepLock(HSEM_TypeDef*, uint32_t)	2
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_hsem.h:247:22:void LL_HSEM_ReleaseLock(HSEM_TypeDef*, uint32_t, uint32_t)	1
+C:\ST\STM32CubeIDE_1.0.2\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.11.3.rel1.win32_1.1.0.202305231506\tools\arm-none-eabi\include\c++\11.3.1\arm-none-eabi\thumb\v7e-m+fp\hard\bits\gthr-default.h:229:1:int __gthread_key_delete(__gthread_key_t)	1
+../src/app_ble.h:81:9:constexpr BleApp::<unnamed struct>::<constructor>()	1
+../src/app_ble.h:8:8:BleApp::BleApp()	1
+../src/app_ble.cpp:23:6:void BleApp::Init()	2
+../src/app_ble.cpp:88:6:void BleApp::ServiceControlCallback(hci_event_pckt*)	17
+../src/app_ble.cpp:174:6:void BleApp::TransportLayerInit()	1
+C:\ST\STM32CubeIDE_1.0.2\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.11.3.rel1.win32_1.1.0.202305231506\tools\bin/../lib/gcc/arm-none-eabi/11.3.1/../../../../arm-none-eabi/include/c++/11.3.1/string_view:215:7:constexpr std::basic_string_view<_CharT, _Traits>::size_type std::basic_string_view<_CharT, _Traits>::length() const [with _CharT = char; _Traits = std::char_traits<char>]	1
+../src/app_ble.cpp:184:6:void BleApp::HciGapGattInit()	4
+../src/app_ble.cpp:252:6:void BleApp::EnableAdvertising(BleApp::ConnStatus)	9
+../src/app_ble.cpp:292:10:uint8_t* BleApp::GetBdAddress()	1
+../src/app_ble.cpp:314:6:static void BleApp::QueueLPAdvertising()	1
+../src/app_ble.cpp:321:6:static void BleApp::QueueFastAdvertising()	1
+../src/app_ble.cpp:328:6:static void BleApp::SwitchLPAdvertising()	1
+../src/app_ble.cpp:334:6:static void BleApp::SwitchFastAdvertising()	1
+../src/app_ble.cpp:339:6:static void BleApp::CancelAdvertising()	5
+../src/app_ble.cpp:362:6:static void BleApp::DisconnectRequest()	1
+../src/app_ble.cpp:368:6:static void BleApp::GoToSleep()	1
+../src/app_ble.cpp:375:13:void SwitchToHSI()	2
+../src/app_ble.cpp:382:6:static void BleApp::EnterSleepMode()	8
+../src/app_ble.cpp:427:6:void BleApp::WakeFromSleep()	3
+../src/app_ble.cpp:445:6:void hci_notify_asynch_evt(void*)	1
+../src/app_ble.cpp:451:6:void hci_cmd_resp_release(uint32_t)	1
+../src/app_ble.cpp:457:6:void hci_cmd_resp_wait(uint32_t)	1
+../src/app_ble.cpp:463:6:static void BleApp::UserEvtRx(void*)	4
+../src/app_ble.cpp:485:6:static void BleApp::StatusNotify(HCI_TL_CmdStatus_t)	3
+../src/app_ble.cpp:503:6:void SVCCTL_ResumeUserEventFlow()	1
+C:\ST\STM32CubeIDE_1.0.2\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.11.3.rel1.win32_1.1.0.202305231506\tools\bin/../lib/gcc/arm-none-eabi/11.3.1/../../../../arm-none-eabi/include/c++/11.3.1/bits/basic_string.h:664:2:std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::basic_string(const _Tp&, const _Alloc&) [with _Tp = std::basic_string_view<char>; <template-parameter-2-2> = void; _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]	1
+../src/app_ble.cpp:506:1:void __static_initialization_and_destruction_0(int, int)	3
+../src/app_ble.cpp:506:1:cpp)	1

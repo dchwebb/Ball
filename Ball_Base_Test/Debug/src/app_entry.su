@@ -1,0 +1,14 @@
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_pwr.h:1414:22:void LL_PWR_SMPS_Enable()	4	static
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_pwr.h:1456:22:void LL_PWR_SMPS_SetStartupCurrent(uint32_t)	16	static
+../Drivers/STM32WBxx_HAL_Driver/Inc/stm32wbxx_ll_pwr.h:1503:22:void LL_PWR_SMPS_SetOutputVoltageLevel(uint32_t)	32	static
+C:\ST\STM32CubeIDE_1.0.2\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.11.3.rel1.win32_1.1.0.202305231506\tools\arm-none-eabi\include\c++\11.3.1\arm-none-eabi\thumb\v7e-m+fp\hard\bits\gthr-default.h:229:1:int __gthread_key_delete(__gthread_key_t)	16	static
+../src/app_entry.cpp:21:6:void APPE_Init()	40	static
+../src/app_entry.cpp:55:6:void Init_Smps()	8	static
+../src/app_entry.cpp:66:13:void APPE_SysStatusNotify(SHCI_TL_CmdStatus_t)	16	static
+../src/app_entry.cpp:81:13:void APPE_SysUserEvtRx(void*)	16	static
+../src/app_entry.cpp:87:6:void RunPendingTasks()	8	static
+../src/app_entry.cpp:93:6:void UTIL_SEQ_Idle()	8	static
+../src/app_entry.cpp:104:6:void UTIL_SEQ_EvtIdle(UTIL_SEQ_bm_t, UTIL_SEQ_bm_t)	16	static
+../src/app_entry.cpp:110:6:void shci_notify_asynch_evt(void*)	16	static
+../src/app_entry.cpp:116:6:void shci_cmd_resp_release(uint32_t)	16	static
+../src/app_entry.cpp:122:6:void shci_cmd_resp_wait(uint32_t)	16	static

@@ -1,0 +1,13 @@
+../src/hids_app.h:23:15:constexpr HidService::HIDInformation::HIDInformation()	16	static
+../src/hids_app.h:6:8:HidService::HidService()	16	static
+../src/hids_app.cpp:8:6:void HidService::Init()	64	static
+../src/hids_app.cpp:100:6:void HidService::AppInit()	16	static
+../src/hids_app.cpp:118:6:static void HidService::UpdateJoystickReportChar()	16	static
+../src/hids_app.cpp:130:6:void HidService::UpdateReportMapChar()	24	static
+../src/hids_app.cpp:136:6:void HidService::UpdateHidInformationChar()	24	static
+../src/hids_app.cpp:142:6:void HidService::JoystickNotification(int16_t, int16_t, int16_t)	24	static
+../src/hids_app.cpp:159:6:void HidService::ControlPointWrite(uint16_t)	16	static
+../src/hids_app.cpp:165:6:void HidService::Disconnect()	16	static
+../src/hids_app.cpp:171:6:bool HidService::EventHandler(hci_event_pckt*)	40	static
+../src/hids_app.cpp:250:1:void __static_initialization_and_destruction_0(int, int)	16	static
+../src/hids_app.cpp:250:1:cpp)	8	static
