@@ -6,7 +6,7 @@
 
 struct HidApp {
 public:
-	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverServices, DiscoverCharacs, DiscoveredCharacs, DiscoveringCharacs, EnableNotificationDesc, EnableHIDNotificationDesc};
+	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverCharacteristics, DiscoveredCharacteristics, DiscoveringCharacteristics, EnableNotificationDesc, EnableHIDNotificationDesc};
 	HidState state;								// state of the HID Client state machine
 
 	enum class HidAction {None, Connect, GetReportMap};
@@ -42,9 +42,9 @@ private:
 	uint16_t HIDReportMapHdle;					// handle of report map
 
 	int32_t calibrateCounter{0};				// When calibrating offsets keeps count of readings averaged
-	static constexpr int32_t calibrateCount{100};				// Total number of readings to use when calibrating
-	int32_t calibX, calibY, calibZ;
-	Position3D calibDebug[calibrateCount];
+	static constexpr int32_t calibrateCount{200};				// Total number of readings to use when calibrating
+	float calibX, calibY, calibZ;
+	//Position3D calibDebug[calibrateCount];
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void HIDServiceDiscovery();
@@ -52,8 +52,6 @@ private:
 	void BatteryNotification(uint8_t* payload, uint8_t len);
 	void PrintReportMap(uint8_t* data, uint8_t len);
 };
-
-void HID_APP_SW1_Button_Action();
 
 extern HidApp hidApp;
 

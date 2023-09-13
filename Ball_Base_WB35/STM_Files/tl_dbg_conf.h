@@ -31,7 +31,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_conf.h"   /* required as some configuration used in dbg_trace.h are set there */
-#include "dbg_trace.h"
+//#include "dbg_trace.h"
 #include "hw_if.h"
 
 /**

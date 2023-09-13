@@ -19,7 +19,7 @@ int main()
 
 	while (1) {
 		if (!bleApp.coprocessorFailure) {
-			MX_APPE_Process();
+			RunPendingTasks();
 		}
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
 	}

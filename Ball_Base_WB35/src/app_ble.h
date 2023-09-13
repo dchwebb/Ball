@@ -38,23 +38,21 @@ public:
 
 private:
 	enum class RequestAction {ScanConnect, ScanInfo, GetReportMap};
-//	enum AddressTypes {PublicAddress = 0, RandomAddress = 1, ResolvablePrivateAddress = 2, NonResolvablePrivateAddress = 3};
 	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
 	enum class GapAddress : uint8_t {Public = 0, StaticRandom = 1, ResolvablePrivate = 2, NonResolvablePrivate = 3} ;
 	enum class SecureSupport : uint8_t {NotSupported = 0, Optional = 1, Mandatory = 2};
 
-	//static constexpr std::string_view GapDeviceName = "Ball_Remote";
 	static constexpr uint8_t  TransmitPower = 24;					 	// -0.15dBm PA_Level Power amplifier output level (0-35)
 	static constexpr uint8_t  DataLengthExtension = 1;					// Allows sending of app data payloads of up to 251 bytes (otherwise limited to 27 bytes)
 	static constexpr uint16_t SlaveSleepClockAccuracy = 500;			// Sleep clock accuracy in Slave mode (ppm value)
 	static constexpr uint16_t MasterSleepClockAccuracy = 0;				// Sleep clock accuracy in Master mode: 0 = 251 ppm to 500 ppm
-	//static constexpr uint8_t  LowSpeedWakeUpClk = 1;					// Low speed clock for RF wake-up: 1 = HSE/32/32; 0 = external low speed crystal (no calibration)
+	static constexpr uint8_t  LowSpeedWakeUpClk = 1;					// Low speed clock for RF wake-up: 1 = HSE/32/32; 0 = external low speed crystal (no calibration)
 	static constexpr uint32_t MaxConnEventLength = 0xFFFFFFFF;			// maximum duration of a slave connection event in units of 625/256 us (~2.44 us)
 	static constexpr uint16_t HseStartupTime = 0x148;					// Startup time of high speed crystal oscillator in units of 625/256 us (~2.44 us)
 	static constexpr uint8_t  ViterbiEnable = true;						// Enable Viterbi implementation in BLE LL reception
 	static constexpr uint8_t  MaxCOChannels = 32;						// Maximum number of connection-oriented channels in initiator mode (0 - 64)
-	//static constexpr uint8_t  MinTransmitPower = 20;					// Minimum transmit power in dBm supported by the Controller. Range: -127 - 20
-	//static constexpr uint8_t  MaxTransmitPower = 20;					// Maximum transmit power in dBm supported by the Controller. Range: -127 - 20
+	static constexpr uint8_t  MinTransmitPower = 0;						// Minimum transmit power in dBm supported by the Controller. Range: -127 - 20
+	static constexpr uint8_t  MaxTransmitPower = 0;						// Maximum transmit power in dBm supported by the Controller. Range: -127 - 20
 	static constexpr uint8_t  RXModelConfig = 0;						// 0: Legacy agc_rssi model
 	static constexpr uint8_t  MaxAdvertisingSets = 3;					// Maximum number of advertising sets. Range: 1 = 8 with limitations
  	static constexpr uint16_t MaxAdvertisingDataLength = 1650;			// Maximum advertising data length (in bytes) Range: 31 - 1650 with limitation
@@ -94,6 +92,8 @@ private:
 		uint8_t BLEAddressType = (uint8_t)GapAddress::Public;			// BLE Address Type
 		uint32_t fixedPin = 111111;										// Fixed pin for pairing process if Use_Fixed_Pin = 1
 	} Security;
+
+
 
 	static void ScanRequest();
 	static void ConnectRequest();

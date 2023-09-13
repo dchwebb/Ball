@@ -28,7 +28,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "ble_conf.h"
-#include "ble_dbg_conf.h"
+//#include "ble_dbg_conf.h"
 
 /**< core */
 #include "core/ble_core.h"

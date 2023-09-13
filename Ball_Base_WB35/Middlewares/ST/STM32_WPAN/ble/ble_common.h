@@ -32,7 +32,7 @@ extern "C" {
 #include <stdarg.h>
 
 #include "ble_conf.h"
-#include "ble_dbg_conf.h"
+
 
 /* Event types copied from MW Legacy file*/
 #include "tl.h"
