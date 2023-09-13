@@ -1,13 +1,10 @@
 #include "main.h"
-//#include "initialisation.h"
-#include "uartHandler.h"
+#include "initialisation.h"
 #include "app_entry.h"
 #include "USB.h"
 #include "SerialHandler.h"
 #include "app_ble.h"
 
-//RTC_HandleTypeDef hrtc;
-SerialHandler serial(usb);
 bool coprocessorFailure = false;
 
 extern uint32_t SystemCoreClock;
@@ -18,7 +15,6 @@ int main(void)
 	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
 
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
-//	InitUart();						// Debugging via STLink UART
 	usb.InitUSB();
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
 
@@ -28,17 +24,11 @@ int main(void)
 		if (!coprocessorFailure) {
 			MX_APPE_Process();
 		}
-		serial.Command();			// Check for incoming CDC commands
+		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
 	}
 }
 
-void Error_Handler()
-{
-	__disable_irq();
-	while (1)
-	{
-	}
-}
+
 
 
 

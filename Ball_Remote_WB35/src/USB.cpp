@@ -410,11 +410,6 @@ void USBMain::GetDescriptor()
 			return EP0In(stringDescr, stringDescr[0]);				// length is 24 bytes (x2 for unicode padding) + 2 for header
 			break;
 
-		case StringIndex::AudioClass:			// 307
-			strSize = StringToUnicode(midiString, stringDescr);
-			return EP0In(stringDescr, strSize);
-			break;
-
 	    case StringIndex::CommunicationClass:	// 306
 	    	strSize = StringToUnicode(cdcString, stringDescr);
 	    	return EP0In(stringDescr, strSize);

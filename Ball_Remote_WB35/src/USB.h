@@ -77,9 +77,7 @@ private:
 	static constexpr std::string_view manufacturerString = "Mountjoy Modular";
 	static constexpr std::string_view productString      = "Mountjoy Ball Remote";
 	static constexpr std::string_view cdcString          = "Mountjoy Ball Remote CDC";
-	static constexpr std::string_view midiString         = "Mountjoy Quango MIDI";
 	static constexpr uint8_t usbSerialNoSize = 24;
-
 	static constexpr uint32_t recipientMask = 0x03;
 	static constexpr uint32_t requestTypeMask = 0x60;
 	static constexpr uint32_t epAddrMask = 0x0F;

@@ -9,7 +9,6 @@
 #include <Algorithm>
 
 HidApp hidApp;
-extern USBHandler usb;
 
 void HidApp::Init(void)
 {
