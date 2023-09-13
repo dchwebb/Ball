@@ -24,8 +24,8 @@ void CDCHandler::ProcessCommand()
 	if (state == serialState::dfuConfirm) {
 		if (cmd.compare("y\n") == 0 || cmd.compare("Y\n") == 0) {
 			usb->SendString("Switching to DFU Mode ...\r\n");
-			uint32_t old = uwTick;
-			while (uwTick < old + 100) {};		// Give enough time to send the message
+			uint32_t old = SysTickVal;
+			while (SysTickVal < old + 100) {};		// Give enough time to send the message
 			//bootloader.BootDFU();
 		} else {
 			state = serialState::pending;

@@ -4,7 +4,7 @@
 #include "app_ble.h"
 
 
-
+volatile uint32_t SysTickVal = 0;
 extern uint32_t SystemCoreClock;
 
 int main(void)

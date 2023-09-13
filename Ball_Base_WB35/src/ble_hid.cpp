@@ -39,9 +39,9 @@ void HidApp::HidNotification(uint8_t* payload, uint8_t len)
 	volatile int16_t* hidPayload = (int16_t*)payload;
 
 	static uint32_t lastPrint = 0;
-	if (outputGyro && (uwTick - lastPrint > 400)) {
+	if (outputGyro && (SysTickVal - lastPrint > 400)) {
 		APP_DBG_MSG("x: %d y: %d z: %d\r\n", hidPayload[0], hidPayload[1], hidPayload[2]);
-		lastPrint = uwTick;
+		lastPrint = SysTickVal;
 	}
 
 	if (calibrateCounter > 0) {

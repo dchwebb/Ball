@@ -3,7 +3,7 @@
 #include "stm32_seq.h"
 #include "shci_tl.h"
 #include "stm32_lpm.h"
-#include "app_debug.h"
+//#include "app_debug.h"
 #include "otp.h"
 
 extern RTC_HandleTypeDef hrtc;
@@ -64,7 +64,7 @@ static void APPE_SysStatusNot(SHCI_TL_CmdStatus_t status)
 
 static void APPE_SysUserEvtRx(void* pPayload)
 {
-	APPD_EnableCPU2();
+	//APPD_EnableCPU2();			// Init debug
 
 	bleApp.Init();
 	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);

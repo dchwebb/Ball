@@ -27,7 +27,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32wbxx.h"
-#include "Legacy/stm32_hal_legacy.h"   /* Aliases file for old names compatibility */
+//#include "Legacy/stm32_hal_legacy.h"   /* Aliases file for old names compatibility */
 #include <stddef.h>
 
 /* Exported types ------------------------------------------------------------*/

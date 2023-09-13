@@ -4,9 +4,7 @@
 #define SYSTICK 1000						// 1ms
 #define USEDONGLE true
 
-extern "C" {
-extern volatile uint32_t uwTick;
-}
+extern volatile uint32_t SysTickVal;
 
 void InitPWMTimer();
 void InitHardware();

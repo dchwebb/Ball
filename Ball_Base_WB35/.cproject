@@ -124,9 +124,9 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
+						<entry excluding="STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_rcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_ipcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_hsem.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_gpio.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_flash.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_flash_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_exti.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+						<entry excluding="ST/STM32_WPAN/utilities/dbg_trace.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry excluding="app_debug.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
 						<entry excluding="SerialHandler.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
@@ -251,9 +251,9 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
+						<entry excluding="STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_rcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_ipcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_hsem.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_gpio.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_flash.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_flash_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_exti.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+						<entry excluding="ST/STM32_WPAN/utilities/dbg_trace.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry excluding="app_debug.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
 						<entry excluding="SerialHandler.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>

@@ -6,7 +6,7 @@
 extern "C" {
 
 void SysTick_Handler() {
-	HAL_IncTick();
+	++SysTickVal;
 }
 
 void USB_LP_IRQHandler() {
