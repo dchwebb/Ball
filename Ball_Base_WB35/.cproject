@@ -58,7 +58,6 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.104977138" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Drivers/STM32WBxx_HAL_Driver/Inc"/>
-									<listOptionValue builtIn="false" value="../Drivers/STM32WBxx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32WBxx/Include"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/STM_Files}&quot;"/>
@@ -86,7 +85,6 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.includepaths.847399808" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Drivers/STM32WBxx_HAL_Driver/Inc"/>
-									<listOptionValue builtIn="false" value="../Drivers/STM32WBxx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32WBxx/Include"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/STM_Files}&quot;"/>
@@ -126,7 +124,7 @@
 					<sourceEntries>
 						<entry excluding="STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_rcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_ipcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_hsem.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_gpio.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_flash.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_flash_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_exti.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="ST/STM32_WPAN/utilities/dbg_trace.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry excluding="app_debug.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
+						<entry excluding="stm32_lpm.c|stm32_lpm_if.c|app_debug.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
 						<entry excluding="SerialHandler.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
@@ -253,7 +251,7 @@
 					<sourceEntries>
 						<entry excluding="STM32WBxx_HAL_Driver/Src/stm32wbxx_ll_rcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rtc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_rcc_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_pwr_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_ipcc.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_hsem.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_gpio.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_flash.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_flash_ex.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_exti.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma.c|STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_dma_ex.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="ST/STM32_WPAN/utilities/dbg_trace.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry excluding="app_debug.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
+						<entry excluding="stm32_lpm.c|stm32_lpm_if.c|app_debug.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="STM_Files"/>
 						<entry excluding="SerialHandler.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>

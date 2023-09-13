@@ -4,8 +4,6 @@
 #include "ble.h"
 #include "stm32_seq.h"
 #include "shci.h"
-#include "stm32_lpm.h"
-#include "uartHandler.h"
 #include "usb.h"
 #include <bitset>
 
@@ -20,31 +18,31 @@ void BleApp::Init()
 			{{0,0,0}},                          // Header unused
 			{0,                                 // pBleBufferAddress not used
 			0,                                  // BleBufferSize not used
-			CFG_BLE_NUM_GATT_ATTRIBUTES,
-			CFG_BLE_NUM_GATT_SERVICES,
+			NumberOfGATTAttributes,
+			NumberOfGATTServices,
 			CFG_BLE_ATT_VALUE_ARRAY_SIZE,
 			CFG_BLE_NUM_LINK,
-			CFG_BLE_DATA_LENGTH_EXTENSION,
+			DataLengthExtension,
 			CFG_BLE_PREPARE_WRITE_LIST_SIZE,
 			CFG_BLE_MBLOCK_COUNT,
 			CFG_BLE_MAX_ATT_MTU,
-			CFG_BLE_SLAVE_SCA,
-			CFG_BLE_MASTER_SCA,
+			SlaveSleepClockAccuracy,
+			MasterSleepClockAccuracy,
 			CFG_BLE_LS_SOURCE,
-			CFG_BLE_MAX_CONN_EVENT_LENGTH,
-			CFG_BLE_HSE_STARTUP_TIME,
-			CFG_BLE_VITERBI_MODE,
+			MaxConnEventLength,
+			HseStartupTime,
+			ViterbiEnable,
 			CFG_BLE_OPTIONS,
 			0,
-			CFG_BLE_MAX_COC_INITIATOR_NBR,
+			MaxCOChannels,
 			CFG_BLE_MIN_TX_POWER,
 			CFG_BLE_MAX_TX_POWER,
-			CFG_BLE_RX_MODEL_CONFIG,
-			CFG_BLE_MAX_ADV_SET_NBR,
-			CFG_BLE_MAX_ADV_DATA_LEN,
-			CFG_BLE_TX_PATH_COMPENS,
-			CFG_BLE_RX_PATH_COMPENS,
-			CFG_BLE_CORE_VERSION,
+			RXModelConfig,
+			MaxAdvertisingSets,
+			MaxAdvertisingDataLength,
+			TXPathCompensation,
+			RXPathCompensation,
+			BLECoreVersion,
 			CFG_BLE_OPTIONS_EXT
 			}
 	};
@@ -52,7 +50,7 @@ void BleApp::Init()
 	TransportLayerInit();										// Initialize Ble Transport Layer
 
 	// Do not allow standby in the application
-	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP_BLE, UTIL_LPM_DISABLE);
+//	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP_BLE, UTIL_LPM_DISABLE);
 
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
@@ -217,7 +215,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 										APP_DBG_MSG("* BLE: Server detected - HID Device\r\n");
 										deviceServerFound = true;
 										memcpy(&deviceAddress, le_advertising_event->Advertising_Report[0].Address, bdddrSize);
-										deviceAddressType = (AddressTypes)le_advertising_event->Advertising_Report[0].Address_Type;
+										deviceAddressType = (GapAddress)le_advertising_event->Advertising_Report[0].Address_Type;
 										aci_gap_terminate_gap_proc(0x2);		// If connecting terminate scan - will fire ACI_GAP_PROC_COMPLETE_VSEVT_CODE event which will initiate connection
 									}
 									break;
@@ -366,7 +364,7 @@ void BleApp::HciGapGattInit()
 	aci_hal_write_config_data(CONFIG_DATA_ER_OFFSET, CONFIG_DATA_ER_LEN, (uint8_t*)EncryptionRootKey);
 
 	// Set TX Power to 0dBm.
-	aci_hal_set_tx_power_level(1, CFG_TX_POWER);
+	aci_hal_set_tx_power_level(1, TransmitPower);
 
 	// Initialize GATT interface
 	aci_gatt_init();
@@ -383,22 +381,23 @@ void BleApp::HciGapGattInit()
 	}
 
 	// Initialize IO capability
-	aci_gap_set_io_capability(CFG_IO_CAPABILITY);
+	aci_gap_set_io_capability(Security.ioCapability);
 
 	// Initialize authentication
-	aci_gap_set_authentication_requirement(CFG_BONDING_MODE,
-			CFG_MITM_PROTECTION,
-			CFG_SC_SUPPORT,
-			CFG_KEYPRESS_NOTIFICATION_SUPPORT,
-			CFG_ENCRYPTION_KEY_SIZE_MIN,
-			CFG_ENCRYPTION_KEY_SIZE_MAX,
-			CFG_USED_FIXED_PIN,
-			CFG_FIXED_PIN,
-			GAP_PUBLIC_ADDR
+	aci_gap_set_authentication_requirement(
+			Security.bondingMode,
+			Security.mitmMode,
+			Security.secureSupport,
+			Security.keypressNotificationSupport,
+			Security.encryptionKeySizeMin,
+			Security.encryptionKeySizeMax,
+			Security.useFixedPin,
+			Security.fixedPin,
+			Security.BLEAddressType
 			);
 
 	// Initialize whitelist
-	if (CFG_BONDING_MODE) {
+	if (Security.bondingMode) {
 		aci_gap_configure_whitelist();
 	}
 }
@@ -425,7 +424,7 @@ void BleApp::ConnectRequest()
 	if (bleApp.deviceConnectionStatus != ConnectionStatus::ClientConnected) {
 		tBleStatus result = aci_gap_create_connection(SCAN_P,
 				SCAN_L,
-				bleApp.deviceAddressType,		// Peer address type & address
+				(uint8_t)bleApp.deviceAddressType,		// Peer address type & address
 				bleApp.deviceAddress,
 				GAP_PUBLIC_ADDR,					// Own address type
 				CONN_P1,

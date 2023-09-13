@@ -2,7 +2,7 @@
 #include "app_ble.h"
 #include "stm32_seq.h"
 #include "shci_tl.h"
-#include "stm32_lpm.h"
+//#include "stm32_lpm.h"
 //#include "app_debug.h"
 #include "otp.h"
 
@@ -67,7 +67,7 @@ static void APPE_SysUserEvtRx(void* pPayload)
 	//APPD_EnableCPU2();			// Init debug
 
 	bleApp.Init();
-	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);
+	//UTIL_LPM_SetOffMode(1 << CFG_LPM_APP, UTIL_LPM_ENABLE);
 }
 
 

@@ -1,13 +1,12 @@
 #include "initialisation.h"
 #include "app_entry.h"
-#include "USB.h"
 #include "app_ble.h"
-
+#include "USB.h"
 
 volatile uint32_t SysTickVal = 0;
 extern uint32_t SystemCoreClock;
 
-int main(void)
+int main()
 {
 	SystemClock_Config();			// Set system clocks
 	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)

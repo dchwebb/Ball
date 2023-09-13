@@ -45,7 +45,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/shci}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/svc/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/core/auto}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/STM32_WPAN/App}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Utilities/lpm/tiny_lpm}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Utilities/sequencer}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/svc/Src}&quot;"/>
@@ -76,7 +75,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/shci}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/svc/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/core/auto}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/STM32_WPAN/App}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Utilities/lpm/tiny_lpm}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Utilities/sequencer}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/svc/Src}&quot;"/>
@@ -107,7 +105,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/interface/patterns/ble_thread/shci}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/svc/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/core/auto}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/STM32_WPAN/App}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Utilities/lpm/tiny_lpm}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Utilities/sequencer}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Middlewares/ST/STM32_WPAN/ble/svc/Src}&quot;"/>
