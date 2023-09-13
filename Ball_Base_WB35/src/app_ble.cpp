@@ -1,6 +1,5 @@
 #include "app_ble.h"
 #include "ble_hid.h"
-#include "main.h"
 #include "dbg_trace.h"
 #include "ble.h"
 #include "stm32_seq.h"
@@ -11,9 +10,6 @@
 #include <bitset>
 
 BleApp bleApp;
-
-//extern USBHandler usb;
-//extern HidApp hidApp;
 
 PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
 
@@ -63,7 +59,6 @@ void BleApp::Init()
 
 	// Start the BLE Stack on CPU2
 	if (SHCI_C2_BLE_Init(&ble_init_cmd_packet) != SHCI_Success) {
-		extern bool coprocessorFailure;
 		coprocessorFailure = true;
 		return;
 	}

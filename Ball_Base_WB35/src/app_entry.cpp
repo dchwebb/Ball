@@ -1,4 +1,3 @@
-#include "main.h"
 #include "app_entry.h"
 #include "app_ble.h"
 #include "stm32_seq.h"

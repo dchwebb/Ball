@@ -18,7 +18,7 @@ void CDCHandler::ProcessCommand()
 		return;
 	}
 
-	std::string_view cmd {comCmd};
+	const std::string_view cmd {comCmd};
 
 	// Provide option to switch to USB DFU mode - this allows the MCU to be programmed with STM32CubeProgrammer in DFU mode
 	if (state == serialState::dfuConfirm) {
@@ -33,14 +33,13 @@ void CDCHandler::ProcessCommand()
 		}
 
 	} else if (cmd.compare("info") == 0) {		// Print diagnostic information
-		extern bool coprocessorFailure;
 
 		sprintf(buf, "\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n"
 				"Wireless firmware: %s\r\n"
 				"Offsets: %f, %f, %f\r\n"
 				"Sensitivity: %f\r\n"
 				"Current Position (0-4096): %d, %d, %d\r\n",
-				coprocessorFailure ? "Off" : "Running",
+				bleApp.coprocessorFailure ? "Off" : "Running",
 				hidApp.offsetX, hidApp.offsetY, hidApp.offsetZ,
 				hidApp.divider,
 				hidApp.position3D.x, hidApp.position3D.y, hidApp.position3D.z);
@@ -71,25 +70,25 @@ void CDCHandler::ProcessCommand()
 		);
 
 #if (USB_DEBUG)
-	} else if (cmd.compare("usbdebug") == 0) {				// Configure gate LED
+	} else if (cmd.compare("usbdebug") == 0) {						// Output USB debug data
 		USBDebug = true;
 		usb->SendString("Press link button to dump output\r\n");
 #endif
 
-	} else if (cmd.compare("connect") == 0) {				// Connect to HID device
+	} else if (cmd.compare("connect") == 0) {						// Connect to HID device
 		bleApp.ScanAndConnect();
 		usb->SendString("Connecting ...\r\n");
 
-	} else if (cmd.compare("scan") == 0) {					// List ble devices
+	} else if (cmd.compare("scan") == 0) {							// List ble devices
 		bleApp.ScanInfo();
 
-	} else if (cmd.compare(0, 7, "hidmap:") == 0) {			// Print Hid repot map for given address
+	} else if (cmd.compare(0, 7, "hidmap:") == 0) {					// Print Hid repot map for given address
 
 		if (cmd.length() != 20) {
 			usb->SendString("Address format not recognised\r\n");
 		} else {
 			uint8_t addr[BleApp::bdddrSize];
-			int8_t pos = cmd.find(":") + 1;					// locate position of character preceding
+			int8_t pos = cmd.find(":") + 1;							// locate position of character preceding
 			size_t val = -1;
 			for (int8_t i = BleApp::bdddrSize; i > 0; --i) {
 				addr[i - 1] = std::stoi(cmd.substr(pos, 2).data(), &val, 16);
@@ -99,10 +98,10 @@ void CDCHandler::ProcessCommand()
 			bleApp.GetHidReportMap(addr);
 		}
 
-	} else if (cmd.compare("disconnect") == 0) {			// Disconnect
+	} else if (cmd.compare("disconnect") == 0) {					// Disconnect
 		bleApp.DisconnectRequest();
 
-	} else if (cmd.compare("fwversion") == 0) {			// Version of BLE firmware
+	} else if (cmd.compare("fwversion") == 0) {						// Version of BLE firmware
 		WirelessFwInfo_t fwInfo;
 		if (SHCI_GetWirelessFwInfo(&fwInfo) == 0) {
 			printf("BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n",
@@ -110,7 +109,7 @@ void CDCHandler::ProcessCommand()
 					fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub);
 		}
 
-	} else if (cmd.compare(0, 12, "sensitivity:") == 0) {	// Set sensitivity
+	} else if (cmd.compare(0, 12, "sensitivity:") == 0) {			// Set sensitivity
 		uint16_t div;
 		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), div, 10);
 
@@ -121,13 +120,13 @@ void CDCHandler::ProcessCommand()
 			printf("Invalid value\r\n");
 		}
 
-	} else if (cmd.compare("recenter") == 0) {				// Recenter all channels to mid point
+	} else if (cmd.compare("recenter") == 0) {						// Recenter all channels to mid point
 		hidApp.position3D.x = 2047;
 		hidApp.position3D.y = 2047;
 		hidApp.position3D.z = 2047;
 		printf("All channels recentered\r\n");
 
-	} else if (cmd.compare(0, 7, "offset:") == 0) {			// Set x offset for raw calibration data
+	} else if (cmd.compare(0, 7, "offset:") == 0) {					// Set x offset for raw calibration data
 		int16_t offset;
 		auto res = std::from_chars(cmd.data() + cmd.find("=") + 1, cmd.data() + cmd.size(), offset, 10);
 
@@ -144,7 +143,7 @@ void CDCHandler::ProcessCommand()
 			printf("Invalid value\r\n");
 		}
 
-	} else if (cmd.compare("calibrate") == 0) {			// recenter and calibrate gyro
+	} else if (cmd.compare("calibrate") == 0) {						// recenter and calibrate gyro
 		if (hidApp.state != HidApp::HidState::ClientConnected) {
 			printf("Must be connected before calibrating\r\n");
 		} else {
@@ -167,7 +166,7 @@ void CDCHandler::DataIn()
 {
 	if (inBuffSize > 0 && inBuffSize % USBMain::ep_maxPacket == 0) {
 		inBuffSize = 0;
-		EndPointTransfer(Direction::in, inEP, 0);				// Fixes issue transmitting an exact multiple of max packet size (n x 64)
+		EndPointTransfer(Direction::in, inEP, 0);					// Fixes issue transmitting an exact multiple of max packet size (n x 64)
 	}
 }
 
@@ -255,7 +254,7 @@ float CDCHandler::ParseFloat(const std::string_view cmd, const char precedingCha
 const uint8_t CDCHandler::Descriptor[] = {
 	// IAD Descriptor - Interface association descriptor for CDC class
 	0x08,									// bLength (8 bytes)
-	USBMain::IadDescriptor,				// bDescriptorType
+	USBMain::IadDescriptor,					// bDescriptorType
 	USBMain::CDCCmdInterface,				// bFirstInterface
 	0x02,									// bInterfaceCount
 	0x02,									// bFunctionClass (Communications and CDC Control)
@@ -305,7 +304,7 @@ const uint8_t CDCHandler::Descriptor[] = {
 	0x07,									// bLength: Endpoint Descriptor size
 	USBMain::EndpointDescriptor,			// bDescriptorType: Endpoint
 	USBMain::CDC_Cmd,						// bEndpointAddress
-	USBMain::Interrupt,					// bmAttributes: Interrupt
+	USBMain::Interrupt,						// bmAttributes: Interrupt
 	0x08,									// wMaxPacketSize
 	0x00,
 	0x10,									// bInterval

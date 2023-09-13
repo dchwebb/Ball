@@ -26,6 +26,7 @@ public:
 
 	ConnectionStatus deviceConnectionStatus;
 	static constexpr uint8_t bdddrSize = 6;
+	bool coprocessorFailure = false;
 
 	void Init();
 	ConnectionStatus GetClientConnectionStatus(uint16_t connHandle);

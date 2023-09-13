@@ -1,11 +1,9 @@
-#include "main.h"
 #include "initialisation.h"
 #include "app_entry.h"
 #include "USB.h"
-#include "SerialHandler.h"
 #include "app_ble.h"
 
-bool coprocessorFailure = false;
+
 
 extern uint32_t SystemCoreClock;
 
@@ -21,7 +19,7 @@ int main(void)
 	InitPWMTimer();					// Initialise PWM output
 
 	while (1) {
-		if (!coprocessorFailure) {
+		if (!bleApp.coprocessorFailure) {
 			MX_APPE_Process();
 		}
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands

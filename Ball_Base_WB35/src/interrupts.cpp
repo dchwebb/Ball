@@ -1,4 +1,3 @@
-#include "main.h"
 #include "initialisation.h"
 #include "app_ble.h"
 #include "USB.h"
@@ -32,7 +31,7 @@ void IPCC_C1_TX_IRQHandler() {
 }
 
 void HSEM_IRQHandler() {
-	HAL_HSEM_IRQHandler();
+//	HAL_HSEM_IRQHandler();
 }
 
 void NMI_Handler() {
@@ -57,22 +56,5 @@ void DebugMon_Handler() {}
 
 void PendSV_Handler() {}
 
-//void USART1_IRQHandler()
-//{
-//	HAL_UART_IRQHandler(&huart1);
-//}
-
-//void LPUART1_IRQHandler()
-//{
-//	HAL_UART_IRQHandler(&hlpuart1);
-//}
-
-//void DMA2_Channel4_IRQHandler()
-//{
-//	HAL_DMA_IRQHandler(&hdma_usart1_tx);
-//}
-
 }
-
-
 

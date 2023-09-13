@@ -1,4 +1,3 @@
-#include "main.h"
 #include "app_common.h"
 #include "dbg_trace.h"
 #include "ble.h"
@@ -100,13 +99,13 @@ void HidApp::HIDConnectionNotification()
 		HIDNotificationDescHandle = 0;
 		HIDServiceHandle = 0;
 
-		HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+		GPIOA->ODR |= GPIO_ODR_OD3;
 		break;
 
 	case BleApp::ConnectionStatus::Idle:
 		state = HidState::Idle;
 		action = HidAction::None;
-		HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+		GPIOA->ODR &= ~GPIO_ODR_OD3;
 		break;
 
 	default:
@@ -281,7 +280,6 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 		case ACI_GATT_PROC_COMPLETE_VSEVT_CODE:
 		{
 			aci_gatt_proc_complete_event_rp0 *pr = (aci_gatt_proc_complete_event_rp0*)blecore_evt->data;
-			APP_DBG_MSG("-- GATT : ACI_GATT_PROC_COMPLETE_VSEVT_CODE \n\n");
 
 			if (hidApp.connHandle == pr->Connection_Handle) {
 				UTIL_SEQ_SetTask(1 << CFG_TASK_HIDServiceDiscovery, CFG_SCH_PRIO_0);		// Call discovery state machine

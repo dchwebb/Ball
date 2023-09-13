@@ -3,11 +3,8 @@
 
 static void InitIPCC();
 static void InitSysTick();
-//static void InitRTC();
 static void InitGPIO();
 
-#define IPCC_ALL_RX_BUF 0x0000003FU /*!< Mask for all RX buffers. */
-#define IPCC_ALL_TX_BUF 0x003F0000U /*!< Mask for all TX buffers. */
 
 uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference to current connection failure
 
@@ -34,9 +31,6 @@ void SystemClock_Config()
 	RCC->CR |= RCC_CR_HSION;						// Turn on high speed internal oscillator
 	while ((RCC->CR & RCC_CR_HSIRDY) == 0);			// Wait till HSI is ready
 
-	//RCC->BDCR |= RCC_BDCR_LSEON;					// Turn on low speed external oscillator
-	//while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0);		// Wait till LSE is ready
-
 	// Activate PLL: HSE = 32MHz / 4(M) * 32(N) / 4(R) = 64MHz
 	RCC->PLLCFGR |= LL_RCC_PLLSOURCE_HSE;			// Set PLL source to HSE
 	RCC->PLLCFGR |= LL_RCC_PLLM_DIV_4;				// Set PLL M divider to 4
@@ -50,9 +44,6 @@ void SystemClock_Config()
 	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 3);	// Increase Flash latency to 3 Wait States (see manual p.77)
 	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 3);
 
-//	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);		// 10: HSE selected as system clock
-//	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until HSE is selected
-
 	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_PLL);		// 11: PLL selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until PLL is selected
 
@@ -60,8 +51,8 @@ void SystemClock_Config()
 
 	// Peripheral clocks already set to default: RTC, USART, LPUSART
 	//RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				// RF system wakeup clock source selection: 01: LSE oscillator clock
-	RCC->CSR |=  RCC_CSR_RFWKPSEL_0 | RCC_CSR_RFWKPSEL_1;				// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
 
+	RCC->CSR |= RCC_CSR_RFWKPSEL_0 | RCC_CSR_RFWKPSEL_1;				// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
 }
 
 
@@ -73,18 +64,17 @@ void InitHardware()
 	// Enable hardware semaphore clock
 	RCC->AHB3ENR |= RCC_AHB3ENR_HSEMEN;
 	while ((RCC->AHB3ENR & RCC_AHB3ENR_HSEMEN) == 0);
-	NVIC_SetPriority(HSEM_IRQn, 0);
-	NVIC_EnableIRQ(HSEM_IRQn);
+//	NVIC_SetPriority(HSEM_IRQn, 0);
+//	NVIC_EnableIRQ(HSEM_IRQn);
 
 	InitIPCC();										// Enable IPCC clock and reset all channels
-//	InitRTC();										// Initialise RTC
 
 	// Disable all wakeup interrupt on CPU1  except IPCC(36), HSEM(38)
 	// see 369 / 1532 for Interrupt list table
 	LL_EXTI_DisableIT_0_31(~0);
 	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
 
-	RCC->CFGR |= RCC_CFGR_STOPWUCK;					// 1: HSI16 oscillator selected as wakeup from stop clock and CSS backup clock
+//	RCC->CFGR |= RCC_CFGR_STOPWUCK;					// 1: HSI16 oscillator selected as wakeup from stop clock and CSS backup clock
 
 	// These bits select the low-power mode entered when CPU2 enters the deepsleep mode. The
 	// system low-power mode entered depend also on the PWR_CR1.LPMS allowed low-power mode from CPU1.
@@ -109,8 +99,8 @@ static void InitGPIO()
 	NVIC_SetPriority(EXTI4_IRQn, 3);				// EXTI interrupt init
 	NVIC_EnableIRQ(EXTI4_IRQn);
 
-	// Configure LED pin: PA3 LED_BLUE_Pin
-	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;
+
+	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;			// Configure Connection LED pin: PA3
 
 	// Init debug pin PB8
 //	RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
