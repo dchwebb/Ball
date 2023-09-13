@@ -3,10 +3,7 @@
 #include <charconv>
 extern "C" {
 #include "shci.h"
-#include "ble_hal_aci.h"
-#include "ble_hci_le.h"
 }
-#include "stm32_seq.h"
 #include "app_ble.h"
 #include "ble_hid.h"
 
@@ -21,18 +18,7 @@ void CDCHandler::ProcessCommand()
 	const std::string_view cmd {comCmd};
 
 	// Provide option to switch to USB DFU mode - this allows the MCU to be programmed with STM32CubeProgrammer in DFU mode
-	if (state == serialState::dfuConfirm) {
-		if (cmd.compare("y\n") == 0 || cmd.compare("Y\n") == 0) {
-			usb->SendString("Switching to DFU Mode ...\r\n");
-			uint32_t old = SysTickVal;
-			while (SysTickVal < old + 100) {};		// Give enough time to send the message
-			//bootloader.BootDFU();
-		} else {
-			state = serialState::pending;
-			usb->SendString("Upgrade cancelled\r\n");
-		}
-
-	} else if (cmd.compare("info") == 0) {		// Print diagnostic information
+	if (cmd.compare("info") == 0) {		// Print diagnostic information
 
 		sprintf(buf, "\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n"
 				"Wireless firmware: %s\r\n"
@@ -54,7 +40,7 @@ void CDCHandler::ProcessCommand()
 				"scan               -  List BLE devices\r\n"
 				"connect            -  Connect to HID BLE device\r\n"
 				"disconnect         -  Disconnect to HID BLE device\r\n"
-				"hidmap:xxxxxxxxxx  -  Print HID report map given device address\r\n"
+				"hidmap:x12			-  Print HID report map at 12 hex digit device address\r\n"
 				"sensitivity:x      -  Amount to divide raw gyro data\r\n"
 				"offset:x=?         -  X/Y/Z offset (more negative if falling)\r\n"
 				"calibrate          -  Recenter and calibrate gyro offsets\r\n"
@@ -84,14 +70,14 @@ void CDCHandler::ProcessCommand()
 
 	} else if (cmd.compare(0, 7, "hidmap:") == 0) {					// Print Hid repot map for given address
 
-		if (cmd.length() != 20) {
+		if (cmd.length() != 19) {
 			usb->SendString("Address format not recognised\r\n");
 		} else {
 			uint8_t addr[BleApp::bdddrSize];
 			int8_t pos = cmd.find(":") + 1;							// locate position of character preceding
 			size_t val = -1;
 			for (int8_t i = BleApp::bdddrSize; i > 0; --i) {
-				addr[i - 1] = std::stoi(cmd.substr(pos, 2).data(), &val, 16);
+				addr[i - 1] = std::stoi(std::string(cmd.substr(pos, 2)), &val, 16);
 				pos += 2;
 			}
 

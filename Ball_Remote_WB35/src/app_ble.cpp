@@ -11,7 +11,7 @@
 BleApp bleApp;
 
 
-PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
+PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t bleCmdBuffer;
 
 // These are the two tags used to manage a power failure during OTA
 // The MagicKeywordAdress shall be mapped @0x140 from start of the binary image
@@ -175,7 +175,7 @@ void BleApp::TransportLayerInit()
 {
 	HCI_TL_HciInitConf_t Hci_Tl_Init_Conf;
 
-	Hci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&BleCmdBuffer;
+	Hci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&bleCmdBuffer;
 	Hci_Tl_Init_Conf.StatusNotCallBack = StatusNotify;
 	hci_init(UserEvtRx, (void*) &Hci_Tl_Init_Conf);
 }
