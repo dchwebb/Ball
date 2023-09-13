@@ -4,17 +4,16 @@
  * @author  MCD Application Team
  * @brief   System HCI command implementation
  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics. 
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the 
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2018-2021 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
  */
 
 
@@ -153,7 +152,7 @@ void shci_send( uint16_t cmd_code, uint8_t len_cmd_payload, uint8_t * p_cmd_payl
   pCmdBuffer->cmdserial.cmd.plen = len_cmd_payload;
 
   memcpy(pCmdBuffer->cmdserial.cmd.payload, p_cmd_payload, len_cmd_payload );
-
+  CmdRspStatusFlag = SHCI_TL_CMD_RESP_WAIT;
   shciContext.io.Send(0,0);
 
   shci_cmd_resp_wait(SHCI_TL_DEFAULT_TIMEOUT);
@@ -238,7 +237,6 @@ __WEAK void shci_cmd_resp_wait(uint32_t timeout)
 {
   (void)timeout;
 
-  CmdRspStatusFlag = SHCI_TL_CMD_RESP_WAIT;
   while(CmdRspStatusFlag != SHCI_TL_CMD_RESP_RELEASE);
 
   return;

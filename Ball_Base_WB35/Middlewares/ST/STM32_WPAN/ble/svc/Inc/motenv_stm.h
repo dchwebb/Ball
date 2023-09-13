@@ -6,17 +6,16 @@
   * @brief   Header for motenv_stm.c module
   ******************************************************************************
   * @attention
- *
- * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
- * All rights reserved.</center></h2>
- *
- * This software component is licensed by ST under Ultimate Liberty license
- * SLA0044, the "License"; You may not use this file except in compliance with
- * the License. You may obtain a copy of the License at:
- *                             www.st.com/SLA0044
- *
- ******************************************************************************
- */
+  *
+  * Copyright (c) 2018-2021 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
 
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -44,6 +43,9 @@ typedef enum
   HW_ACC_EVENT_NOTIFY_ENABLED_EVT,
   HW_ACC_EVENT_NOTIFY_DISABLED_EVT,
   HW_ACC_EVENT_READ_EVT,
+  HW_TOF_NOTIFY_ENABLED_EVT,
+  HW_TOF_NOTIFY_DISABLED_EVT,
+  HW_TOF_WRITE_EVT,
   /* SW Service Chars related events */
   SW_MOTIONFX_NOTIFY_ENABLED_EVT,
   SW_MOTIONFX_NOTIFY_DISABLED_EVT,
@@ -98,7 +100,9 @@ typedef struct
 
 
 /* Exported constants --------------------------------------------------------*/
-/* External variables --------------------------------------------------------*/
+/* Exported Variables ------------------------------------------------------- */
+extern uint8_t ToF_BoardPresent;
+
 /* Exported macros -----------------------------------------------------------*/
 /**
  * @brief  Motion (Acc-Gyro-Magneto) Char shortened UUID
@@ -108,6 +112,10 @@ typedef struct
  * @brief  Environmental (Temp-Humidity-Pressure) Char shortened UUID
  */
 #define ENV_CHAR_UUID                   (0x1D00)
+/**
+ * @brief  ToF Char shortened UUID
+ */
+#define TOF_CHAR_UUID                (0x0000)
 /**
  * @brief  Acceleration event Char shortened UUID
  */
@@ -165,4 +173,4 @@ tBleStatus MOTENV_STM_App_Update_Char(uint16_t UUID, uint8_t payloadLen, uint8_t
 
 #endif /* MOTENV_STM_H */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+

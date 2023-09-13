@@ -12,8 +12,8 @@
 
 BleApp bleApp;
 
-extern USBHandler usb;
-extern HidApp hidApp;
+//extern USBHandler usb;
+//extern HidApp hidApp;
 
 PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
 
@@ -23,31 +23,37 @@ void BleApp::Init()
 	SHCI_C2_Ble_Init_Cmd_Packet_t ble_init_cmd_packet =	{
 			{{0,0,0}},                          // Header unused
 			{0,                                 // pBleBufferAddress not used
-					0,                                  // BleBufferSize not used
-					CFG_BLE_NUM_GATT_ATTRIBUTES,
-					CFG_BLE_NUM_GATT_SERVICES,
-					CFG_BLE_ATT_VALUE_ARRAY_SIZE,
-					CFG_BLE_NUM_LINK,
-					CFG_BLE_DATA_LENGTH_EXTENSION,
-					CFG_BLE_PREPARE_WRITE_LIST_SIZE,
-					CFG_BLE_MBLOCK_COUNT,
-					CFG_BLE_MAX_ATT_MTU,
-					CFG_BLE_SLAVE_SCA,
-					CFG_BLE_MASTER_SCA,
-					CFG_BLE_LSE_SOURCE,
-					CFG_BLE_MAX_CONN_EVENT_LENGTH,
-					CFG_BLE_HSE_STARTUP_TIME,
-					CFG_BLE_VITERBI_MODE,
-					CFG_BLE_OPTIONS,
-					0,
-					CFG_BLE_MAX_COC_INITIATOR_NBR,
-					CFG_BLE_MIN_TX_POWER,
-					CFG_BLE_MAX_TX_POWER}
+			0,                                  // BleBufferSize not used
+			CFG_BLE_NUM_GATT_ATTRIBUTES,
+			CFG_BLE_NUM_GATT_SERVICES,
+			CFG_BLE_ATT_VALUE_ARRAY_SIZE,
+			CFG_BLE_NUM_LINK,
+			CFG_BLE_DATA_LENGTH_EXTENSION,
+			CFG_BLE_PREPARE_WRITE_LIST_SIZE,
+			CFG_BLE_MBLOCK_COUNT,
+			CFG_BLE_MAX_ATT_MTU,
+			CFG_BLE_SLAVE_SCA,
+			CFG_BLE_MASTER_SCA,
+			CFG_BLE_LS_SOURCE,
+			CFG_BLE_MAX_CONN_EVENT_LENGTH,
+			CFG_BLE_HSE_STARTUP_TIME,
+			CFG_BLE_VITERBI_MODE,
+			CFG_BLE_OPTIONS,
+			0,
+			CFG_BLE_MAX_COC_INITIATOR_NBR,
+			CFG_BLE_MIN_TX_POWER,
+			CFG_BLE_MAX_TX_POWER,
+			CFG_BLE_RX_MODEL_CONFIG,
+			CFG_BLE_MAX_ADV_SET_NBR,
+			CFG_BLE_MAX_ADV_DATA_LEN,
+			CFG_BLE_TX_PATH_COMPENS,
+			CFG_BLE_RX_PATH_COMPENS,
+			CFG_BLE_CORE_VERSION,
+			CFG_BLE_OPTIONS_EXT
+			}
 	};
 
-
-	// Initialize Ble Transport Layer
-	TransportLayerInit();
+	TransportLayerInit();										// Initialize Ble Transport Layer
 
 	// Do not allow standby in the application
 	UTIL_LPM_SetOffMode(1 << CFG_LPM_APP_BLE, UTIL_LPM_DISABLE);
@@ -55,34 +61,24 @@ void BleApp::Init()
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
 
-	// Starts the BLE Stack on CPU2
+	// Start the BLE Stack on CPU2
 	if (SHCI_C2_BLE_Init(&ble_init_cmd_packet) != SHCI_Success) {
 		extern bool coprocessorFailure;
 		coprocessorFailure = true;
-		//Error_Handler();
 		return;
 	}
 
-	// Initialization of HCI & GATT & GAP layer
-	HciGapGattInit();
-
-	// Initialization of the BLE Services
-	SVCCTL_Init();
+	HciGapGattInit();											// Initialization of HCI & GATT & GAP layer
+	SVCCTL_Init();												// Initialization of the BLE Services
 
 	// From here, all initialization are BLE application specific
 	UTIL_SEQ_RegTask(1 << CFG_TASK_ScanRequest, UTIL_SEQ_RFU, ScanRequest);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_ConnectRequest, UTIL_SEQ_RFU, ConnectRequest);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, UTIL_SEQ_RFU, DisconnectRequest);
 
-	// Initialization of the BLE App Context
-	bleApp.deviceConnectionStatus = ConnectionStatus::Idle;
-
-	// Radio mask Activity
-	aci_hal_set_radio_activity_mask(0x0020);			// Connection event master
-
-	// Initialize HID Client Application
-	hidApp.Init();
-
+	bleApp.deviceConnectionStatus = ConnectionStatus::Idle;		// Initialization of the BLE App Context
+	aci_hal_set_radio_activity_mask(0x0020);					// Radio mask Activity: Connection event master
+	hidApp.Init();												// Initialize HID Client Application
 }
 
 
@@ -131,7 +127,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 					result = aci_l2cap_connection_parameter_update_resp(connectionHandle,
 							pr->Interval_Min,
 							pr->Interval_Max,
-							pr->Slave_Latency,
+							pr->Latency,
 							pr->Timeout_Multiplier,
 							CONN_L1,
 							CONN_L2,
@@ -403,7 +399,7 @@ void BleApp::HciGapGattInit()
 			CFG_ENCRYPTION_KEY_SIZE_MAX,
 			CFG_USED_FIXED_PIN,
 			CFG_FIXED_PIN,
-			PUBLIC_ADDR
+			GAP_PUBLIC_ADDR
 			);
 
 	// Initialize whitelist
@@ -417,7 +413,7 @@ void BleApp::ScanRequest()
 {
 	if (bleApp.deviceConnectionStatus != ConnectionStatus::ClientConnected) {
 		bleApp.deviceServerFound = false;
-		tBleStatus result = aci_gap_start_general_discovery_proc(SCAN_P, SCAN_L, PUBLIC_ADDR, 1);
+		tBleStatus result = aci_gap_start_general_discovery_proc(SCAN_P, SCAN_L, GAP_PUBLIC_ADDR, 1);
 		if (result == BLE_STATUS_SUCCESS) {
 			APP_DBG_MSG("* BLE: Start general discovery\r\n");
 		} else {
@@ -436,7 +432,7 @@ void BleApp::ConnectRequest()
 				SCAN_L,
 				bleApp.deviceAddressType,		// Peer address type & address
 				bleApp.deviceAddress,
-				PUBLIC_ADDR,					// Own address type
+				GAP_PUBLIC_ADDR,					// Own address type
 				CONN_P1,
 				CONN_P2,
 				0,

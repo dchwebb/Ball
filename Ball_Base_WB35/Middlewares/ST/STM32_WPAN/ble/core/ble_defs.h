@@ -1,19 +1,18 @@
 /*****************************************************************************
  * @file    ble_defs.h
- * @author  MCD
+ * @author  MDG
  * @brief   This file contains definitions used for BLE Stack interface.
  *****************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
- * All rights reserved.</center></h2>
+ * Copyright (c) 2018-2023 STMicroelectronics.
+ * All rights reserved.
  *
- * This software component is licensed by ST under Ultimate Liberty license
- * SLA0044, the "License"; You may not use this file except in compliance with
- * the License. You may obtain a copy of the License at:
- *                             www.st.com/SLA0044
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
  *
- ******************************************************************************
+ *****************************************************************************
  */
 
 #ifndef BLE_DEFS_H__
@@ -22,221 +21,11 @@
 
 /* ------------------------------------------------------------------------- */
 
-/* ACI GAP vendor specific event codes
- */
-
-/* ACI_GAP_LIMITED_DISCOVERABLE_EVENT code: */
-#define ACI_GAP_LIMITED_DISCOVERABLE_VSEVT_CODE         0x0400U
-
-/* ACI_GAP_PAIRING_COMPLETE_EVENT code: */
-#define ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE             0x0401U
-
-/* ACI_GAP_PASS_KEY_REQ_EVENT code: */
-#define ACI_GAP_PASS_KEY_REQ_VSEVT_CODE                 0x0402U
-
-/* ACI_GAP_AUTHORIZATION_REQ_EVENT code: */
-#define ACI_GAP_AUTHORIZATION_REQ_VSEVT_CODE            0x0403U
-
-/* ACI_GAP_SLAVE_SECURITY_INITIATED_EVENT code: */
-#define ACI_GAP_SLAVE_SECURITY_INITIATED_VSEVT_CODE     0x0404U
-
-/* ACI_GAP_BOND_LOST_EVENT code: */
-#define ACI_GAP_BOND_LOST_VSEVT_CODE                    0x0405U
-
-/* ACI_GAP_PROC_COMPLETE_EVENT code: */
-#define ACI_GAP_PROC_COMPLETE_VSEVT_CODE                0x0407U
-
-/* ACI_GAP_ADDR_NOT_RESOLVED_EVENT code: */
-#define ACI_GAP_ADDR_NOT_RESOLVED_VSEVT_CODE            0x0408U
-
-/* ACI_GAP_NUMERIC_COMPARISON_VALUE_EVENT code: */
-#define ACI_GAP_NUMERIC_COMPARISON_VALUE_VSEVT_CODE     0x0409U
-
-/* ACI_GAP_KEYPRESS_NOTIFICATION_EVENT code: */
-#define ACI_GAP_KEYPRESS_NOTIFICATION_VSEVT_CODE        0x040AU
-
-/* ACI GATT/ATT vendor specific event codes
- */
-
-/* ACI_GATT_ATTRIBUTE_MODIFIED_EVENT code: */
-#define ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE          0x0C01U
-
-/* ACI_GATT_PROC_TIMEOUT_EVENT code: */
-#define ACI_GATT_PROC_TIMEOUT_VSEVT_CODE                0x0C02U
-
-/* ACI_ATT_EXCHANGE_MTU_RESP_EVENT code: */
-#define ACI_ATT_EXCHANGE_MTU_RESP_VSEVT_CODE            0x0C03U
-
-/* ACI_ATT_FIND_INFO_RESP_EVENT code: */
-#define ACI_ATT_FIND_INFO_RESP_VSEVT_CODE               0x0C04U
-
-/* ACI_ATT_FIND_BY_TYPE_VALUE_RESP_EVENT code: */
-#define ACI_ATT_FIND_BY_TYPE_VALUE_RESP_VSEVT_CODE      0x0C05U
-
-/* ACI_ATT_READ_BY_TYPE_RESP_EVENT code: */
-#define ACI_ATT_READ_BY_TYPE_RESP_VSEVT_CODE            0x0C06U
-
-/* ACI_ATT_READ_RESP_EVENT code: */
-#define ACI_ATT_READ_RESP_VSEVT_CODE                    0x0C07U
-
-/* ACI_ATT_READ_BLOB_RESP_EVENT code: */
-#define ACI_ATT_READ_BLOB_RESP_VSEVT_CODE               0x0C08U
-
-/* ACI_ATT_READ_MULTIPLE_RESP_EVENT code: */
-#define ACI_ATT_READ_MULTIPLE_RESP_VSEVT_CODE           0x0C09U
-
-/* ACI_ATT_READ_BY_GROUP_TYPE_RESP_EVENT code: */
-#define ACI_ATT_READ_BY_GROUP_TYPE_RESP_VSEVT_CODE      0x0C0AU
-
-/* ACI_ATT_PREPARE_WRITE_RESP_EVENT code: */
-#define ACI_ATT_PREPARE_WRITE_RESP_VSEVT_CODE           0x0C0CU
-
-/* ACI_ATT_EXEC_WRITE_RESP_EVENT code: */
-#define ACI_ATT_EXEC_WRITE_RESP_VSEVT_CODE              0x0C0DU
-
-/* ACI_GATT_INDICATION_EVENT code: */
-#define ACI_GATT_INDICATION_VSEVT_CODE                  0x0C0EU
-
-/* ACI_GATT_NOTIFICATION_EVENT code: */
-#define ACI_GATT_NOTIFICATION_VSEVT_CODE                0x0C0FU
-
-/* ACI_GATT_PROC_COMPLETE_EVENT code: */
-#define ACI_GATT_PROC_COMPLETE_VSEVT_CODE               0x0C10U
-
-/* ACI_GATT_ERROR_RESP_EVENT code: */
-#define ACI_GATT_ERROR_RESP_VSEVT_CODE                  0x0C11U
-
-/* ACI_GATT_DISC_READ_CHAR_BY_UUID_RESP_EVENT code: */
-#define ACI_GATT_DISC_READ_CHAR_BY_UUID_RESP_VSEVT_CODE 0x0C12U
-
-/* ACI_GATT_WRITE_PERMIT_REQ_EVENT code: */
-#define ACI_GATT_WRITE_PERMIT_REQ_VSEVT_CODE            0x0C13U
-
-/* ACI_GATT_READ_PERMIT_REQ_EVENT code: */
-#define ACI_GATT_READ_PERMIT_REQ_VSEVT_CODE             0x0C14U
-
-/* ACI_GATT_READ_MULTI_PERMIT_REQ_EVENT code: */
-#define ACI_GATT_READ_MULTI_PERMIT_REQ_VSEVT_CODE       0x0C15U
-
-/* ACI_GATT_TX_POOL_AVAILABLE_EVENT code: */
-#define ACI_GATT_TX_POOL_AVAILABLE_VSEVT_CODE           0x0C16U
-
-/* ACI_GATT_SERVER_CONFIRMATION_EVENT code: */
-#define ACI_GATT_SERVER_CONFIRMATION_VSEVT_CODE         0x0C17U
-
-/* ACI_GATT_PREPARE_WRITE_PERMIT_REQ_EVENT code: */
-#define ACI_GATT_PREPARE_WRITE_PERMIT_REQ_VSEVT_CODE    0x0C18U
-
-/* ACI_GATT_READ_EXT_EVENT code: */
-#define ACI_GATT_READ_EXT_VSEVT_CODE                    0x0C1DU
-
-/* ACI_GATT_INDICATION_EXT_EVENT code: */
-#define ACI_GATT_INDICATION_EXT_VSEVT_CODE              0x0C1EU
-
-/* ACI_GATT_NOTIFICATION_EXT_EVENT code: */
-#define ACI_GATT_NOTIFICATION_EXT_VSEVT_CODE            0x0C1FU
-
-/* ACI L2CAP vendor specific event codes
- */
-
-/* ACI_L2CAP_CONNECTION_UPDATE_RESP_EVENT code: */
-#define ACI_L2CAP_CONNECTION_UPDATE_RESP_VSEVT_CODE     0x0800U
-
-/* ACI_L2CAP_PROC_TIMEOUT_EVENT code: */
-#define ACI_L2CAP_PROC_TIMEOUT_VSEVT_CODE               0x0801U
-
-/* ACI_L2CAP_CONNECTION_UPDATE_REQ_EVENT code: */
-#define ACI_L2CAP_CONNECTION_UPDATE_REQ_VSEVT_CODE      0x0802U
-
-/* ACI_L2CAP_COMMAND_REJECT_EVENT code: */
-#define ACI_L2CAP_COMMAND_REJECT_VSEVT_CODE             0x080AU
-
-/* ACI_L2CAP_COC_CONNECT_EVENT code: */
-#define ACI_L2CAP_COC_CONNECT_VSEVT_CODE                0x0810U
-
-/* ACI_L2CAP_COC_CONNECT_CONFIRM_EVENT code: */
-#define ACI_L2CAP_COC_CONNECT_CONFIRM_VSEVT_CODE        0x0811U
-
-/* ACI_L2CAP_COC_RECONF_EVENT code: */
-#define ACI_L2CAP_COC_RECONF_VSEVT_CODE                 0x0812U
-
-/* ACI_L2CAP_COC_RECONF_CONFIRM_EVENT code: */
-#define ACI_L2CAP_COC_RECONF_CONFIRM_VSEVT_CODE         0x0813U
-
-/* ACI_L2CAP_COC_DISCONNECT_EVENT code: */
-#define ACI_L2CAP_COC_DISCONNECT_VSEVT_CODE             0x0814U
-
-/* ACI_L2CAP_COC_FLOW_CONTROL_EVENT code: */
-#define ACI_L2CAP_COC_FLOW_CONTROL_VSEVT_CODE           0x0815U
-
-/* ACI_L2CAP_COC_RX_DATA_EVENT code: */
-#define ACI_L2CAP_COC_RX_DATA_VSEVT_CODE                0x0816U
-
-/* ACI_L2CAP_COC_TX_POOL_AVAILABLE_EVENT code: */
-#define ACI_L2CAP_COC_TX_POOL_AVAILABLE_VSEVT_CODE      0x0817U
-
-/* ACI HAL vendor specific event codes
- */
-
-/* ACI_HAL_END_OF_RADIO_ACTIVITY_EVENT code: */
-#define ACI_HAL_END_OF_RADIO_ACTIVITY_VSEVT_CODE        0x0004U
-
-/* ACI_HAL_SCAN_REQ_REPORT_EVENT code: */
-#define ACI_HAL_SCAN_REQ_REPORT_VSEVT_CODE              0x0005U
-
-/* ACI_HAL_FW_ERROR_EVENT code: */
-#define ACI_HAL_FW_ERROR_VSEVT_CODE                     0x0006U
-
-/* ------------------------------------------------------------------------- */
-
 /* Status codes */
 
 /* Returned when the command has completed with success
  */
 #define BLE_STATUS_SUCCESS                              0x00U
-
-/* The Connection Identifier does not exist at SMP level.
- */
-#define BLE_STATUS_UNKNOWN_CONNECTION_ID                0x40U
-
-/* The Host failed while performing the requested operation.
- */
-#define BLE_STATUS_FAILED                               0x41U
-
-/* Invalid parameters in Host commands
- */
-#define BLE_STATUS_INVALID_PARAMS                       0x42U
-
-/* The Host is already processing another request received in advance.
- */
-#define BLE_STATUS_BUSY                                 0x43U
-
-/* The operation requested cannot be completed immediately by the Host
- * (usually because of lack of resources). 
- * The operation is generally put on hold by the caller and it's usually 
- * retried on later time.
- */
-#define BLE_STATUS_PENDING                              0x45U
-
-/* The requested operation cannot be performed by the Host in the current
- * status.
- */
-#define BLE_STATUS_NOT_ALLOWED                          0x46U
-
-/* The requested operation violates the logic of the called layer/function or
- * the format of the data to be processed during the operation.
- */
-#define BLE_STATUS_ERROR                                0x47U
-
-/* The requested operation failed because of lack of memory.
- * Out of memory shall be returned for situations where memory will never 
- * become available again (e.g. ATT database)
- */
-#define BLE_STATUS_OUT_OF_MEMORY                        0x48U
-
-/* An invalid L2CAP CID/channel has been selected to send data over.
- */
-#define BLE_STATUS_INVALID_CID                          0x50U
 
 /* The remote device in in the Blacklist and the pairing operation it requested
  * cannot be performed.
@@ -334,6 +123,36 @@
  */
 #define BLE_STATUS_LENGTH_FAILED                        0x86U
 
+/* The Host failed while performing the requested operation.
+ */
+#define BLE_STATUS_FAILED                               0x91U
+
+/* Invalid parameters in Host commands
+ */
+#define BLE_STATUS_INVALID_PARAMS                       0x92U
+
+/* The Host is already processing another request received in advance.
+ */
+#define BLE_STATUS_BUSY                                 0x93U
+
+/* The operation requested cannot be completed immediately by the Host
+ * (usually because of lack of resources). 
+ * The operation is generally put on hold by the caller and it's usually 
+ * retried on later time.
+ */
+#define BLE_STATUS_PENDING                              0x95U
+
+/* The requested operation violates the logic of the called layer/function or
+ * the format of the data to be processed during the operation.
+ */
+#define BLE_STATUS_ERROR                                0x97U
+
+/* The requested operation failed because of lack of memory.
+ * Out of memory shall be returned for situations where memory will never 
+ * become available again (e.g. ATT database)
+ */
+#define BLE_STATUS_OUT_OF_MEMORY                        0x98U
+
 /* Returned when a timeout occurs at BLE application interface
  */
 #define BLE_STATUS_TIMEOUT                              0xFFU
@@ -368,7 +187,7 @@
 #define AD_TYPE_CLASS_OF_DEVICE                      0x0DU
 #define AD_TYPE_SEC_MGR_TK_VALUE                     0x10U
 #define AD_TYPE_SEC_MGR_OOB_FLAGS                    0x11U
-#define AD_TYPE_SLAVE_CONN_INTERVAL                  0x12U
+#define AD_TYPE_PERIPHERAL_CONN_INTERVAL             0x12U
 #define AD_TYPE_SERV_SOLICIT_16_BIT_UUID_LIST        0x14U
 #define AD_TYPE_SERV_SOLICIT_128_BIT_UUID_LIST       0x15U
 #define AD_TYPE_SERVICE_DATA                         0x16U
@@ -476,6 +295,20 @@
 #define GAP_DIRECT_CONNECTION_ESTABLISHMENT_PROC     0x40U
 #define GAP_OBSERVATION_PROC                         0x80U
 
+/* GAP Address Type
+ */
+#define GAP_PUBLIC_ADDR                              0x00U
+#define GAP_STATIC_RANDOM_ADDR                       0x01U
+#define GAP_RESOLVABLE_PRIVATE_ADDR                  0x02U
+#define GAP_NON_RESOLVABLE_PRIVATE_ADDR              0x03U
+
+/* Bitmap definitions for Mode of ACI_GAP_ADD_DEVICES_TO_LIST
+ */
+#define GAP_ADD_DEV_MODE_RESOLVING_LIST_ONLY         0x00U
+#define GAP_ADD_DEV_MODE_CLEAR                       0x01U
+#define GAP_ADD_DEV_MODE_FILTER_ACC_LIST_ONLY        0x02U
+#define GAP_ADD_DEV_MODE_BOTH_LISTS                  0x04U 
+
 /* ------------------------------------------------------------------------- */
 
 /* IO capabilities
@@ -571,6 +404,7 @@
 
 /* GATT UUIDs
  */
+#define GATT_SERVICE_UUID                        0x1801U
 #define PRIMARY_SERVICE_UUID                     0x2800U
 #define SECONDARY_SERVICE_UUID                   0x2801U
 #define INCLUDE_SERVICE_UUID                     0x2802U
@@ -581,19 +415,21 @@
 #define CHAR_SERVER_CONFIG_DESC_UUID             0x2903U
 #define CHAR_FORMAT_DESC_UUID                    0x2904U
 #define CHAR_AGGR_FMT_DESC_UUID                  0x2905U
-#define GATT_SERVICE_UUID                        0x1801U
 #define SERVICE_CHANGED_UUID                     0x2A05U
+#define CLIENT_SUPPORTED_FEATURES_UUID           0X2B29U
+#define DATABASE_HASH_UUID                       0X2B2AU
+#define SERVER_SUPPORTED_FEATURES_UUID           0X2B3AU
 
 /* GAP UUIDs
  */
 #define GAP_SERVICE_UUID                         0x1800U
 #define DEVICE_NAME_UUID                         0x2A00U
 #define APPEARANCE_UUID                          0x2A01U
-#define PERIPHERAL_PRIVACY_FLAG_UUID             0x2A02U
-#define RECONNECTION_ADDR_UUID                   0x2A03U
 #define PERIPHERAL_PREFERRED_CONN_PARAMS_UUID    0x2A04U
 #define CENTRAL_ADDRESS_RESOLUTION_UUID          0x2AA6U
 #define RESOLVABLE_PRIVATE_ADDRESS_ONLY_UUID     0x2AC9U
+#define ENCRYPTED_DATA_KEY_MATERIAL_UUID         0x2B88U
+#define LE_GATT_SECURITY_LEVELS_UUID             0x2BF5U
 
 /* Access permissions for an attribute
  */
@@ -642,10 +478,11 @@
  * Type of event generated by GATT server
  * See aci_gatt_add_char.
  */
-#define GATT_DONT_NOTIFY_EVENTS                       0x00 
-#define GATT_NOTIFY_ATTRIBUTE_WRITE                   0x01
-#define GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP  0x02
-#define GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP   0x04
+#define GATT_DONT_NOTIFY_EVENTS                       0x00U
+#define GATT_NOTIFY_ATTRIBUTE_WRITE                   0x01U
+#define GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP  0x02U
+#define GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP   0x04U
+#define GATT_NOTIFY_NOTIFICATION_COMPLETION           0x08U
 
 /* Type of characteristic length (see ACI_GATT_ADD_CHAR)
  */
@@ -670,15 +507,22 @@
 #define UNIT_TEMP_CELSIUS                      0x272F
 #define UNIT_PRESSURE_BAR                      0x2780
 
+/* Update_Type definitions for ACI_GATT_UPDATE_CHAR_VALUE_EXT
+ */
+#define GATT_CHAR_UPDATE_LOCAL_ONLY                   0x00U
+#define GATT_CHAR_UPDATE_SEND_NOTIFICATION            0x01U
+#define GATT_CHAR_UPDATE_SEND_INDICATION              0x02U
+
 /* ------------------------------------------------------------------------- */
 
-/* Advertising policy for filtering (white list related)
- * See HCI_LE_SET_ADVERTISING_PARAMETERS
+/* Advertising Type
  */
-#define NO_WHITE_LIST_USE                      0X00U
-#define WHITE_LIST_FOR_ONLY_SCAN               0X01U
-#define WHITE_LIST_FOR_ONLY_CONN               0X02U
-#define WHITE_LIST_FOR_ALL                     0X03U
+#define ADV_IND                                        0
+#define ADV_DIRECT_IND                                 1
+#define ADV_SCAN_IND                                   2
+#define ADV_NONCONN_IND                                3
+#define ADV_DIRECT_IND_LDC                             4
+#define SCAN_RSP                                       4
 
 /* Advertising channels
  */
@@ -694,6 +538,11 @@
 #define CONFIG_DATA_ER_OFFSET                  0x08U
 #define CONFIG_DATA_IR_OFFSET                  0x18U
 #define CONFIG_DATA_RANDOM_ADDRESS_OFFSET      0x2EU
+#define CONFIG_DATA_GAP_ADD_REC_NBR_OFFSET     0x34U
+#define CONFIG_DATA_SC_KEY_TYPE_OFFSET         0x35U
+#define CONFIG_DATA_SMP_MODE_OFFSET            0xB0U
+#define CONFIG_DATA_LL_SCAN_CHAN_MAP_OFFSET    0xC0U
+#define CONFIG_DATA_LL_BG_SCAN_MODE_OFFSET     0xC1U
 
 /* Length for configuration values (see ACI_HAL_WRITE_CONFIG_DATA)
  */
@@ -701,6 +550,11 @@
 #define CONFIG_DATA_ER_LEN                    16
 #define CONFIG_DATA_IR_LEN                    16
 #define CONFIG_DATA_RANDOM_ADDRESS_LEN         6
+#define CONFIG_DATA_GAP_ADD_REC_NBR_LEN        1
+#define CONFIG_DATA_SC_KEY_TYPE_LEN            1
+#define CONFIG_DATA_SMP_MODE_LEN               1
+#define CONFIG_DATA_LL_SCAN_CHAN_MAP_LEN       1
+#define CONFIG_DATA_LL_BG_SCAN_MODE_LEN        1
 
 /* ------------------------------------------------------------------------- */
 

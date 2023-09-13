@@ -269,7 +269,8 @@ void UTIL_SEQ_Run( UTIL_SEQ_bm_t Mask_bm )
 	 * Once the index is read, the associated task will be executed even though a higher priority stack is requested
 	 * before task execution.
 	 */
-    CurrentTaskIdx = SEQ_BitPosition(current_task_set & TaskPrio[counter].round_robin);
+    CurrentTaskIdx = (SEQ_BitPosition(current_task_set & TaskPrio[counter].round_robin));
+
     /*
      * remove from the roun_robin mask the task that has been selected to be executed
      */

@@ -1,20 +1,19 @@
-/******************************************************************************
+/*****************************************************************************
  * @file    ble_gap_aci.c
- * @author  MCD
+ * @author  MDG
  * @brief   STM32WB BLE API (gap_aci)
  *          Auto-generated file: do not edit!
- ******************************************************************************
+ *****************************************************************************
  * @attention
  *
- * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
- * All rights reserved.</center></h2>
+ * Copyright (c) 2018-2023 STMicroelectronics.
+ * All rights reserved.
  *
- * This software component is licensed by ST under Ultimate Liberty license
- * SLA0044, the "License"; You may not use this file except in compliance with
- * the License. You may obtain a copy of the License at:
- *                             www.st.com/SLA0044
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
  *
- ******************************************************************************
+ *****************************************************************************
  */
 
 #include "ble_gap_aci.h"
@@ -42,8 +41,8 @@ tBleStatus aci_gap_set_limited_discoverable( uint8_t Advertising_Type,
                                              const uint8_t* Local_Name,
                                              uint8_t Service_Uuid_length,
                                              const uint8_t* Service_Uuid_List,
-                                             uint16_t Slave_Conn_Interval_Min,
-                                             uint16_t Slave_Conn_Interval_Max )
+                                             uint16_t Conn_Interval_Min,
+                                             uint16_t Conn_Interval_Max )
 {
   struct hci_request rq;
   uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
@@ -75,11 +74,11 @@ tBleStatus aci_gap_set_limited_discoverable( uint8_t Advertising_Type,
     Osal_MemCpy( (void*)&cp1->Service_Uuid_List, (const void*)Service_Uuid_List, Service_Uuid_length );
     index_input += Service_Uuid_length;
     {
-      cp2->Slave_Conn_Interval_Min = Slave_Conn_Interval_Min;
+      cp2->Conn_Interval_Min = Conn_Interval_Min;
     }
     index_input += 2;
     {
-      cp2->Slave_Conn_Interval_Max = Slave_Conn_Interval_Max;
+      cp2->Conn_Interval_Max = Conn_Interval_Max;
     }
     index_input += 2;
   }
@@ -105,8 +104,8 @@ tBleStatus aci_gap_set_discoverable( uint8_t Advertising_Type,
                                      const uint8_t* Local_Name,
                                      uint8_t Service_Uuid_length,
                                      const uint8_t* Service_Uuid_List,
-                                     uint16_t Slave_Conn_Interval_Min,
-                                     uint16_t Slave_Conn_Interval_Max )
+                                     uint16_t Conn_Interval_Min,
+                                     uint16_t Conn_Interval_Max )
 {
   struct hci_request rq;
   uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
@@ -138,11 +137,11 @@ tBleStatus aci_gap_set_discoverable( uint8_t Advertising_Type,
     Osal_MemCpy( (void*)&cp1->Service_Uuid_List, (const void*)Service_Uuid_List, Service_Uuid_length );
     index_input += Service_Uuid_length;
     {
-      cp2->Slave_Conn_Interval_Min = Slave_Conn_Interval_Min;
+      cp2->Conn_Interval_Min = Conn_Interval_Min;
     }
     index_input += 2;
     {
-      cp2->Slave_Conn_Interval_Max = Slave_Conn_Interval_Max;
+      cp2->Conn_Interval_Max = Conn_Interval_Max;
     }
     index_input += 2;
   }
@@ -422,11 +421,11 @@ tBleStatus aci_gap_set_undirected_connectable( uint16_t Advertising_Interval_Min
   return status;
 }
 
-tBleStatus aci_gap_slave_security_req( uint16_t Connection_Handle )
+tBleStatus aci_gap_peripheral_security_req( uint16_t Connection_Handle )
 {
   struct hci_request rq;
   uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
-  aci_gap_slave_security_req_cp0 *cp0 = (aci_gap_slave_security_req_cp0*)(cmd_buffer);
+  aci_gap_peripheral_security_req_cp0 *cp0 = (aci_gap_peripheral_security_req_cp0*)(cmd_buffer);
   tBleStatus status = 0;
   int index_input = 0;
   cp0->Connection_Handle = Connection_Handle;
@@ -538,7 +537,7 @@ tBleStatus aci_gap_set_event_mask( uint16_t GAP_Evt_Mask )
   return status;
 }
 
-tBleStatus aci_gap_configure_whitelist( void )
+tBleStatus aci_gap_configure_filter_accept_list( void )
 {
   struct hci_request rq;
   tBleStatus status = 0;
@@ -674,58 +673,6 @@ tBleStatus aci_gap_start_general_discovery_proc( uint16_t LE_Scan_Interval,
   return status;
 }
 
-tBleStatus aci_gap_start_name_discovery_proc( uint16_t LE_Scan_Interval,
-                                              uint16_t LE_Scan_Window,
-                                              uint8_t Peer_Address_Type,
-                                              const uint8_t* Peer_Address,
-                                              uint8_t Own_Address_Type,
-                                              uint16_t Conn_Interval_Min,
-                                              uint16_t Conn_Interval_Max,
-                                              uint16_t Conn_Latency,
-                                              uint16_t Supervision_Timeout,
-                                              uint16_t Minimum_CE_Length,
-                                              uint16_t Maximum_CE_Length )
-{
-  struct hci_request rq;
-  uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
-  aci_gap_start_name_discovery_proc_cp0 *cp0 = (aci_gap_start_name_discovery_proc_cp0*)(cmd_buffer);
-  tBleStatus status = 0;
-  int index_input = 0;
-  cp0->LE_Scan_Interval = LE_Scan_Interval;
-  index_input += 2;
-  cp0->LE_Scan_Window = LE_Scan_Window;
-  index_input += 2;
-  cp0->Peer_Address_Type = Peer_Address_Type;
-  index_input += 1;
-  Osal_MemCpy( (void*)&cp0->Peer_Address, (const void*)Peer_Address, 6 );
-  index_input += 6;
-  cp0->Own_Address_Type = Own_Address_Type;
-  index_input += 1;
-  cp0->Conn_Interval_Min = Conn_Interval_Min;
-  index_input += 2;
-  cp0->Conn_Interval_Max = Conn_Interval_Max;
-  index_input += 2;
-  cp0->Conn_Latency = Conn_Latency;
-  index_input += 2;
-  cp0->Supervision_Timeout = Supervision_Timeout;
-  index_input += 2;
-  cp0->Minimum_CE_Length = Minimum_CE_Length;
-  index_input += 2;
-  cp0->Maximum_CE_Length = Maximum_CE_Length;
-  index_input += 2;
-  Osal_MemSet( &rq, 0, sizeof(rq) );
-  rq.ogf = 0x3f;
-  rq.ocf = 0x098;
-  rq.event = 0x0F;
-  rq.cparam = cmd_buffer;
-  rq.clen = index_input;
-  rq.rparam = &status;
-  rq.rlen = 1;
-  if ( hci_send_req(&rq, FALSE) < 0 )
-    return BLE_STATUS_TIMEOUT;
-  return status;
-}
-
 tBleStatus aci_gap_start_auto_connection_establish_proc( uint16_t LE_Scan_Interval,
                                                          uint16_t LE_Scan_Window,
                                                          uint8_t Own_Address_Type,
@@ -735,8 +682,8 @@ tBleStatus aci_gap_start_auto_connection_establish_proc( uint16_t LE_Scan_Interv
                                                          uint16_t Supervision_Timeout,
                                                          uint16_t Minimum_CE_Length,
                                                          uint16_t Maximum_CE_Length,
-                                                         uint8_t Num_of_Whitelist_Entries,
-                                                         const Whitelist_Entry_t* Whitelist_Entry )
+                                                         uint8_t Num_of_Peer_Entries,
+                                                         const Peer_Entry_t* Peer_Entry )
 {
   struct hci_request rq;
   uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
@@ -761,10 +708,10 @@ tBleStatus aci_gap_start_auto_connection_establish_proc( uint16_t LE_Scan_Interv
   index_input += 2;
   cp0->Maximum_CE_Length = Maximum_CE_Length;
   index_input += 2;
-  cp0->Num_of_Whitelist_Entries = Num_of_Whitelist_Entries;
+  cp0->Num_of_Peer_Entries = Num_of_Peer_Entries;
   index_input += 1;
-  Osal_MemCpy( (void*)&cp0->Whitelist_Entry, (const void*)Whitelist_Entry, Num_of_Whitelist_Entries * (sizeof(Whitelist_Entry_t)) );
-  index_input += Num_of_Whitelist_Entries * (sizeof(Whitelist_Entry_t));
+  Osal_MemCpy( (void*)&cp0->Peer_Entry, (const void*)Peer_Entry, Num_of_Peer_Entries * (sizeof(Peer_Entry_t)) );
+  index_input += Num_of_Peer_Entries * (sizeof(Peer_Entry_t));
   Osal_MemSet( &rq, 0, sizeof(rq) );
   rq.ogf = 0x3f;
   rq.ocf = 0x099;
@@ -821,8 +768,8 @@ tBleStatus aci_gap_start_selective_connection_establish_proc( uint8_t LE_Scan_Ty
                                                               uint8_t Own_Address_Type,
                                                               uint8_t Scanning_Filter_Policy,
                                                               uint8_t Filter_Duplicates,
-                                                              uint8_t Num_of_Whitelist_Entries,
-                                                              const Whitelist_Entry_t* Whitelist_Entry )
+                                                              uint8_t Num_of_Peer_Entries,
+                                                              const Peer_Entry_t* Peer_Entry )
 {
   struct hci_request rq;
   uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
@@ -841,10 +788,10 @@ tBleStatus aci_gap_start_selective_connection_establish_proc( uint8_t LE_Scan_Ty
   index_input += 1;
   cp0->Filter_Duplicates = Filter_Duplicates;
   index_input += 1;
-  cp0->Num_of_Whitelist_Entries = Num_of_Whitelist_Entries;
+  cp0->Num_of_Peer_Entries = Num_of_Peer_Entries;
   index_input += 1;
-  Osal_MemCpy( (void*)&cp0->Whitelist_Entry, (const void*)Whitelist_Entry, Num_of_Whitelist_Entries * (sizeof(Whitelist_Entry_t)) );
-  index_input += Num_of_Whitelist_Entries * (sizeof(Whitelist_Entry_t));
+  Osal_MemCpy( (void*)&cp0->Peer_Entry, (const void*)Peer_Entry, Num_of_Peer_Entries * (sizeof(Peer_Entry_t)) );
+  index_input += Num_of_Peer_Entries * (sizeof(Peer_Entry_t));
   Osal_MemSet( &rq, 0, sizeof(rq) );
   rq.ogf = 0x3f;
   rq.ocf = 0x09b;
@@ -1028,8 +975,8 @@ tBleStatus aci_gap_set_broadcast_mode( uint16_t Advertising_Interval_Min,
                                        uint8_t Own_Address_Type,
                                        uint8_t Adv_Data_Length,
                                        const uint8_t* Adv_Data,
-                                       uint8_t Num_of_Whitelist_Entries,
-                                       const Whitelist_Entry_t* Whitelist_Entry )
+                                       uint8_t Num_of_Peer_Entries,
+                                       const Peer_Entry_t* Peer_Entry )
 {
   struct hci_request rq;
   uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
@@ -1052,11 +999,11 @@ tBleStatus aci_gap_set_broadcast_mode( uint16_t Advertising_Interval_Min,
     Osal_MemCpy( (void*)&cp0->Adv_Data, (const void*)Adv_Data, Adv_Data_Length );
     index_input += Adv_Data_Length;
     {
-      cp1->Num_of_Whitelist_Entries = Num_of_Whitelist_Entries;
+      cp1->Num_of_Peer_Entries = Num_of_Peer_Entries;
     }
     index_input += 1;
-    Osal_MemCpy( (void*)&cp1->Whitelist_Entry, (const void*)Whitelist_Entry, Num_of_Whitelist_Entries * (sizeof(Whitelist_Entry_t)) );
-    index_input += Num_of_Whitelist_Entries * (sizeof(Whitelist_Entry_t));
+    Osal_MemCpy( (void*)&cp1->Peer_Entry, (const void*)Peer_Entry, Num_of_Peer_Entries * (sizeof(Peer_Entry_t)) );
+    index_input += Num_of_Peer_Entries * (sizeof(Peer_Entry_t));
   }
   Osal_MemSet( &rq, 0, sizeof(rq) );
   rq.ogf = 0x3f;
@@ -1268,21 +1215,21 @@ tBleStatus aci_gap_set_oob_data( uint8_t Device_Type,
 }
 
 tBleStatus aci_gap_add_devices_to_resolving_list( uint8_t Num_of_Resolving_list_Entries,
-                                                  const Whitelist_Identity_Entry_t* Whitelist_Identity_Entry,
+                                                  const Identity_Entry_t* Identity_Entry,
                                                   uint8_t Clear_Resolving_List )
 {
   struct hci_request rq;
   uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
   aci_gap_add_devices_to_resolving_list_cp0 *cp0 = (aci_gap_add_devices_to_resolving_list_cp0*)(cmd_buffer);
-  aci_gap_add_devices_to_resolving_list_cp1 *cp1 = (aci_gap_add_devices_to_resolving_list_cp1*)(cmd_buffer + 1 + Num_of_Resolving_list_Entries * (sizeof(Whitelist_Identity_Entry_t)));
+  aci_gap_add_devices_to_resolving_list_cp1 *cp1 = (aci_gap_add_devices_to_resolving_list_cp1*)(cmd_buffer + 1 + Num_of_Resolving_list_Entries * (sizeof(Identity_Entry_t)));
   tBleStatus status = 0;
   int index_input = 0;
   cp0->Num_of_Resolving_list_Entries = Num_of_Resolving_list_Entries;
   index_input += 1;
   /* var_len_data input */
   {
-    Osal_MemCpy( (void*)&cp0->Whitelist_Identity_Entry, (const void*)Whitelist_Identity_Entry, Num_of_Resolving_list_Entries * (sizeof(Whitelist_Identity_Entry_t)) );
-    index_input += Num_of_Resolving_list_Entries * (sizeof(Whitelist_Identity_Entry_t));
+    Osal_MemCpy( (void*)&cp0->Identity_Entry, (const void*)Identity_Entry, Num_of_Resolving_list_Entries * (sizeof(Identity_Entry_t)) );
+    index_input += Num_of_Resolving_list_Entries * (sizeof(Identity_Entry_t));
     {
       cp1->Clear_Resolving_List = Clear_Resolving_List;
     }
@@ -1315,6 +1262,39 @@ tBleStatus aci_gap_remove_bonded_device( uint8_t Peer_Identity_Address_Type,
   Osal_MemSet( &rq, 0, sizeof(rq) );
   rq.ogf = 0x3f;
   rq.ocf = 0x0aa;
+  rq.cparam = cmd_buffer;
+  rq.clen = index_input;
+  rq.rparam = &status;
+  rq.rlen = 1;
+  if ( hci_send_req(&rq, FALSE) < 0 )
+    return BLE_STATUS_TIMEOUT;
+  return status;
+}
+
+tBleStatus aci_gap_add_devices_to_list( uint8_t Num_of_List_Entries,
+                                        const List_Entry_t* List_Entry,
+                                        uint8_t Mode )
+{
+  struct hci_request rq;
+  uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
+  aci_gap_add_devices_to_list_cp0 *cp0 = (aci_gap_add_devices_to_list_cp0*)(cmd_buffer);
+  aci_gap_add_devices_to_list_cp1 *cp1 = (aci_gap_add_devices_to_list_cp1*)(cmd_buffer + 1 + Num_of_List_Entries * (sizeof(List_Entry_t)));
+  tBleStatus status = 0;
+  int index_input = 0;
+  cp0->Num_of_List_Entries = Num_of_List_Entries;
+  index_input += 1;
+  /* var_len_data input */
+  {
+    Osal_MemCpy( (void*)&cp0->List_Entry, (const void*)List_Entry, Num_of_List_Entries * (sizeof(List_Entry_t)) );
+    index_input += Num_of_List_Entries * (sizeof(List_Entry_t));
+    {
+      cp1->Mode = Mode;
+    }
+    index_input += 1;
+  }
+  Osal_MemSet( &rq, 0, sizeof(rq) );
+  rq.ogf = 0x3f;
+  rq.ocf = 0x0ab;
   rq.cparam = cmd_buffer;
   rq.clen = index_input;
   rq.rparam = &status;
@@ -1389,6 +1369,221 @@ tBleStatus aci_gap_additional_beacon_set_data( uint8_t Adv_Data_Length,
   Osal_MemSet( &rq, 0, sizeof(rq) );
   rq.ogf = 0x3f;
   rq.ocf = 0x0b2;
+  rq.cparam = cmd_buffer;
+  rq.clen = index_input;
+  rq.rparam = &status;
+  rq.rlen = 1;
+  if ( hci_send_req(&rq, FALSE) < 0 )
+    return BLE_STATUS_TIMEOUT;
+  return status;
+}
+
+tBleStatus aci_gap_adv_set_configuration( uint8_t Adv_Mode,
+                                          uint8_t Advertising_Handle,
+                                          uint16_t Adv_Event_Properties,
+                                          uint32_t Primary_Adv_Interval_Min,
+                                          uint32_t Primary_Adv_Interval_Max,
+                                          uint8_t Primary_Adv_Channel_Map,
+                                          uint8_t Own_Address_Type,
+                                          uint8_t Peer_Address_Type,
+                                          const uint8_t* Peer_Address,
+                                          uint8_t Adv_Filter_Policy,
+                                          uint8_t Adv_TX_Power,
+                                          uint8_t Secondary_Adv_Max_Skip,
+                                          uint8_t Secondary_Adv_PHY,
+                                          uint8_t Adv_SID,
+                                          uint8_t Scan_Req_Notification_Enable )
+{
+  struct hci_request rq;
+  uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
+  aci_gap_adv_set_configuration_cp0 *cp0 = (aci_gap_adv_set_configuration_cp0*)(cmd_buffer);
+  tBleStatus status = 0;
+  int index_input = 0;
+  cp0->Adv_Mode = Adv_Mode;
+  index_input += 1;
+  cp0->Advertising_Handle = Advertising_Handle;
+  index_input += 1;
+  cp0->Adv_Event_Properties = Adv_Event_Properties;
+  index_input += 2;
+  cp0->Primary_Adv_Interval_Min = Primary_Adv_Interval_Min;
+  index_input += 4;
+  cp0->Primary_Adv_Interval_Max = Primary_Adv_Interval_Max;
+  index_input += 4;
+  cp0->Primary_Adv_Channel_Map = Primary_Adv_Channel_Map;
+  index_input += 1;
+  cp0->Own_Address_Type = Own_Address_Type;
+  index_input += 1;
+  cp0->Peer_Address_Type = Peer_Address_Type;
+  index_input += 1;
+  Osal_MemCpy( (void*)&cp0->Peer_Address, (const void*)Peer_Address, 6 );
+  index_input += 6;
+  cp0->Adv_Filter_Policy = Adv_Filter_Policy;
+  index_input += 1;
+  cp0->Adv_TX_Power = Adv_TX_Power;
+  index_input += 1;
+  cp0->Secondary_Adv_Max_Skip = Secondary_Adv_Max_Skip;
+  index_input += 1;
+  cp0->Secondary_Adv_PHY = Secondary_Adv_PHY;
+  index_input += 1;
+  cp0->Adv_SID = Adv_SID;
+  index_input += 1;
+  cp0->Scan_Req_Notification_Enable = Scan_Req_Notification_Enable;
+  index_input += 1;
+  Osal_MemSet( &rq, 0, sizeof(rq) );
+  rq.ogf = 0x3f;
+  rq.ocf = 0x0c0;
+  rq.cparam = cmd_buffer;
+  rq.clen = index_input;
+  rq.rparam = &status;
+  rq.rlen = 1;
+  if ( hci_send_req(&rq, FALSE) < 0 )
+    return BLE_STATUS_TIMEOUT;
+  return status;
+}
+
+tBleStatus aci_gap_adv_set_enable( uint8_t Enable,
+                                   uint8_t Num_Sets,
+                                   const Adv_Set_t* Adv_Set )
+{
+  struct hci_request rq;
+  uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
+  aci_gap_adv_set_enable_cp0 *cp0 = (aci_gap_adv_set_enable_cp0*)(cmd_buffer);
+  tBleStatus status = 0;
+  int index_input = 0;
+  cp0->Enable = Enable;
+  index_input += 1;
+  cp0->Num_Sets = Num_Sets;
+  index_input += 1;
+  Osal_MemCpy( (void*)&cp0->Adv_Set, (const void*)Adv_Set, Num_Sets * (sizeof(Adv_Set_t)) );
+  index_input += Num_Sets * (sizeof(Adv_Set_t));
+  Osal_MemSet( &rq, 0, sizeof(rq) );
+  rq.ogf = 0x3f;
+  rq.ocf = 0x0c1;
+  rq.cparam = cmd_buffer;
+  rq.clen = index_input;
+  rq.rparam = &status;
+  rq.rlen = 1;
+  if ( hci_send_req(&rq, FALSE) < 0 )
+    return BLE_STATUS_TIMEOUT;
+  return status;
+}
+
+tBleStatus aci_gap_adv_set_adv_data( uint8_t Advertising_Handle,
+                                     uint8_t Operation,
+                                     uint8_t Fragment_Preference,
+                                     uint8_t Advertising_Data_Length,
+                                     const uint8_t* Advertising_Data )
+{
+  struct hci_request rq;
+  uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
+  aci_gap_adv_set_adv_data_cp0 *cp0 = (aci_gap_adv_set_adv_data_cp0*)(cmd_buffer);
+  tBleStatus status = 0;
+  int index_input = 0;
+  cp0->Advertising_Handle = Advertising_Handle;
+  index_input += 1;
+  cp0->Operation = Operation;
+  index_input += 1;
+  cp0->Fragment_Preference = Fragment_Preference;
+  index_input += 1;
+  cp0->Advertising_Data_Length = Advertising_Data_Length;
+  index_input += 1;
+  Osal_MemCpy( (void*)&cp0->Advertising_Data, (const void*)Advertising_Data, Advertising_Data_Length );
+  index_input += Advertising_Data_Length;
+  Osal_MemSet( &rq, 0, sizeof(rq) );
+  rq.ogf = 0x3f;
+  rq.ocf = 0x0c2;
+  rq.cparam = cmd_buffer;
+  rq.clen = index_input;
+  rq.rparam = &status;
+  rq.rlen = 1;
+  if ( hci_send_req(&rq, FALSE) < 0 )
+    return BLE_STATUS_TIMEOUT;
+  return status;
+}
+
+tBleStatus aci_gap_adv_set_scan_resp_data( uint8_t Advertising_Handle,
+                                           uint8_t Operation,
+                                           uint8_t Fragment_Preference,
+                                           uint8_t Scan_Response_Data_Length,
+                                           const uint8_t* Scan_Response_Data )
+{
+  struct hci_request rq;
+  uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
+  aci_gap_adv_set_scan_resp_data_cp0 *cp0 = (aci_gap_adv_set_scan_resp_data_cp0*)(cmd_buffer);
+  tBleStatus status = 0;
+  int index_input = 0;
+  cp0->Advertising_Handle = Advertising_Handle;
+  index_input += 1;
+  cp0->Operation = Operation;
+  index_input += 1;
+  cp0->Fragment_Preference = Fragment_Preference;
+  index_input += 1;
+  cp0->Scan_Response_Data_Length = Scan_Response_Data_Length;
+  index_input += 1;
+  Osal_MemCpy( (void*)&cp0->Scan_Response_Data, (const void*)Scan_Response_Data, Scan_Response_Data_Length );
+  index_input += Scan_Response_Data_Length;
+  Osal_MemSet( &rq, 0, sizeof(rq) );
+  rq.ogf = 0x3f;
+  rq.ocf = 0x0c3;
+  rq.cparam = cmd_buffer;
+  rq.clen = index_input;
+  rq.rparam = &status;
+  rq.rlen = 1;
+  if ( hci_send_req(&rq, FALSE) < 0 )
+    return BLE_STATUS_TIMEOUT;
+  return status;
+}
+
+tBleStatus aci_gap_adv_remove_set( uint8_t Advertising_Handle )
+{
+  struct hci_request rq;
+  uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
+  aci_gap_adv_remove_set_cp0 *cp0 = (aci_gap_adv_remove_set_cp0*)(cmd_buffer);
+  tBleStatus status = 0;
+  int index_input = 0;
+  cp0->Advertising_Handle = Advertising_Handle;
+  index_input += 1;
+  Osal_MemSet( &rq, 0, sizeof(rq) );
+  rq.ogf = 0x3f;
+  rq.ocf = 0x0c4;
+  rq.cparam = cmd_buffer;
+  rq.clen = index_input;
+  rq.rparam = &status;
+  rq.rlen = 1;
+  if ( hci_send_req(&rq, FALSE) < 0 )
+    return BLE_STATUS_TIMEOUT;
+  return status;
+}
+
+tBleStatus aci_gap_adv_clear_sets( void )
+{
+  struct hci_request rq;
+  tBleStatus status = 0;
+  Osal_MemSet( &rq, 0, sizeof(rq) );
+  rq.ogf = 0x3f;
+  rq.ocf = 0x0c5;
+  rq.rparam = &status;
+  rq.rlen = 1;
+  if ( hci_send_req(&rq, FALSE) < 0 )
+    return BLE_STATUS_TIMEOUT;
+  return status;
+}
+
+tBleStatus aci_gap_adv_set_random_address( uint8_t Advertising_Handle,
+                                           const uint8_t* Random_Address )
+{
+  struct hci_request rq;
+  uint8_t cmd_buffer[BLE_CMD_MAX_PARAM_LEN];
+  aci_gap_adv_set_random_address_cp0 *cp0 = (aci_gap_adv_set_random_address_cp0*)(cmd_buffer);
+  tBleStatus status = 0;
+  int index_input = 0;
+  cp0->Advertising_Handle = Advertising_Handle;
+  index_input += 1;
+  Osal_MemCpy( (void*)&cp0->Random_Address, (const void*)Random_Address, 6 );
+  index_input += 6;
+  Osal_MemSet( &rq, 0, sizeof(rq) );
+  rq.ogf = 0x3f;
+  rq.ocf = 0x0c6;
   rq.cparam = cmd_buffer;
   rq.clen = index_input;
   rq.rparam = &status;

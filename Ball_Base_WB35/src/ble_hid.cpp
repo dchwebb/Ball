@@ -108,7 +108,6 @@ void HidApp::HIDConnectionNotification()
 		state = HidState::Idle;
 		action = HidAction::None;
 		HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
 		break;
 
 	default:
@@ -385,7 +384,6 @@ void HidApp::HIDServiceDiscovery()
 			aci_gatt_write_char_desc(hidApp.connHandle, hidApp.HIDNotificationDescHandle, 2, &enable);
 
 			hidApp.state = HidState::ClientConnected;
-			HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
 			break;
 
 		case HidState::Disconnect:

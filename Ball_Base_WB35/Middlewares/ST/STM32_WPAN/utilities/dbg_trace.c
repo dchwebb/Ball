@@ -4,18 +4,17 @@
   * @author  MCD Application Team
   * @brief   This file contains the Interface with BLE Drivers functions.
   ******************************************************************************
-   * @attention
+  * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics. 
-  * All rights reserved.</center></h2>
+  * Copyright (c) 2018-2021 STMicroelectronics.
+  * All rights reserved.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the 
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
- */
+  */
 
 
 /* Includes ------------------------------------------------------------------*/
@@ -139,7 +138,7 @@ const char *DbgTraceGetFileName(const char *fullpath)
  * @param  *pBuffer  Pointer on buffer to be output
  * @param  u32Length buffer Size
  * @paramt strFormat string as expected by "printf" function. Used to desrcibe buffer content information.
- * @param  ...       Paremeters to be "formatted" in strFormat string (if any)
+ * @param  ...       Parameters to be "formatted" in strFormat string (if any)
  * @retval None
  */
 
@@ -225,12 +224,11 @@ void DbgTraceInit( void )
  * @param	...: arguments to be formatted in format string
  * @retval none
  */
-#ifdef DWDISABLE
-size_t _write(int handle, const unsigned char * buf, size_t bufSize)
-{
-  return ( DbgTraceWrite(handle, buf, bufSize) );
-}
-#endif
+//size_t _write(int handle, const unsigned char * buf, size_t bufSize)
+//{
+//  return ( DbgTraceWrite(handle, buf, bufSize) );
+//}
+
 #else
 /**
  * @brief __write: override the _write standard lib function to redirect printf to USART.
@@ -296,14 +294,14 @@ size_t DbgTraceWrite(int handle, const unsigned char * buf, size_t bufSize)
     RESTORE_PRIMASK();
 
     DbgOutputTraces((uint8_t*)buf, bufSize, DbgTrace_TxCpltCallback);
-//    while (!DbgTracePeripheralReady);
+    while (!DbgTracePeripheralReady);
 #endif
     /* CS END */
   }
   return ( chars_written );
 }
 
-#if   defined ( __CC_ARM )     /* Keil */
+#if defined ( __CC_ARM ) || defined (__ARMCC_VERSION) /* Keil */
 
 /**
   Called from assert() and prints a message on stderr and calls abort().
@@ -359,4 +357,4 @@ int fputc(int ch, FILE *f)
 /**
  * @}
  */
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+

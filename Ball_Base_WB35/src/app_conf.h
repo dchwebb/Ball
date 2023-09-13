@@ -222,11 +222,14 @@
 #define CFG_BLE_MASTER_SCA   0
 
 /**
- *  Source for the low speed clock for RF wake-up
- *  1 : external high speed crystal HSE/32/32
- *  0 : external low speed crystal ( no calibration )
+ * LsSource
+ * Some information for Low speed clock mapped in bits field
+ * - bit 0:   1: Calibration for the RF system wakeup clock source   0: No calibration for the RF system wakeup clock source
+ * - bit 1:   1: STM32WB5M Module device                             0: Other devices as STM32WBxx SOC, STM32WB1M module
+ * - bit 2:   1: HSE/1024 Clock config                               0: LSE Clock config
  */
-#define CFG_BLE_LSE_SOURCE  0
+#define CFG_BLE_LS_SOURCE  (SHCI_C2_BLE_INIT_CFG_BLE_LS_NOCALIB | SHCI_C2_BLE_INIT_CFG_BLE_LS_OTHER_DEV | SHCI_C2_BLE_INIT_CFG_BLE_LS_CLK_HSE_1024)
+
 
 /**
  * Start up time of the high speed (16 or 32 MHz) crystal oscillator in units of 625/256 us (~2.44 us)
@@ -266,13 +269,78 @@
  *          0: LE Power Class 2-3
  * other bits: reserved (shall be set to 0)
  */
-#define CFG_BLE_OPTIONS  (SHCI_C2_BLE_INIT_OPTIONS_LL_HOST | SHCI_C2_BLE_INIT_OPTIONS_WITH_SVC_CHANGE_DESC | SHCI_C2_BLE_INIT_OPTIONS_DEVICE_NAME_RW | SHCI_C2_BLE_INIT_OPTIONS_POWER_CLASS_2_3)
+#define CFG_BLE_OPTIONS  (SHCI_C2_BLE_INIT_OPTIONS_LL_HOST | SHCI_C2_BLE_INIT_OPTIONS_WITH_SVC_CHANGE_DESC | SHCI_C2_BLE_INIT_OPTIONS_DEVICE_NAME_RW | SHCI_C2_BLE_INIT_OPTIONS_NO_EXT_ADV | SHCI_C2_BLE_INIT_OPTIONS_NO_CS_ALGO2 | SHCI_C2_BLE_INIT_OPTIONS_FULL_GATTDB_NVM | SHCI_C2_BLE_INIT_OPTIONS_GATT_CACHING_NOTUSED | SHCI_C2_BLE_INIT_OPTIONS_POWER_CLASS_2_3)
+
+/**
+ * BLE stack Options_extension flags to be configured with:
+ * - SHCI_C2_BLE_INIT_OPTIONS_APPEARANCE_WRITABLE
+ * - SHCI_C2_BLE_INIT_OPTIONS_APPEARANCE_READONLY
+ * - SHCI_C2_BLE_INIT_OPTIONS_ENHANCED_ATT_SUPPORTED
+ * - SHCI_C2_BLE_INIT_OPTIONS_ENHANCED_ATT_NOTSUPPORTED
+ * which are used to set following configuration bits:
+ * (bit 0): 1: appearance Writable
+ *          0: appearance Read-Only
+ * (bit 1): 1: Enhanced ATT supported
+ *          0: Enhanced ATT not supported
+ * other bits: reserved (shall be set to 0)
+ */
+#define CFG_BLE_OPTIONS_EXT  (SHCI_C2_BLE_INIT_OPTIONS_APPEARANCE_READONLY | SHCI_C2_BLE_INIT_OPTIONS_ENHANCED_ATT_NOTSUPPORTED)
 
 #define CFG_BLE_MAX_COC_INITIATOR_NBR   (32)
 
 #define CFG_BLE_MIN_TX_POWER            (0)
 
 #define CFG_BLE_MAX_TX_POWER            (0)
+
+/**
+ * BLE Rx model configuration flags to be configured with:
+ * - SHCI_C2_BLE_INIT_RX_MODEL_AGC_RSSI_LEGACY
+ * - SHCI_C2_BLE_INIT_RX_MODEL_AGC_RSSI_BLOCKER
+ * which are used to set following configuration bits:
+ * (bit 0): 1: agc_rssi model improved vs RF blockers
+ *          0: Legacy agc_rssi model
+ * other bits: reserved (shall be set to 0)
+ */
+
+#define CFG_BLE_RX_MODEL_CONFIG         (SHCI_C2_BLE_INIT_RX_MODEL_AGC_RSSI_LEGACY)
+
+/* Maximum number of advertising sets.
+ * Range: 1 .. 8 with limitation:
+ * This parameter is linked to CFG_BLE_MAX_ADV_DATA_LEN such as both compliant with allocated Total memory computed with BLE_EXT_ADV_BUFFER_SIZE based
+ * on Max Extended advertising configuration supported.
+ * This parameter is considered by the CPU2 when CFG_BLE_OPTIONS has SHCI_C2_BLE_INIT_OPTIONS_EXT_ADV flag set
+ */
+
+#define CFG_BLE_MAX_ADV_SET_NBR     (3)
+
+ /* Maximum advertising data length (in bytes)
+ * Range: 31 .. 1650 with limitation:
+ * This parameter is linked to CFG_BLE_MAX_ADV_SET_NBR such as both compliant with allocated Total memory computed with BLE_EXT_ADV_BUFFER_SIZE based
+ * on Max Extended advertising configuration supported.
+ * This parameter is considered by the CPU2 when CFG_BLE_OPTIONS has SHCI_C2_BLE_INIT_OPTIONS_EXT_ADV flag set
+ */
+
+#define CFG_BLE_MAX_ADV_DATA_LEN    (1650)
+
+ /* RF TX Path Compensation Value (16-bit signed integer). Units: 0.1 dB.
+  * Range: -1280 .. 1280
+  */
+
+#define CFG_BLE_TX_PATH_COMPENS    (0)
+
+ /* RF RX Path Compensation Value (16-bit signed integer). Units: 0.1 dB.
+  * Range: -1280 .. 1280
+  */
+
+#define CFG_BLE_RX_PATH_COMPENS    (0)
+
+  /* BLE core version (16-bit signed integer).
+   * - SHCI_C2_BLE_INIT_BLE_CORE_5_2
+   * - SHCI_C2_BLE_INIT_BLE_CORE_5_3
+   * which are used to set: 11(5.2), 12(5.3).
+   */
+
+#define CFG_BLE_CORE_VERSION   (SHCI_C2_BLE_INIT_BLE_CORE_5_3)
 
 /******************************************************************************
  * Transport Layer
