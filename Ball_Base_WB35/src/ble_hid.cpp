@@ -283,6 +283,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 
 void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
 {
+
 	usb.SendString("* Report Map:\r\n" + HexToString(data, len, true) + "\r\n");
 }
 
