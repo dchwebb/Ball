@@ -9,8 +9,9 @@ extern "C" {
 size_t _write(int handle, const unsigned char* buf, size_t bufSize)
 {
 	if (usb.devState == USBMain::DeviceState::Configured) {
-	return usb.SendString(buf, bufSize);
+		return usb.SendString(buf, bufSize);
 	} else {
+		++usb.stringErrors;
 		return 0;
 	}
 }
@@ -517,6 +518,7 @@ size_t USBMain::SendData(const uint8_t* data, uint16_t len, uint8_t endpoint)
 		EPStartXfer(Direction::in, endpoint, len);
 		return len;
 	} else {
+		++stringErrors;
 		return 0;
 	}
 }

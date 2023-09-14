@@ -13,10 +13,6 @@ struct AdvertisingReport {
 	uint8_t manufactData[16];
 	uint8_t manufactLen;
 	std::string shortName;
-
-	std::string formatAddress() {
-		return HexByte(address[5]) + HexByte(address[4]) + HexByte(address[3]) + HexByte(address[2]) + HexByte(address[1]) + HexByte(address[0]);
-	}
 };
 
 
@@ -37,7 +33,7 @@ public:
 	void ServiceControlCallback(void* pckt);
 
 private:
-	enum class RequestAction {ScanConnect, ScanInfo, GetReportMap};
+	enum class RequestAction {None, ScanConnect, ScanInfo, GetReportMap} action = RequestAction::None;
 	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
 	enum class GapAddress : uint8_t {Public = 0, StaticRandom = 1, ResolvablePrivate = 2, NonResolvablePrivate = 3} ;
 	enum class SecureSupport : uint8_t {NotSupported = 0, Optional = 1, Mandatory = 2};
@@ -73,10 +69,7 @@ private:
 
 	bool deviceServerFound = false;
 	GapAddress deviceAddressType;
-
 	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
-	RequestAction action;
-	std::string advMsg;
 	uint8_t bd_addr_udn[bdddrSize];
 	uint8_t deviceAddress[bdddrSize];
 

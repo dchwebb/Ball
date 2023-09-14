@@ -102,6 +102,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 						if (action == RequestAction::ScanConnect && deviceServerFound && deviceConnectionStatus != BleApp::ConnectionStatus::ClientConnected) {
 							UTIL_SEQ_SetTask(1 << CFG_TASK_ConnectRequest, CFG_SCH_PRIO_0);
 						}
+						action = RequestAction::None;
 					}
 				}
 				break;
@@ -208,7 +209,9 @@ void BleApp::ServiceControlCallback(void* pckt)
 										deviceServerFound = true;
 										memcpy(&deviceAddress, advertisingEvent->Advertising_Report[0].Address, bdddrSize);
 										deviceAddressType = (GapAddress)advertisingEvent->Advertising_Report[0].Address_Type;
-										aci_gap_terminate_gap_proc(0x2);		// If connecting terminate scan - will fire ACI_GAP_PROC_COMPLETE_VSEVT_CODE event which will initiate connection
+
+										// If connecting terminate scan - will fire ACI_GAP_PROC_COMPLETE_VSEVT_CODE event which will initiate connection
+										aci_gap_terminate_gap_proc(GAP_GENERAL_DISCOVERY_PROC);
 									}
 									break;
 
@@ -257,15 +260,28 @@ void BleApp::ServiceControlCallback(void* pckt)
 
 void BleApp::PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
 {
-	advMsg = "* BLE: Found device:"
-			"\r\n  Address: " + ar->formatAddress() +
-			"\r\n  Flags: " + std::bitset<8>(ar->flags).to_string() +
-			"\r\n  Name: " + ar->shortName +
-			"\r\n  Appearance: " + HexByte(ar->appearance) +
-			"\r\n  Service class: " + HexByte(ar->serviceClasses) +
-			"\r\n  Manufacturer data: " + HexToString(ar->manufactData, ar->manufactLen, true) +
-			"\r\n";
-	usb.SendString(advMsg);
+	// Generate a c string containing the manufacturer's data as hex chars
+	char manuDataBuf[50];
+	for (uint8_t i = 0; i < ar->manufactLen; ++i) {
+		sprintf(&manuDataBuf[i * 3], "%02X ", ar->manufactData[i]);			// sprintf will null terminate
+	}
+
+	usb.cdc.PrintString("* BLE: Found device:"
+			"\r\n  Address: %02X%02X%02X%02X%02X%02X"
+			"\r\n  Flags: %s"
+			"\r\n  Name: %s"
+			"\r\n  Appearance: %02X"
+			"\r\n  Service class: %02X"
+			"\r\n  Manufacturer data: %s"
+			"\r\n",
+			ar->address[5], ar->address[4], ar->address[3], ar->address[2], ar->address[1], ar->address[0],
+			std::bitset<8>(ar->flags).to_string().c_str(),
+			ar->shortName.c_str(),
+			ar->appearance,
+			ar->serviceClasses,
+			manuDataBuf
+	);
+
 }
 
 
@@ -281,6 +297,11 @@ BleApp::ConnectionStatus BleApp::GetClientConnectionStatus(uint16_t connHandle)
 void BleApp::ScanInfo()
 {
 	if (bleApp.deviceConnectionStatus == ConnectionStatus::Idle) {
+		if (bleApp.action == RequestAction::ScanInfo) {
+			aci_gap_terminate_gap_proc(GAP_GENERAL_DISCOVERY_PROC);			// If currently scanning terminate
+			printf("Still scanning ...\n");
+			return;
+		}
 		bleApp.action = RequestAction::ScanInfo;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_ScanRequest, CFG_SCH_PRIO_0);
 	} else {
@@ -408,9 +429,9 @@ void BleApp::ConnectRequest()
 	if (bleApp.deviceConnectionStatus != ConnectionStatus::ClientConnected) {
 		tBleStatus result = aci_gap_create_connection(SCAN_P,
 				SCAN_L,
-				(uint8_t)bleApp.deviceAddressType,		// Peer address type & address
+				(uint8_t)bleApp.deviceAddressType,				// Peer address type & address
 				bleApp.deviceAddress,
-				(uint8_t)bleApp.Security.BLEAddressType,					// Own address type
+				(uint8_t)bleApp.Security.BLEAddressType,		// Own address type
 				CONN_P1,
 				CONN_P2,
 				0,

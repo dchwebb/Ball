@@ -72,6 +72,7 @@ public:
 
 	bool classPendingData = false;			// Set when class setup command received and data pending
 	bool transmitting;
+	uint32_t stringErrors = 0;				// For debug capture number of times sending aborted because busy
 
 private:
 	static constexpr std::string_view manufacturerString = "Mountjoy Modular";

@@ -141,10 +141,22 @@ void CDCHandler::ProcessCommand()
 		hidApp.outputGyro = !hidApp.outputGyro;
 
 	} else {
-		usb->SendString("Unrecognised command: " + std::string(comCmd) + " Type 'help' for supported commands\r\n");
+		PrintString("Unrecognised command: %s Type 'help' for supported commands\r\n", comCmd);
+		//usb->SendString("Unrecognised command: " + std::string(comCmd) + " Type 'help' for supported commands\r\n");
 	}
 
 	cmdPending = false;
+}
+
+
+void CDCHandler::PrintString(const char* format, ...)
+{
+	va_list args;
+	va_start (args, format);
+	vsnprintf (buf, bufSize, format, args);
+	va_end (args);
+
+	usb->SendString(buf);
 }
 
 
