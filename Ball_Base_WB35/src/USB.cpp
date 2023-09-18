@@ -151,7 +151,7 @@ void USBMain::EPStartXfer(const Direction direction, uint8_t endpoint, uint32_t 
 }
 
 
-void USBMain::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pcd.c
+void USBMain::USBInterruptHandler()							// Originally in Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pcd.c
 {
 	// Handle spurious interrupt
 	USBP->ISTR &= ~(USB_ISTR_SOF | USB_ISTR_ESOF);
@@ -180,7 +180,7 @@ void USBMain::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_
 					EPStartXfer(Direction::in, 0, classByEP[epIndex]->inBuffRem);
 					EPStartXfer(Direction::out, 0, 0);
 				} else {
-					// FIXME if (rem_length ==  maxpacket) etc - where non zero size packet and last packet is a multiple of max packet size
+					// FIXME if (rem_length == maxpacket) etc - where non zero size packet and last packet is a multiple of max packet size
 					SetTxStatus(0, USB_EP_TX_STALL);
 					EPStartXfer(Direction::out, 0, 0);
 				}
@@ -228,21 +228,27 @@ void USBMain::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_
 				}
 				SetRxStatus(epIndex, USB_EP_RX_VALID);
 
-
 				classByEP[epIndex]->DataOut();
 			}
 
 			if ((USB_EPR[epIndex].EPR & USB_EP_CTR_TX) != 0) {
-				transmitting = false;
+
 				ClearTxInterrupt(epIndex);
 
 				uint16_t txBytes = USB_PMA[epIndex].GetTXCount();
 				if (classByEP[epIndex]->inBuffSize >= txBytes) {					// Transmitting data larger than buffer size
 					classByEP[epIndex]->inBuffSize -= txBytes;
 					classByEP[epIndex]->inBuff += txBytes;
-					EPStartXfer(Direction::in, epIndex, classByEP[epIndex]->inBuffSize);
-				}
 
+					// Send IN packet if data to be sent, or size of last block in sequence is exactly size of maximum packet
+					if (classByEP[epIndex]->inBuffSize > 0 || (txBytes == ep_maxPacket && classByEP[epIndex]->inBuffSize == 0)) {
+						EPStartXfer(Direction::in, epIndex, classByEP[epIndex]->inBuffSize);
+					}
+				}
+				if (classByEP[epIndex]->inBuffSize == 0) {
+					transmitting = false;
+					classByEP[epIndex]->DataIn();
+				}
 			}
 
 		}
@@ -528,6 +534,7 @@ void USBMain::SendString(const char* s)
 {
 	uint16_t counter = 0;
 	while (transmitting && counter < 10000) {
+		++stringErrors;
 		++counter;
 	}
 	SendData((uint8_t*)s, strlen(s), CDC_In);
@@ -544,6 +551,7 @@ size_t USBMain::SendString(const unsigned char* s, size_t len)
 {
 	uint16_t counter = 0;
 	while (transmitting && counter < 10000) {
+		++stringErrors;
 		++counter;
 	}
 	return SendData((uint8_t*)s, len, CDC_In);

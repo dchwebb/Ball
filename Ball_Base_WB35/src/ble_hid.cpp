@@ -131,7 +131,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 				for (uint8_t i = 0; i < numServ; i++) {
 					uint16_t uuid = *((uint16_t*)&attributeDataEvent->Attribute_Data_List[idx]);
 
-					servicetext+= "  - Service UUID: 0x" + HexToString((uint32_t)uuid, false);
+					servicetext += "  - Service UUID: " + std::string(usb.cdc.HexToString(uuid));
 					if (uuid == BATTERY_SERVICE_UUID) {
 						hidApp.BatteryServiceHandle = *((uint16_t*)&attributeDataEvent->Attribute_Data_List[idx - 4]);
 						hidApp.BatteryServiceEndHandle = *((uint16_t*)&attributeDataEvent->Attribute_Data_List[idx - 2]);
@@ -174,22 +174,22 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 
 					switch (uuid) {
 					case BATTERY_LEVEL_CHAR_UUID:
-						printf("  - uuid %x handle: %x [Battery Notification]\n", uuid, handle);
+						printf("  - UUID: %04X handle: %X [Battery Notification]\n", uuid, handle);
 						hidApp.state = HidState::DiscoveredCharacteristics;
 						hidApp.BatteryNotificationCharHdle = handle;
 						break;
 					case REPORT_CHAR_UUID:
-						printf("  - uuid %x handle: %x [HID Report Notification\n", uuid, handle);
+						printf("  - UUID: %04X handle: %X [HID Report Notification]\n", uuid, handle);
 						hidApp.state = HidState::DiscoveredCharacteristics;
 						hidApp.HIDNotificationCharHdle = handle;
 						break;
 					case REPORT_MAP_CHAR_UUID:
-						printf("  - uuid %x handle: %x [HID Report Map]\n", uuid, handle);
+						printf("  - UUID: %04X handle: %X [HID Report Map]\n", uuid, handle);
 						hidApp.state = HidState::DiscoveredCharacteristics;
 						hidApp.HIDReportMapHdle = handle;
 						break;
 					default:
-						printf("  - uuid %x handle: %x\n", uuid, handle);
+						printf("  - UUID: %04X handle: %X\n", uuid, handle);
 					}
 
 					characteristicsEvent->Data_Length -= 7;
@@ -283,14 +283,13 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 
 void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
 {
-
-	usb.SendString("* Report Map:\r\n" + HexToString(data, len, true) + "\r\n");
+	usb.cdc.PrintString("* Report Map:\r\n%s\r\n", usb.cdc.HexToString(data, len, true));
 }
 
 
 void HidApp::BatteryNotification(uint8_t* payload, uint8_t len)
 {
-		printf(" -- Battery Notification: x: %d; y: %d; z: %d; Battery: %d%%\n", position3D.x, position3D.y, position3D.z, payload[0]);
+	printf(" -- Battery Notification: x: %d; y: %d; z: %d; Battery: %d%%\n", position3D.x, position3D.y, position3D.z, payload[0]);
 }
 
 

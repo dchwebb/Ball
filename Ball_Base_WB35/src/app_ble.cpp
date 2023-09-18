@@ -260,26 +260,20 @@ void BleApp::ServiceControlCallback(void* pckt)
 
 void BleApp::PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
 {
-	// Generate a c string containing the manufacturer's data as hex chars
-	char manuDataBuf[50];
-	for (uint8_t i = 0; i < ar->manufactLen; ++i) {
-		sprintf(&manuDataBuf[i * 3], "%02X ", ar->manufactData[i]);			// sprintf will null terminate
-	}
-
-	usb.cdc.PrintString("* BLE: Found device:"
+	usb.cdc.PrintString("* BLE Found device:"
 			"\r\n  Address: %02X%02X%02X%02X%02X%02X"
 			"\r\n  Flags: %s"
 			"\r\n  Name: %s"
 			"\r\n  Appearance: %02X"
 			"\r\n  Service class: %02X"
 			"\r\n  Manufacturer data: %s"
-			"\r\n",
+			"\r\n\r\n",
 			ar->address[5], ar->address[4], ar->address[3], ar->address[2], ar->address[1], ar->address[0],
 			std::bitset<8>(ar->flags).to_string().c_str(),
 			ar->shortName.c_str(),
 			ar->appearance,
 			ar->serviceClasses,
-			manuDataBuf
+			usb.cdc.HexToString(ar->manufactData, ar->manufactLen, true)
 	);
 
 }

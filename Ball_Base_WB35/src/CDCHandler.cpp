@@ -40,7 +40,7 @@ void CDCHandler::ProcessCommand()
 				"scan               -  List BLE devices\r\n"
 				"connect            -  Connect to HID BLE device\r\n"
 				"disconnect         -  Disconnect to HID BLE device\r\n"
-				"hidmap:x12			-  Print HID report map at 12 hex digit device address\r\n"
+				"hidmap:x12         -  Print HID report map at 12 hex digit device address\r\n"
 				"sensitivity:x      -  Amount to divide raw gyro data\r\n"
 				"offset:x=?         -  X/Y/Z offset (more negative if falling)\r\n"
 				"calibrate          -  Recenter and calibrate gyro offsets\r\n"
@@ -142,7 +142,6 @@ void CDCHandler::ProcessCommand()
 
 	} else {
 		PrintString("Unrecognised command: %s Type 'help' for supported commands\r\n", comCmd);
-		//usb->SendString("Unrecognised command: " + std::string(comCmd) + " Type 'help' for supported commands\r\n");
 	}
 
 	cmdPending = false;
@@ -157,6 +156,25 @@ void CDCHandler::PrintString(const char* format, ...)
 	va_end (args);
 
 	usb->SendString(buf);
+}
+
+
+char* CDCHandler::HexToString(const uint8_t* v, uint32_t len, const bool spaces) {
+	const uint8_t byteLen = spaces ? 3 : 2;
+	uint32_t pos = 0;
+	len = std::min(maxStrLen / byteLen, len);
+
+	for (uint8_t i = 0; i < len; ++i) {
+		pos += sprintf(&stringBuf[pos], spaces ? "%02X " : "%02X", v[i]);
+	}
+
+	return (char*)&stringBuf;
+}
+
+
+char* CDCHandler::HexToString(const uint16_t v) {
+	sprintf(stringBuf, "%04X", v);
+	return (char*)&stringBuf;
 }
 
 

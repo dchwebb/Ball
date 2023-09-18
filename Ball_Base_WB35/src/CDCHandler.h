@@ -19,12 +19,15 @@ public:
 
 	void ProcessCommand();
 	void PrintString(const char* format, ...);
+	char* HexToString(const uint8_t* v, uint32_t len, const bool spaces = false);
+	char* HexToString(const uint16_t v);
 	int32_t ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low, const int32_t high);
 
 	bool cmdPending = false;
 	static constexpr uint32_t maxCmdLen = 40;
 	char comCmd[maxCmdLen];
-
+	static constexpr uint32_t maxStrLen = 100;
+	char stringBuf[maxStrLen];
 
 	struct LineCoding {
 		uint32_t bitrate;    		// Data terminal rate in bits per sec.

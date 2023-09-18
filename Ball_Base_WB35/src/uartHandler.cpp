@@ -58,10 +58,6 @@ char uartBuf[100];
 std::string HexToString(const uint8_t* v, uint32_t len, const bool spaces) {
 	uint32_t pos = 0, cnt = 0;
 	len = std::min(50ul, len);
-//	while (len > 0) {
-//		pos += sprintf(&uartBuf[pos], (spaces ? "%02X ": "%02X"), v[cnt++]);
-//		len--;
-//	}
 
 	for (uint8_t i = 0; i < len; ++i) {
 		pos += sprintf(&uartBuf[pos], "%02X ", v[cnt++]);
