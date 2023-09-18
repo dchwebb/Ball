@@ -161,10 +161,11 @@ typedef enum
 {
     CFG_TASK_ScanRequest,
     CFG_TASK_ConnectRequest,
-    CFG_TASK_HIDServiceDiscovery,
+    CFG_TASK_DisconnectRequest,
+	CFG_TASK_HIDServiceDiscovery,
+	CFG_TASK_GetBatteryLevel,
     CFG_TASK_CONN_UPDATE_ID,
     CFG_TASK_HCI_ASYNCH_EVT_ID,
-    CFG_TASK_SW1_BUTTON_PUSHED_ID,
     CFG_LAST_TASK_ID_WITH_HCICMD,                                               // Last in the list
 } CFG_Task_Id_With_HCI_Cmd_t;
 

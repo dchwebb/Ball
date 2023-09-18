@@ -21,12 +21,12 @@ public:
 	enum class ConnectionStatus {Idle, ClientConnected, Connecting};
 
 	ConnectionStatus deviceConnectionStatus;
-	static constexpr uint8_t bdddrSize = 6;
+	static constexpr uint8_t bleAddrSize = 6;
 	bool coprocessorFailure = false;
 
 	void Init();
 	ConnectionStatus GetClientConnectionStatus(uint16_t connHandle);
-	void ScanAndConnect();
+	void SwitchConnectState();
 	void GetHidReportMap(uint8_t* address);
 	void ScanInfo();
 	static void DisconnectRequest();
@@ -70,8 +70,8 @@ private:
 	bool deviceServerFound = false;
 	GapAddress deviceAddressType;
 	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
-	uint8_t bd_addr_udn[bdddrSize];
-	uint8_t deviceAddress[bdddrSize];
+	uint8_t bd_addr_udn[bleAddrSize];
+	uint8_t deviceAddress[bleAddrSize];
 
 	struct {
 		uint8_t ioCapability = (uint8_t)IOCapability::NoIO;				// IO capability of the device
@@ -94,7 +94,6 @@ private:
 	static void StatusNot(HCI_TL_CmdStatus_t status);
 	void PrintAdvData(std::unique_ptr<AdvertisingReport> ar);
 	void HciGapGattInit();
-	void TransportLayerInit();
 	uint8_t* GetBdAddress();
 };
 

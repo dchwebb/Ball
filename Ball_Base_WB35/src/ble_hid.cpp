@@ -11,6 +11,7 @@ HidApp hidApp;
 void HidApp::Init(void)
 {
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HIDServiceDiscovery, UTIL_SEQ_RFU, HIDServiceDiscovery);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_GetBatteryLevel, UTIL_SEQ_RFU, GetBatteryLevel);
 	state = HidState::Idle;
 	SVCCTL_RegisterCltHandler(HIDEventHandler);
 }
@@ -70,6 +71,15 @@ void HidApp::HidNotification(uint8_t* payload, uint8_t len)
 	TIM2->CCR1 = position3D.x;
 	TIM2->CCR2 = position3D.y;
 	TIM2->CCR3 = position3D.z;
+}
+
+
+void HidApp::GetBatteryLevel()
+{
+	if (hidApp.state == HidApp::HidState::ClientConnected) {
+		printf("* GATT : Get Battery Level\n");
+		aci_gatt_read_char_value(hidApp.connHandle, hidApp.BatteryNotificationCharHdle);
+	}
 }
 
 
@@ -243,6 +253,13 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 		}
 		break;
 
+		case ACI_ATT_READ_RESP_VSEVT_CODE:
+		{
+			auto *pr = (aci_att_read_resp_event_rp0*)bleCoreEvent->data;			// FIXME - need to establish state before assumiong battery level
+			printf("Battery Level: %d%%\n\r", pr->Attribute_Value[0]);
+		}
+		break;
+
 		case ACI_GATT_NOTIFICATION_VSEVT_CODE:
 		{
 			auto* pr = (aci_gatt_notification_event_rp0*)bleCoreEvent->data;
@@ -290,6 +307,14 @@ void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
 void HidApp::BatteryNotification(uint8_t* payload, uint8_t len)
 {
 	printf(" -- Battery Notification: x: %d; y: %d; z: %d; Battery: %d%%\n", position3D.x, position3D.y, position3D.z, payload[0]);
+}
+
+
+void HidApp::GetReportMap()
+{
+	printf("* GATT : Read Report Map\n");
+	//aci_gatt_read_char_value(hidApp.connHandle, hidApp.HIDReportMapHdle);
+	aci_gatt_read_long_char_value(hidApp.connHandle, hidApp.HIDReportMapHdle, 0);
 }
 
 

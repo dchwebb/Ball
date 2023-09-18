@@ -3,6 +3,7 @@
 #include <charconv>
 extern "C" {
 #include "shci.h"
+#include "stm32_seq.h"
 }
 #include "app_ble.h"
 #include "ble_hid.h"
@@ -47,6 +48,7 @@ void CDCHandler::ProcessCommand()
 				"recenter           -  Recenter all channels\r\n"
 				"outputgyro         -  Periodically output raw gyro data\r\n"
 				"fwversion          -  Read firmware version\r\n"
+				"battery            -  Get Battery Level\r\n"
 				"\r\n"
 
 #if (USB_DEBUG)
@@ -62,7 +64,7 @@ void CDCHandler::ProcessCommand()
 #endif
 
 	} else if (cmd.compare("connect") == 0) {						// Connect to HID device
-		bleApp.ScanAndConnect();
+		bleApp.SwitchConnectState();
 		usb->SendString("Connecting ...\r\n");
 
 	} else if (cmd.compare("scan") == 0) {							// List ble devices
@@ -73,10 +75,10 @@ void CDCHandler::ProcessCommand()
 		if (cmd.length() != 19) {
 			usb->SendString("Address format not recognised\r\n");
 		} else {
-			uint8_t addr[BleApp::bdddrSize];
+			uint8_t addr[BleApp::bleAddrSize];
 			int8_t pos = cmd.find(":") + 1;							// locate position of character preceding
 			size_t val = -1;
-			for (int8_t i = BleApp::bdddrSize; i > 0; --i) {
+			for (int8_t i = BleApp::bleAddrSize; i > 0; --i) {
 				addr[i - 1] = std::stoi(std::string(cmd.substr(pos, 2)), &val, 16);
 				pos += 2;
 			}
@@ -140,6 +142,10 @@ void CDCHandler::ProcessCommand()
 	} else if (cmd.compare("outputgyro") == 0) {					// Output raw gyro data
 		hidApp.outputGyro = !hidApp.outputGyro;
 
+	} else if (cmd.compare("battery") == 0) {						// read battery level
+		UTIL_SEQ_SetTask(1 << CFG_TASK_GetBatteryLevel, CFG_SCH_PRIO_0);
+
+
 	} else {
 		PrintString("Unrecognised command: %s Type 'help' for supported commands\r\n", comCmd);
 	}
@@ -180,10 +186,7 @@ char* CDCHandler::HexToString(const uint16_t v) {
 
 void CDCHandler::DataIn()
 {
-	if (inBuffSize > 0 && inBuffSize % USBMain::ep_maxPacket == 0) {
-		inBuffSize = 0;
-		EndPointTransfer(Direction::in, inEP, 0);					// Fixes issue transmitting an exact multiple of max packet size (n x 64)
-	}
+
 }
 
 

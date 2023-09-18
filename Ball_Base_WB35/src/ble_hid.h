@@ -27,6 +27,8 @@ public:
 	void Init(void);
 	void HIDConnectionNotification();
 	void Calibrate();
+	void GetReportMap();
+	static void GetBatteryLevel();
 
 private:
 	uint16_t connHandle;						// connection handle

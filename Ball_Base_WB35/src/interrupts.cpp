@@ -14,12 +14,9 @@ void USB_LP_IRQHandler() {
 }
 
 void EXTI4_IRQHandler() {
+	// Handle connect button press
 	EXTI->PR1 = EXTI_PR1_PIF4;
-	if (bleApp.deviceConnectionStatus != BleApp::ConnectionStatus::ClientConnected)	{
-		bleApp.ScanAndConnect();
-	} else {
-		bleApp.DisconnectRequest();
-	}
+	bleApp.SwitchConnectState();
 }
 
 void IPCC_C1_RX_IRQHandler() {

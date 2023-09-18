@@ -1,6 +1,5 @@
 #include "app_ble.h"
 #include "ble_hid.h"
-//#include "dbg_trace.h"
 #include "ble.h"
 #include "stm32_seq.h"
 #include "shci.h"
@@ -9,7 +8,7 @@
 
 BleApp bleApp;
 
-PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
+PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t bleCmdBuffer;
 
 
 void BleApp::Init()
@@ -47,7 +46,11 @@ void BleApp::Init()
 			}
 	};
 
-	TransportLayerInit();										// Initialize Ble Transport Layer
+	// Initialize BLE Transport Layer
+	HCI_TL_HciInitConf_t Hci_Tl_Init_Conf;
+	Hci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&bleCmdBuffer;
+	Hci_Tl_Init_Conf.StatusNotCallBack = StatusNot;
+	hci_init(UserEvtRx, (void*)&Hci_Tl_Init_Conf);
 
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
@@ -63,7 +66,7 @@ void BleApp::Init()
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_ScanRequest, UTIL_SEQ_RFU, ScanRequest);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_ConnectRequest, UTIL_SEQ_RFU, ConnectRequest);
-	UTIL_SEQ_RegTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, UTIL_SEQ_RFU, DisconnectRequest);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_DisconnectRequest, UTIL_SEQ_RFU, DisconnectRequest);
 
 	bleApp.deviceConnectionStatus = ConnectionStatus::Idle;		// Initialization of the BLE App Context
 	aci_hal_set_radio_activity_mask(0x0020);					// Radio mask Activity: Connection event master
@@ -155,17 +158,17 @@ void BleApp::ServiceControlCallback(void* pckt)
 					connectionHandle = connectionCompleteEvent->Connection_Handle;
 					deviceConnectionStatus = BleApp::ConnectionStatus::ClientConnected;
 
-					printf("* BLE: Connected to server\r\n");
-
 					// Notify HidApp
+					printf("* BLE: Connected to server\r\n");
+					hidApp.HIDConnectionNotification();
+
 					if (action == RequestAction::GetReportMap) {
 						hidApp.action = HidApp::HidAction::GetReportMap;
 					} else {
 						hidApp.action = HidApp::HidAction::Connect;
 					}
-					hidApp.HIDConnectionNotification();
-
 					result = aci_gatt_disc_all_primary_services(connectionHandle);
+
 					if (result == BLE_STATUS_SUCCESS) {
 						printf("* BLE: Start Searching Primary Services\r\n");
 					} else {
@@ -183,7 +186,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 
 					std::unique_ptr<AdvertisingReport> ar = std::make_unique<AdvertisingReport>();
 
-					memcpy(ar->address, advertisingEvent->Advertising_Report[0].Address, bdddrSize);
+					memcpy(ar->address, advertisingEvent->Advertising_Report[0].Address, bleAddrSize);
 
 					// When decoding advertising report the data and RSSI values must be read by using offsets
 					// RSSI = (int8_t)*(uint8_t*) (adv_report_data + advertisingEvent->Advertising_Report[0].Length_Data);
@@ -207,7 +210,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 									if (action == RequestAction::ScanConnect && ar->serviceClasses == 0x1812) {	// FIXME whitelist etc
 										printf("* BLE: Server detected - HID Device\r\n");
 										deviceServerFound = true;
-										memcpy(&deviceAddress, advertisingEvent->Advertising_Report[0].Address, bdddrSize);
+										memcpy(&deviceAddress, advertisingEvent->Advertising_Report[0].Address, bleAddrSize);
 										deviceAddressType = (GapAddress)advertisingEvent->Advertising_Report[0].Address_Type;
 
 										// If connecting terminate scan - will fire ACI_GAP_PROC_COMPLETE_VSEVT_CODE event which will initiate connection
@@ -308,7 +311,7 @@ void BleApp::GetHidReportMap(uint8_t* address)			// FIXME: need to handle random
 {
 	if (bleApp.deviceConnectionStatus == ConnectionStatus::Idle) {
 		bleApp.action = RequestAction::GetReportMap;
-		memcpy(&deviceAddress, address, bdddrSize);
+		memcpy(&deviceAddress, address, bleAddrSize);
 		UTIL_SEQ_SetTask(1 << CFG_TASK_ConnectRequest, CFG_SCH_PRIO_0);
 	} else {
 		printf("Connection is busy ...\n");
@@ -316,24 +319,14 @@ void BleApp::GetHidReportMap(uint8_t* address)			// FIXME: need to handle random
 }
 
 
-void BleApp::ScanAndConnect()
+void BleApp::SwitchConnectState()
 {
 	if (hidApp.state != HidApp::HidState::ClientConnected)	{
 		bleApp.action = RequestAction::ScanConnect;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_ScanRequest, CFG_SCH_PRIO_0);
 	} else {
-		UTIL_SEQ_SetTask(1 << CFG_TASK_SW1_BUTTON_PUSHED_ID, CFG_SCH_PRIO_0);
+		UTIL_SEQ_SetTask(1 << CFG_TASK_DisconnectRequest, CFG_SCH_PRIO_0);
 	}
-}
-
-
-void BleApp::TransportLayerInit()
-{
-	HCI_TL_HciInitConf_t Hci_Tl_Init_Conf;
-
-	Hci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&BleCmdBuffer;
-	Hci_Tl_Init_Conf.StatusNotCallBack = StatusNot;
-	hci_init(UserEvtRx, (void*) &Hci_Tl_Init_Conf);
 }
 
 
