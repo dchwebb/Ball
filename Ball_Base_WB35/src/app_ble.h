@@ -21,6 +21,7 @@ public:
 	enum class ConnectionStatus {Idle, ClientConnected, Connecting};
 
 	ConnectionStatus deviceConnectionStatus;
+	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
 	static constexpr uint8_t bleAddrSize = 6;
 	bool coprocessorFailure = false;
 
@@ -69,7 +70,6 @@ private:
 
 	bool deviceServerFound = false;
 	GapAddress deviceAddressType;
-	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
 	uint8_t bd_addr_udn[bleAddrSize];
 	uint8_t deviceAddress[bleAddrSize];
 

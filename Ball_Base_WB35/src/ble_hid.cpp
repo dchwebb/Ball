@@ -40,10 +40,26 @@ void HidApp::HidNotification(uint8_t* payload, uint8_t len)
 	}
 
 	if (calibrateCounter == 0) {
+		// Adjust calibration offsets on the fly if required
+		static constexpr int32_t offsetVariation = 50;
+		if (abs(prevPayload.x - hidPayload[0]) < offsetVariation && abs(prevPayload.y - hidPayload[1]) < offsetVariation && abs(prevPayload.z - hidPayload[2]) < offsetVariation) {
+			++noChangeCnt;
+		} else {
+			noChangeCnt = 0;
+		}
+
+		// if many repeating values, adjust offset to nudge towards dynamic offset
+		if (noChangeCnt > 3) {
+			offsetX = static_cast<float>(hidPayload[0]);
+			offsetY = static_cast<float>(hidPayload[1]);
+			offsetZ = static_cast<float>(hidPayload[2]);
+		}
+		prevPayload = *(payload_t*)hidPayload;
+
 		// Raw data from remote is signed 16 bit integer
-		position3D.x = std::clamp(((static_cast<float>(hidPayload[0]) - offsetX) / divider) + static_cast<float>(position3D.x), 0.0f, 4095.0f);
-		position3D.y = std::clamp(((static_cast<float>(hidPayload[1]) - offsetY) / divider) + static_cast<float>(position3D.y), 0.0f, 4095.0f);
-		position3D.z = std::clamp(((static_cast<float>(hidPayload[2]) - offsetZ) / divider) + static_cast<float>(position3D.z), 0.0f, 4095.0f);
+		position3D.x = std::clamp(((static_cast<float>(hidPayload[0]) - offsetX) / divider) + position3D.x, 0.0f, 4095.0f);
+		position3D.y = std::clamp(((static_cast<float>(hidPayload[1]) - offsetY) / divider) + position3D.y, 0.0f, 4095.0f);
+		position3D.z = std::clamp(((static_cast<float>(hidPayload[2]) - offsetZ) / divider) + position3D.z, 0.0f, 4095.0f);
 
 	} else {
 		calibX += hidPayload[0];
@@ -63,7 +79,6 @@ void HidApp::HidNotification(uint8_t* payload, uint8_t len)
 			printf("New Offsets x: %.1f y: %.1f z: %.1f\r\n", offsetX, offsetY, offsetZ);
 		}
 	}
-
 
 	if (outputGyro && (SysTickVal - lastPrint > 400)) {
 		printf("x: %.1f y: %.1f z: %.1f; [received x: %d y: %d z: %d]\r\n", position3D.x, position3D.y, position3D.z, hidPayload[0], hidPayload[1], hidPayload[2]);
@@ -315,7 +330,7 @@ void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
 
 void HidApp::BatteryNotification(uint8_t* payload, uint8_t len)
 {
-	printf(" -- Battery Notification: Battery: %d%%\n", payload[0]);
+	printf("* Battery Notification: Battery: %d%%\n", payload[0]);
 }
 
 

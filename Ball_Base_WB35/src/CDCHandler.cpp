@@ -4,6 +4,7 @@
 extern "C" {
 #include "shci.h"
 #include "stm32_seq.h"
+#include "ble_hci_le.h"
 }
 #include "app_ble.h"
 #include "ble_hid.h"
@@ -21,15 +22,29 @@ void CDCHandler::ProcessCommand()
 	// Provide option to switch to USB DFU mode - this allows the MCU to be programmed with STM32CubeProgrammer in DFU mode
 	if (cmd.compare("info") == 0) {		// Print diagnostic information
 
+		int8_t rssi = -127;
+		if (bleApp.deviceConnectionStatus == BleApp::ConnectionStatus::ClientConnected) {
+			hci_read_rssi(bleApp.connectionHandle, (uint8_t*)&rssi);
+		}
+
+		WirelessFwInfo_t fwInfo {};
+		SHCI_GetWirelessFwInfo(&fwInfo);
+
 		sprintf(buf, "\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n"
 				"Wireless firmware: %s\r\n"
 				"Offsets: %.1f, %.1f, %.1f\r\n"
 				"Sensitivity: %.1f\r\n"
-				"Current Position (0-4096): %.1f, %.1f, %.1f\r\n",
+				"Current Position (0-4096): %.1f, %.1f, %.1f\r\n"
+				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
+				"RSSI Value: %d dBm\r\n",
 				bleApp.coprocessorFailure ? "Off" : "Running",
 				hidApp.offsetX, hidApp.offsetY, hidApp.offsetZ,
 				hidApp.divider,
-				hidApp.position3D.x, hidApp.position3D.y, hidApp.position3D.z);
+				hidApp.position3D.x, hidApp.position3D.y, hidApp.position3D.z,
+				fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
+				fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub,
+				rssi
+			);
 		usb->SendString(buf);
 
 
