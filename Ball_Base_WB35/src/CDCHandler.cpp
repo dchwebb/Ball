@@ -145,7 +145,6 @@ void CDCHandler::ProcessCommand()
 	} else if (cmd.compare("battery") == 0) {						// read battery level
 		UTIL_SEQ_SetTask(1 << CFG_TASK_GetBatteryLevel, CFG_SCH_PRIO_0);
 
-
 	} else {
 		PrintString("Unrecognised command: %s Type 'help' for supported commands\r\n", comCmd);
 	}

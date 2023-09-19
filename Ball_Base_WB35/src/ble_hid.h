@@ -6,10 +6,10 @@
 
 struct HidApp {
 public:
-	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverCharacteristics, DiscoveredCharacteristics, DiscoveringCharacteristics, EnableNotificationDesc, EnableHIDNotificationDesc};
+	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverServices, DiscoverCharacteristics, DiscoveredCharacteristics, DiscoveringCharacteristics, EnableNotificationDesc, EnableHIDNotificationDesc};
 	HidState state;								// state of the HID Client state machine
 
-	enum class HidAction {None, Connect, GetReportMap};
+	enum class HidAction {None, Connect, GetReportMap, BatteryLevel};
 	HidAction action;
 
 	struct Position3D {
