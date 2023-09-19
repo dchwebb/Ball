@@ -19,12 +19,13 @@ void HidApp::Init(void)
 
 void HidApp::Calibrate()
 {
-	position3D.x = 2047;
-	position3D.y = 2047;
-	position3D.z = 2047;
-	calibX = 0;
-	calibY = 0;
-	calibZ = 0;
+	printf("Starting calibration\r\n");
+	position3D.x = 2047.0f;
+	position3D.y = 2047.0f;
+	position3D.z = 2047.0f;
+	calibX = 0.0f;
+	calibY = 0.0f;
+	calibZ = 0.0f;
 	calibrateCounter = calibrateCount;
 }
 
@@ -33,44 +34,45 @@ void HidApp::HidNotification(uint8_t* payload, uint8_t len)
 {
 	volatile int16_t* hidPayload = (int16_t*)payload;
 
-	static uint32_t lastPrint = 0;
-	if (outputGyro && (SysTickVal - lastPrint > 400)) {
-		printf("x: %d y: %d z: %d\r\n", hidPayload[0], hidPayload[1], hidPayload[2]);
-		lastPrint = SysTickVal;
+	// If no offset configured perform calibration
+	if (calibrateCounter == 0 && offsetX == 0 && offsetY == 0 && offsetZ == 0) {
+		Calibrate();
 	}
 
-	if (calibrateCounter > 0) {
+	if (calibrateCounter == 0) {
+		// Raw data from remote is signed 16 bit integer
+		position3D.x = std::clamp(((static_cast<float>(hidPayload[0]) - offsetX) / divider) + static_cast<float>(position3D.x), 0.0f, 4095.0f);
+		position3D.y = std::clamp(((static_cast<float>(hidPayload[1]) - offsetY) / divider) + static_cast<float>(position3D.y), 0.0f, 4095.0f);
+		position3D.z = std::clamp(((static_cast<float>(hidPayload[2]) - offsetZ) / divider) + static_cast<float>(position3D.z), 0.0f, 4095.0f);
 
+	} else {
 		calibX += hidPayload[0];
 		calibY += hidPayload[1];
 		calibZ += hidPayload[2];
 
 		float div = (calibrateCount - calibrateCounter) + 1;
 
-		printf("%ld: x: %3.3f y: %3.3f z: %3.3f\r\n", (int32_t)div, calibX / div, calibY / div, calibZ / div);
+		if (calibrateCounter % 20 == 0) {
+			printf("%ld: x: %.1f y: %.1f z: %.1f\r\n", (int32_t)div, calibX / div, calibY / div, calibZ / div);
+		}
 
-		--calibrateCounter;
-
-		if (calibrateCounter == 0) {
+		if (--calibrateCounter == 0) {
 			offsetX = calibX / calibrateCount;
 			offsetY = calibY / calibrateCount;
 			offsetZ = calibZ / calibrateCount;
-			printf("New Offsets x: %3.3f y: %3.3f z: %d\r\n", offsetX, offsetY, static_cast<int16_t>(offsetZ));
+			printf("New Offsets x: %.1f y: %.1f z: %.1f\r\n", offsetX, offsetY, offsetZ);
 		}
-	} else {
-		// Raw data from remote is signed 16 bit integer
-		float newX = std::clamp(((static_cast<float>(hidPayload[0]) - offsetX) / divider) + static_cast<float>(position3D.x), 0.0f, 4095.0f);
-		float newY = std::clamp(((static_cast<float>(hidPayload[1]) - offsetY) / divider) + static_cast<float>(position3D.y), 0.0f, 4095.0f);
-		float newZ = std::clamp(((static_cast<float>(hidPayload[2]) - offsetZ) / divider) + static_cast<float>(position3D.z), 0.0f, 4095.0f);
-
-		position3D.x = static_cast<int16_t>(newX);
-		position3D.y = static_cast<int16_t>(newY);
-		position3D.z = static_cast<int16_t>(newZ);
 	}
 
-	TIM2->CCR1 = position3D.x;
-	TIM2->CCR2 = position3D.y;
-	TIM2->CCR3 = position3D.z;
+
+	if (outputGyro && (SysTickVal - lastPrint > 400)) {
+		printf("x: %.1f y: %.1f z: %.1f; [received x: %d y: %d z: %d]\r\n", position3D.x, position3D.y, position3D.z, hidPayload[0], hidPayload[1], hidPayload[2]);
+		lastPrint = SysTickVal;
+	}
+
+	TIM2->CCR1 = static_cast<int16_t>(position3D.x);
+	TIM2->CCR2 = static_cast<int16_t>(position3D.y);
+	TIM2->CCR3 = static_cast<int16_t>(position3D.z);
 }
 
 
@@ -136,30 +138,25 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 				hidApp.connHandle = attributeDataEvent->Connection_Handle;
 				uint8_t numServ = (attributeDataEvent->Data_Length) / attributeDataEvent->Attribute_Data_Length;
 
-				printf("-- GATT : Services: %d; Connection handle 0x%x \n", numServ, hidApp.connHandle);
+				printf("* GATT : %d Services; Connection handle 0x%x \n", numServ, hidApp.connHandle);
 
 				// Event data: 2 bytes start handle | 2 bytes end handle | 2 or 16 bytes data
 				// Only if the UUID is 16 bit so check if the data length is 6
 				if (attributeDataEvent->Attribute_Data_Length == 6) {
-					std::string servicetext;
 					uint8_t idx = 4;
 					for (uint8_t i = 0; i < numServ; i++) {
 						uint16_t uuid = *((uint16_t*)&attributeDataEvent->Attribute_Data_List[idx]);
 
-						servicetext += "  - Service UUID: " + std::string(usb.cdc.HexToString(uuid));
 						if (uuid == BATTERY_SERVICE_UUID) {
 							hidApp.BatteryServiceHandle = *((uint16_t*)&attributeDataEvent->Attribute_Data_List[idx - 4]);
 							hidApp.BatteryServiceEndHandle = *((uint16_t*)&attributeDataEvent->Attribute_Data_List[idx - 2]);
-							//printf("  - Battery Service UUID: 0x%x\n", uuid);
-							servicetext += " [Battery]\n";
+							printf("  - Battery Service UUID: 0x%x\r\n", uuid);
 						} else if (uuid == HUMAN_INTERFACE_DEVICE_SERVICE_UUID) {
 							hidApp.HIDServiceHandle = *((uint16_t*)&attributeDataEvent->Attribute_Data_List[idx - 4]);
 							hidApp.HIDServiceEndHandle = *((uint16_t*)&attributeDataEvent->Attribute_Data_List[idx - 2]);
-							//printf("  - HID Service UUID: 0x%x\n", uuid);
-							servicetext += " [HID]\n";
+							printf("  - HID Service UUID: 0x%x\r\n", uuid);
 						} else {
-							//printf("  - Service UUID: 0x%x\n", uuid);
-							servicetext += "\n";
+							printf("  - Service UUID: 0x%x\r\n", uuid);
 						}
 
 						if (hidApp.BatteryServiceHandle > 0 || hidApp.HIDServiceHandle > 0){
@@ -168,7 +165,6 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 
 						idx += 6;
 					}
-					usb.SendString(servicetext);
 				}
 				handled = SVCCTL_EvtAckFlowEnable;
 			}
@@ -191,22 +187,22 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 
 						switch (uuid) {
 						case BATTERY_LEVEL_CHAR_UUID:
-							printf("  - UUID: %04X handle: %X [Battery Notification]\n", uuid, handle);
+							printf("  - UUID: 0x%x handle: 0x%x [Battery Notification]\n", uuid, handle);
 							hidApp.state = HidState::DiscoveredCharacteristics;
 							hidApp.BatteryNotificationCharHdle = handle;
 							break;
 						case REPORT_CHAR_UUID:
-							printf("  - UUID: %04X handle: %X [HID Report Notification]\n", uuid, handle);
+							printf("  - UUID: 0x%x handle: 0x%x [HID Report Notification]\n", uuid, handle);
 							hidApp.state = HidState::DiscoveredCharacteristics;
 							hidApp.HIDNotificationCharHdle = handle;
 							break;
 						case REPORT_MAP_CHAR_UUID:
-							printf("  - UUID: %04X handle: %X [HID Report Map]\n", uuid, handle);
+							printf("  - UUID: 0x%x handle: 0x%x [HID Report Map]\n", uuid, handle);
 							hidApp.state = HidState::DiscoveredCharacteristics;
 							hidApp.HIDReportMapHdle = handle;
 							break;
 						default:
-							printf("  - UUID: %04X handle: %X\n", uuid, handle);
+							printf("  - UUID: 0x%x handle: 0x%x\r\n", uuid, handle);
 						}
 
 						characteristicsEvent->Data_Length -= 7;
@@ -227,7 +223,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 				auto *notificationEvent = (aci_att_find_info_resp_event_rp0*)bleCoreEvent->data;
 
 				uint8_t numDesc = (notificationEvent->Event_Data_Length) / 4;
-				printf("  - Found %d client configuration descriptors\n", numDesc);
+				printf("  - Found %d client configuration descriptors\r\n", numDesc);
 
 				// event data: 2 bytes handle | 2 bytes UUID
 				uint8_t idx = 0;
@@ -237,12 +233,12 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 						uint16_t uuid = *((uint16_t*)&notificationEvent->Handle_UUID_Pair[idx + 2]);
 
 						if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > hidApp.BatteryNotificationCharHdle && handle <= hidApp.BatteryServiceEndHandle) {
-							printf("  - Battery Client Char Config Descriptor: 0x%x\n", handle);
+							printf("  - Battery Client Char Config Descriptor: 0x%x\r\n", handle);
 							hidApp.BatteryNotificationDescHandle = handle;
 							hidApp.state = HidState::EnableNotificationDesc;
 
 						} else if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > hidApp.HIDNotificationCharHdle && handle <= hidApp.HIDServiceEndHandle) {
-							printf("  - HID Client Char Config Descriptor: 0x%x\n", handle);
+							printf("  - HID Client Char Config Descriptor: 0x%x\r\n", handle);
 							hidApp.HIDNotificationDescHandle = handle;
 							hidApp.state = HidState::EnableNotificationDesc;
 						}
@@ -272,19 +268,19 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 			break;
 
 		case ACI_GATT_NOTIFICATION_VSEVT_CODE:
-		{
-			auto* pr = (aci_gatt_notification_event_rp0*)bleCoreEvent->data;
+			{
+				auto* pr = (aci_gatt_notification_event_rp0*)bleCoreEvent->data;
 
-			if (pr->Attribute_Handle == hidApp.BatteryNotificationCharHdle) {
-				hidApp.BatteryNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
-				handled = SVCCTL_EvtAckFlowEnable;
+				if (pr->Attribute_Handle == hidApp.BatteryNotificationCharHdle) {
+					hidApp.BatteryNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
+					handled = SVCCTL_EvtAckFlowEnable;
+				}
+				if (pr->Attribute_Handle == hidApp.HIDNotificationCharHdle) {
+					hidApp.HidNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
+					handled = SVCCTL_EvtAckFlowEnable;
+				}
 			}
-			if (pr->Attribute_Handle == hidApp.HIDNotificationCharHdle) {
-				hidApp.HidNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
-				handled = SVCCTL_EvtAckFlowEnable;
-			}
-		}
-		break;
+			break;
 
 		case ACI_GATT_PROC_COMPLETE_VSEVT_CODE:
 			if (hidApp.state != HidState::ClientConnected && hidApp.state != HidState::Idle) {
@@ -319,7 +315,7 @@ void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
 
 void HidApp::BatteryNotification(uint8_t* payload, uint8_t len)
 {
-	printf(" -- Battery Notification: x: %d; y: %d; z: %d; Battery: %d%%\n", position3D.x, position3D.y, position3D.z, payload[0]);
+	printf(" -- Battery Notification: Battery: %d%%\n", payload[0]);
 }
 
 

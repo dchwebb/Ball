@@ -13,16 +13,16 @@ public:
 	HidAction action;
 
 	struct Position3D {
-		int16_t x{2047};
-		int16_t y{2047};
-		int16_t z{2047};
+		float x = 2047.0;
+		float y = 2047.0;
+		float z = 2047.0;
 	} position3D;
 
 	float divider = 600.0f;						// Divider for raw gyroscope data (increase for more sensitivity)
-	float offsetX{-128.0f};						// Offsets for raw incoming hid data
-	float offsetY{-100.0f};
-	float offsetZ{-76.0f};
-	bool outputGyro{false};						// Set to true to output raw gyro and received
+	float offsetX = 0.0f;						// Offsets for raw incoming hid data
+	float offsetY = 0.0f;
+	float offsetZ = 0.0f;
+	bool outputGyro = false;					// Set to true to output raw gyro and received
 
 	void Init(void);
 	void HIDConnectionNotification();
@@ -43,10 +43,10 @@ private:
 	uint16_t BatteryNotificationDescHandle;		// handle of the client configuration descriptor of Rx characteristic
 	uint16_t HIDReportMapHdle;					// handle of report map
 
-	int32_t calibrateCounter{0};				// When calibrating offsets keeps count of readings averaged
-	static constexpr int32_t calibrateCount{200};				// Total number of readings to use when calibrating
-	float calibX, calibY, calibZ;
-	//Position3D calibDebug[calibrateCount];
+	int32_t calibrateCounter = 0;				// When calibrating offsets keeps count of readings averaged
+	static constexpr int32_t calibrateCount = 200;	// Total number of readings to use when calibrating
+	float calibX, calibY, calibZ;				// Temporary totals used during calibration
+	uint32_t lastPrint = 0;						// For perdiodic printing of gyro output
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void HIDServiceDiscovery();

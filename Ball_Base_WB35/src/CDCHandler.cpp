@@ -23,9 +23,9 @@ void CDCHandler::ProcessCommand()
 
 		sprintf(buf, "\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n"
 				"Wireless firmware: %s\r\n"
-				"Offsets: %f, %f, %f\r\n"
-				"Sensitivity: %f\r\n"
-				"Current Position (0-4096): %d, %d, %d\r\n",
+				"Offsets: %.1f, %.1f, %.1f\r\n"
+				"Sensitivity: %.1f\r\n"
+				"Current Position (0-4096): %.1f, %.1f, %.1f\r\n",
 				bleApp.coprocessorFailure ? "Off" : "Running",
 				hidApp.offsetX, hidApp.offsetY, hidApp.offsetZ,
 				hidApp.divider,
@@ -109,9 +109,9 @@ void CDCHandler::ProcessCommand()
 		}
 
 	} else if (cmd.compare("recenter") == 0) {						// Recenter all channels to mid point
-		hidApp.position3D.x = 2047;
-		hidApp.position3D.y = 2047;
-		hidApp.position3D.z = 2047;
+		hidApp.position3D.x = 2047.0f;
+		hidApp.position3D.y = 2047.0f;
+		hidApp.position3D.z = 2047.0f;
 		printf("All channels recentered\r\n");
 
 	} else if (cmd.compare(0, 7, "offset:") == 0) {					// Set x offset for raw calibration data
@@ -135,7 +135,6 @@ void CDCHandler::ProcessCommand()
 		if (hidApp.state != HidApp::HidState::ClientConnected) {
 			printf("Must be connected before calibrating\r\n");
 		} else {
-			printf("Starting calibration\r\n");
 			hidApp.Calibrate();
 		}
 
