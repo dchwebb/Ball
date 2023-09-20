@@ -30,41 +30,34 @@ void HidApp::Calibrate()
 }
 
 
-void HidApp::HidNotification(uint8_t* payload, uint8_t len)
+void HidApp::HidNotification(int16_t* payload, uint8_t len)
 {
-	volatile int16_t* hidPayload = (int16_t*)payload;
+	// Convert raw HID data from signed 16 bit int to float
+	Pos3D hidData {(float)payload[0], (float)payload[1], (float)payload[2]};
 
 	// If no offset configured perform calibration
-	if (calibrateCounter == 0 && offsetX == 0 && offsetY == 0 && offsetZ == 0) {
+	if (calibrateCounter == 0 && offset.x == 0 && offset.y == 0 && offset.z == 0) {
 		Calibrate();
 	}
 
 	if (calibrateCounter == 0) {
-		// Adjust calibration offsets on the fly if required
-		static constexpr int32_t offsetVariation = 50;
-		if (abs(prevPayload.x - hidPayload[0]) < offsetVariation && abs(prevPayload.y - hidPayload[1]) < offsetVariation && abs(prevPayload.z - hidPayload[2]) < offsetVariation) {
-			++noChangeCnt;
-		} else {
-			noChangeCnt = 0;
+		// Adjust calibration offsets on the fly
+		if (abs(hidData.x - offset.x) < 50 && abs(hidData.y - offset.y) < 50 && abs(hidData.z - offset.z) < 50) {
+			static constexpr float calibFilter = 0.9999f;
+			offset.x = calibFilter * offset.x + (1.0f - calibFilter) * hidData.x;
+			offset.y = calibFilter * offset.y + (1.0f - calibFilter) * hidData.y;
+			offset.z = calibFilter * offset.z + (1.0f - calibFilter) * hidData.z;
 		}
 
-		// if many repeating values, adjust offset to nudge towards dynamic offset
-		if (noChangeCnt > 3) {
-			offsetX = static_cast<float>(hidPayload[0]);
-			offsetY = static_cast<float>(hidPayload[1]);
-			offsetZ = static_cast<float>(hidPayload[2]);
-		}
-		prevPayload = *(payload_t*)hidPayload;
-
-		// Raw data from remote is signed 16 bit integer
-		position3D.x = std::clamp(((static_cast<float>(hidPayload[0]) - offsetX) / divider) + position3D.x, 0.0f, 4095.0f);
-		position3D.y = std::clamp(((static_cast<float>(hidPayload[1]) - offsetY) / divider) + position3D.y, 0.0f, 4095.0f);
-		position3D.z = std::clamp(((static_cast<float>(hidPayload[2]) - offsetZ) / divider) + position3D.z, 0.0f, 4095.0f);
+		// Remote offset, scale down and clamp to 12 bit value
+		position3D.x = std::clamp(((hidData.x - offset.x) / divider) + position3D.x, 0.0f, 4095.0f);
+		position3D.y = std::clamp(((hidData.y - offset.y) / divider) + position3D.y, 0.0f, 4095.0f);
+		position3D.z = std::clamp(((hidData.z - offset.z) / divider) + position3D.z, 0.0f, 4095.0f);
 
 	} else {
-		calibX += hidPayload[0];
-		calibY += hidPayload[1];
-		calibZ += hidPayload[2];
+		calibX += hidData.x;
+		calibY += hidData.y;
+		calibZ += hidData.z;
 
 		float div = (calibrateCount - calibrateCounter) + 1;
 
@@ -73,15 +66,15 @@ void HidApp::HidNotification(uint8_t* payload, uint8_t len)
 		}
 
 		if (--calibrateCounter == 0) {
-			offsetX = calibX / calibrateCount;
-			offsetY = calibY / calibrateCount;
-			offsetZ = calibZ / calibrateCount;
-			printf("New Offsets x: %.1f y: %.1f z: %.1f\r\n", offsetX, offsetY, offsetZ);
+			offset.x = calibX / calibrateCount;
+			offset.y = calibY / calibrateCount;
+			offset.z = calibZ / calibrateCount;
+			printf("New Offsets x: %.1f y: %.1f z: %.1f\r\n", offset.x, offset.y, offset.z);
 		}
 	}
 
 	if (outputGyro && (SysTickVal - lastPrint > 400)) {
-		printf("x: %.1f y: %.1f z: %.1f; [received x: %d y: %d z: %d]\r\n", position3D.x, position3D.y, position3D.z, hidPayload[0], hidPayload[1], hidPayload[2]);
+		printf("Pos: %.1f/%.1f/%.1f;  offset %.1f/%.1f/%.1f;  raw: %.1f/%.1f/%.1f \r\n", position3D.x, position3D.y, position3D.z, offset.x, offset.y, offset.z, hidData.x, hidData.y, hidData.z);
 		lastPrint = SysTickVal;
 	}
 
@@ -291,7 +284,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
 				if (pr->Attribute_Handle == hidApp.HIDNotificationCharHdle) {
-					hidApp.HidNotification(&pr->Attribute_Value[0], pr->Attribute_Value_Length);
+					hidApp.HidNotification((int16_t*)&pr->Attribute_Value[0], pr->Attribute_Value_Length);
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
 			}

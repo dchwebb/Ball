@@ -12,16 +12,14 @@ public:
 	enum class HidAction {None, Connect, GetReportMap, BatteryLevel};
 	HidAction action;
 
-	struct Position3D {
+	struct Pos3D {
 		float x = 2047.0;
 		float y = 2047.0;
 		float z = 2047.0;
 	} position3D;
 
+	Pos3D offset = {0.0f, 0.0f, 0.0f};
 	float divider = 600.0f;							// Divider for raw gyroscope data (increase for more sensitivity)
-	float offsetX = 0.0f;							// Offsets for raw incoming hid data
-	float offsetY = 0.0f;
-	float offsetZ = 0.0f;
 	bool outputGyro = false;						// Set to true to output raw gyro and received
 
 	void Init(void);
@@ -48,16 +46,11 @@ private:
 	float calibX, calibY, calibZ;					// Temporary totals used during calibration
 	uint32_t lastPrint = 0;							// For perdiodic printing of gyro output
 
-	uint32_t noChangeCnt = 0;						// count similar sequences of payload data assuming that they are random fluctuations to adjust offsets
-	struct payload_t {
-		int16_t x;
-		int16_t y;
-		int16_t z;
-	} prevPayload;
+
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void HIDServiceDiscovery();
-	void HidNotification(uint8_t* payload, uint8_t len);
+	void HidNotification(int16_t* payload, uint8_t len);
 	void BatteryNotification(uint8_t* payload, uint8_t len);
 	void PrintReportMap(uint8_t* data, uint8_t len);
 };

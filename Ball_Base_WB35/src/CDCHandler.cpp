@@ -38,7 +38,7 @@ void CDCHandler::ProcessCommand()
 				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
 				"RSSI Value: %d dBm\r\n",
 				bleApp.coprocessorFailure ? "Off" : "Running",
-				hidApp.offsetX, hidApp.offsetY, hidApp.offsetZ,
+				hidApp.offset.x, hidApp.offset.y, hidApp.offset.z,
 				hidApp.divider,
 				hidApp.position3D.x, hidApp.position3D.y, hidApp.position3D.z,
 				fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
@@ -135,11 +135,11 @@ void CDCHandler::ProcessCommand()
 
 		if (res.ec == std::errc()) {
 			if (cmd.compare(7, 1, "x") == 0) {
-				hidApp.offsetX = offset;
+				hidApp.offset.x = offset;
 			} else if (cmd.compare(7, 1, "y") == 0) {
-				hidApp.offsetY = offset;
+				hidApp.offset.y = offset;
 			} else if (cmd.compare(7, 1, "z") == 0) {
-				hidApp.offsetZ = offset;
+				hidApp.offset.z = offset;
 			}
 			printf("Offset set to: %d\r\n", offset);
 		} else {
