@@ -27,6 +27,8 @@ public:
 	void Calibrate();
 	void GetReportMap();
 	static void GetBatteryLevel();
+	uint32_t SerialiseConfig(uint8_t** buff);
+	uint32_t StoreConfig(uint8_t* buff);
 
 private:
 	uint16_t connHandle;							// connection handle

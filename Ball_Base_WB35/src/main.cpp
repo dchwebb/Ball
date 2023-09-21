@@ -2,6 +2,7 @@
 #include "app_entry.h"
 #include "app_ble.h"
 #include "USB.h"
+#include "configManager.h"
 
 volatile uint32_t SysTickVal = 0;
 extern uint32_t SystemCoreClock;
@@ -14,7 +15,7 @@ int main()
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
 	usb.InitUSB();
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE in while loop
-
+	configManager.RestoreConfig();
 	InitPWMTimer();					// Initialise PWM output
 
 	while (1) {

@@ -407,3 +407,21 @@ void HidApp::HIDServiceDiscovery()
 		}
 	}
 }
+
+
+
+uint32_t HidApp::SerialiseConfig(uint8_t** buff)
+{
+	*buff = reinterpret_cast<uint8_t*>(&offset);
+	return sizeof(offset);
+}
+
+
+uint32_t HidApp::StoreConfig(uint8_t* buff)
+{
+	if (buff != nullptr) {
+		memcpy(&offset, buff, sizeof(offset));
+	}
+
+	return sizeof(offset);
+}
