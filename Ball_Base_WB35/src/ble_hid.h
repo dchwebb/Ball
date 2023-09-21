@@ -6,11 +6,11 @@
 
 struct HidApp {
 public:
-	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverServices, DiscoverCharacteristics, DiscoveredCharacteristics, DiscoveringCharacteristics, EnableNotificationDesc, EnableHIDNotificationDesc};
-	HidState state;								// state of the HID Client state machine
+	// state of the HID Client state machine
+	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverServices, DiscoverCharacteristics, DiscoveredCharacteristics, DiscoveringCharacteristics,
+		EnableNotificationDesc, EnableHIDNotificationDesc} state;
 
-	enum class HidAction {None, Connect, GetReportMap, BatteryLevel};
-	HidAction action;
+	enum class HidAction {None, Connect, GetReportMap, BatteryLevel} action;
 
 	struct Pos3D {
 		float x = 2047.0;
@@ -18,11 +18,11 @@ public:
 		float z = 2047.0;
 	} position3D;
 
-	Pos3D offset = {0.0f, 0.0f, 0.0f};
+	Pos3D offset = {0.0f, 0.0f, 0.0f};				// Calibrated adjustment for gyroscope offsets and drift
 	float divider = 600.0f;							// Divider for raw gyroscope data (increase for more sensitivity)
 	bool outputGyro = false;						// Set to true to output raw gyro and received
 
-	void Init(void);
+	void Init();
 	void HIDConnectionNotification();
 	void Calibrate();
 	void GetReportMap();
@@ -41,12 +41,11 @@ private:
 	uint16_t BatteryNotificationDescHandle;			// handle of the client configuration descriptor of Rx characteristic
 	uint16_t HIDReportMapHdle;						// handle of report map
 
+	static constexpr float calibFilter = 0.9999f;	// 1 pole filter co-efficient for smoothing long-term drift adjustments
 	static constexpr int32_t calibrateCount = 200;	// Total number of readings to use when calibrating
 	int32_t calibrateCounter = 0;					// When calibrating offsets keeps count of readings averaged
 	float calibX, calibY, calibZ;					// Temporary totals used during calibration
 	uint32_t lastPrint = 0;							// For perdiodic printing of gyro output
-
-
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void HIDServiceDiscovery();

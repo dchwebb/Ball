@@ -32,6 +32,9 @@ public:
 	void ScanInfo();
 	static void DisconnectRequest();
 	void ServiceControlCallback(void* pckt);
+	void LedOnOff(bool on);
+	void LedFlash(bool startStop);										// starts and stops flashing
+	void LedFlash();													// Called periodically to check flash state
 
 private:
 	enum class RequestAction {None, ScanConnect, ScanInfo, GetReportMap} action = RequestAction::None;
@@ -86,7 +89,10 @@ private:
 		uint32_t fixedPin = 111111;										// Fixed pin for pairing process if Use_Fixed_Pin = 1
 	} Security;
 
-
+	// Variables for handling LED flashing
+	bool ledFlashing = false;
+	uint32_t ledFlashTime = 0;
+	bool ledState;
 
 	static void ScanRequest();
 	static void ConnectRequest();

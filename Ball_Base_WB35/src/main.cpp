@@ -22,6 +22,7 @@ int main()
 			RunPendingTasks();
 		}
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
+		bleApp.LedFlash();			// Check if connection LED needs to be flashed
 	}
 }
 

@@ -157,6 +157,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 					auto* connectionCompleteEvent = (hci_le_connection_complete_event_rp0*) metaEvent->data;
 					connectionHandle = connectionCompleteEvent->Connection_Handle;
 					deviceConnectionStatus = BleApp::ConnectionStatus::ClientConnected;
+					LedFlash(false);						// Turn off connecting flashing
 
 					// Notify HidApp
 					printf("* BLE: Connected to server\r\n");
@@ -322,6 +323,7 @@ void BleApp::GetHidReportMap(uint8_t* address)			// FIXME: need to handle random
 void BleApp::SwitchConnectState()
 {
 	if (hidApp.state != HidApp::HidState::ClientConnected)	{
+		bleApp.LedFlash(true);							// Turn on connection LED - will flash until connected
 		bleApp.action = RequestAction::ScanConnect;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_ScanRequest, CFG_SCH_PRIO_0);
 	} else {
@@ -463,6 +465,36 @@ uint8_t* BleApp::GetBdAddress()
 }
 
 
+void BleApp::LedOnOff(bool on)
+{
+	if (on) {
+		GPIOA->ODR |= GPIO_ODR_OD3;				// Turn on connection LED
+		ledState = true;
+	} else {
+		GPIOA->ODR &= ~GPIO_ODR_OD3;			// Turn off connection LED
+		ledState = false;
+	}
+}
+
+
+void BleApp::LedFlash(bool startStop)
+{
+	LedOnOff(startStop);
+	ledFlashTime = SysTickVal;
+	ledFlashing = startStop;
+}
+
+
+void BleApp::LedFlash() {
+	// Called periodically to manage flash state
+	if (ledFlashing && SysTickVal - ledFlashTime > 200) {
+		LedOnOff(!ledState);
+		ledFlashTime = SysTickVal;
+	}
+}
+
+
+
 void BleApp::UserEvtRx(void* pPayload)
 {
 	tHCI_UserEvtRxParam* pParam = (tHCI_UserEvtRxParam*)pPayload;
@@ -521,3 +553,5 @@ void hci_cmd_resp_wait(uint32_t timeout)
 {
 	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_HCI_CMD_EVT_RSP_ID);
 }
+
+

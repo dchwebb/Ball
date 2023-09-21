@@ -43,7 +43,6 @@ void HidApp::HidNotification(int16_t* payload, uint8_t len)
 	if (calibrateCounter == 0) {
 		// Adjust calibration offsets on the fly
 		if (abs(hidData.x - offset.x) < 50 && abs(hidData.y - offset.y) < 50 && abs(hidData.z - offset.z) < 50) {
-			static constexpr float calibFilter = 0.9999f;
 			offset.x = calibFilter * offset.x + (1.0f - calibFilter) * hidData.x;
 			offset.y = calibFilter * offset.y + (1.0f - calibFilter) * hidData.y;
 			offset.z = calibFilter * offset.z + (1.0f - calibFilter) * hidData.z;
@@ -108,13 +107,13 @@ void HidApp::HIDConnectionNotification()
 		HIDNotificationDescHandle = 0;
 		HIDServiceHandle = 0;
 
-		GPIOA->ODR |= GPIO_ODR_OD3;				// Turn on connection LED
+		bleApp.LedOnOff(true);				// Turn on connection LED
 		break;
 
 	case BleApp::ConnectionStatus::Idle:
 		state = HidState::Idle;
 		action = HidAction::None;
-		GPIOA->ODR &= ~GPIO_ODR_OD3;			// Turn off connection LED
+		bleApp.LedOnOff(false);				// Turn off connection LED
 		break;
 
 	default:
