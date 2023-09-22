@@ -11,6 +11,7 @@ size_t _write(int handle, const unsigned char* buf, size_t bufSize)
 	if (usb.devState == USBMain::DeviceState::Configured) {
 		return usb.SendString(buf, bufSize);
 	} else {
+		++usb.stringErrors;
 		return 0;
 	}
 }
@@ -21,7 +22,6 @@ inline void ClearRxInterrupt(uint8_t ep)
 	uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPREG_MASK) & ~USB_EP_CTR_RX;
 	USB_EPR[ep].EPR = wRegVal | USB_EP_CTR_TX;
 }
-
 
 inline void ClearTxInterrupt(uint8_t ep)
 {
@@ -151,7 +151,7 @@ void USBMain::EPStartXfer(const Direction direction, uint8_t endpoint, uint32_t 
 }
 
 
-void USBMain::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pcd.c
+void USBMain::USBInterruptHandler()							// Originally in Drivers\STM32F4xx_HAL_Driver\Src\stm32f4xx_hal_pcd.c
 {
 	// Handle spurious interrupt
 	USBP->ISTR &= ~(USB_ISTR_SOF | USB_ISTR_ESOF);
@@ -180,7 +180,7 @@ void USBMain::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_
 					EPStartXfer(Direction::in, 0, classByEP[epIndex]->inBuffRem);
 					EPStartXfer(Direction::out, 0, 0);
 				} else {
-					// FIXME if (rem_length ==  maxpacket) etc - where non zero size packet and last packet is a multiple of max packet size
+					// FIXME if (rem_length == maxpacket) etc - where non zero size packet and last packet is a multiple of max packet size
 					SetTxStatus(0, USB_EP_TX_STALL);
 					EPStartXfer(Direction::out, 0, 0);
 				}
@@ -228,21 +228,27 @@ void USBMain::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_
 				}
 				SetRxStatus(epIndex, USB_EP_RX_VALID);
 
-
 				classByEP[epIndex]->DataOut();
 			}
 
 			if ((USB_EPR[epIndex].EPR & USB_EP_CTR_TX) != 0) {
-				transmitting = false;
+
 				ClearTxInterrupt(epIndex);
 
 				uint16_t txBytes = USB_PMA[epIndex].GetTXCount();
 				if (classByEP[epIndex]->inBuffSize >= txBytes) {					// Transmitting data larger than buffer size
 					classByEP[epIndex]->inBuffSize -= txBytes;
 					classByEP[epIndex]->inBuff += txBytes;
-					EPStartXfer(Direction::in, epIndex, classByEP[epIndex]->inBuffSize);
-				}
 
+					// Send IN packet if data to be sent, or size of last block in sequence is exactly size of maximum packet
+					if (classByEP[epIndex]->inBuffSize > 0 || (txBytes == ep_maxPacket && classByEP[epIndex]->inBuffSize == 0)) {
+						EPStartXfer(Direction::in, epIndex, classByEP[epIndex]->inBuffSize);
+					}
+				}
+				if (classByEP[epIndex]->inBuffSize == 0) {
+					transmitting = false;
+					classByEP[epIndex]->DataIn();
+				}
 			}
 
 		}
@@ -289,6 +295,7 @@ void USBMain::USBInterruptHandler()						// Originally in Drivers\STM32F4xx_HAL_
 
 void USBMain::InitUSB()
 {
+
     // PA11 USB_DM; PA12 USB_DP
 	GPIOA->MODER &= ~(GPIO_MODER_MODE11_0 | GPIO_MODER_MODE12_0);
 	GPIOA->AFR[1] |= ((0xA << GPIO_AFRH_AFSEL11_Pos) | (0xA << GPIO_AFRH_AFSEL12_Pos));
@@ -338,7 +345,7 @@ void USBMain::ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointTy
 		SetTxStatus(endpoint, USB_EP_TX_NAK);
 
 	} else {
-		USB_PMA[endpoint].ADDR_RX = pmaAddress;				// Offset of PMA used for EP RX
+		USB_PMA[endpoint].ADDR_RX = pmaAddress;						// Offset of PMA used for EP RX
 		USB_PMA[endpoint].SetRXBlkSize(1);					// configure block size = 1 (32 Bytes)
 		USB_PMA[endpoint].SetRXBlocks(1);					// number of blocks = 2 (64 bytes)
 		//USB_PMA[endpoint].COUNT_RX = (1 << USB_COUNT0_RX_BLSIZE_Pos) | (1 << USB_COUNT0_RX_NUM_BLOCK_Pos);		// configure block size = 1 (32 Bytes); number of blocks = 2 (64 bytes)
@@ -443,8 +450,8 @@ uint32_t USBMain::MakeConfigDescriptor()
 			uint32_t descSize = c->GetInterfaceDescriptor(&descBuff);
 			memcpy(&configDescriptor[descPos], descBuff, descSize);
 			descPos += descSize;
-		}
 	}
+}
 
 	// Insert config descriptor header
 	const uint8_t descriptorHeader[] = {
@@ -517,6 +524,7 @@ size_t USBMain::SendData(const uint8_t* data, uint16_t len, uint8_t endpoint)
 		EPStartXfer(Direction::in, endpoint, len);
 		return len;
 	} else {
+		++stringErrors;
 		return 0;
 	}
 }
@@ -526,6 +534,7 @@ void USBMain::SendString(const char* s)
 {
 	uint16_t counter = 0;
 	while (transmitting && counter < 10000) {
+		++stringErrors;
 		++counter;
 	}
 	SendData((uint8_t*)s, strlen(s), CDC_In);
@@ -542,6 +551,7 @@ size_t USBMain::SendString(const unsigned char* s, size_t len)
 {
 	uint16_t counter = 0;
 	while (transmitting && counter < 10000) {
+		++stringErrors;
 		++counter;
 	}
 	return SendData((uint8_t*)s, len, CDC_In);

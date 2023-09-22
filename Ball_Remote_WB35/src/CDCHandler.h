@@ -16,14 +16,18 @@ public:
 	void ClassSetup(usbRequest& req) override;
 	void ClassSetupData(usbRequest& req, const uint8_t* data) override;
 	uint32_t GetInterfaceDescriptor(const uint8_t** buffer) override;
-	int32_t ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low, const int32_t high);
 
 	void ProcessCommand();
+	void PrintString(const char* format, ...);
+	char* HexToString(const uint8_t* v, uint32_t len, const bool spaces = false);
+	char* HexToString(const uint16_t v);
+	int32_t ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low, const int32_t high);
 
 	bool cmdPending = false;
 	static constexpr uint32_t maxCmdLen = 40;
 	char comCmd[maxCmdLen];
-
+	static constexpr uint32_t maxStrLen = 100;
+	char stringBuf[maxStrLen];
 
 	struct LineCoding {
 		uint32_t bitrate;    		// Data terminal rate in bits per sec.
@@ -37,7 +41,8 @@ private:
 	enum {HtoD_Class_Interface = 0x21, DtoH_Class_Interface = 0xA1};		// A1 = [1|01|00001] Device to host | Class | Interface;
 	uint32_t xfer_buff[64] __attribute__ ((aligned (4)));					// Receive data buffer - must be aligned to allow copying to other structures
 	uint32_t buffPos = 0;
-	char buf[1024];
+	static constexpr uint32_t bufSize = 1024;
+	char buf[bufSize];
 
 	static const uint8_t Descriptor[];
 

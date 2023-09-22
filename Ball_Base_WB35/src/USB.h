@@ -18,10 +18,10 @@ static constexpr uint32_t pmaBlkSizeMask = 0x1 << 15;
 
 // Declare registers for PMA area
 typedef struct {
-  volatile uint16_t ADDR_TX;
-  volatile uint16_t COUNT_TX;
-  volatile uint16_t ADDR_RX;
-  volatile uint16_t COUNT_RX;
+	volatile uint16_t ADDR_TX;
+	volatile uint16_t COUNT_TX;
+	volatile uint16_t ADDR_RX;
+	volatile uint16_t COUNT_RX;
 	uint32_t GetTXCount()	{ return COUNT_TX & 0x3FF; }
 	uint32_t GetRXCount()	{ return COUNT_RX & 0x3FF; }
 	void SetRXBlocks(uint32_t cnt)	{ COUNT_RX = (COUNT_RX & ~pmaBlocksMask) | (cnt << 10); }

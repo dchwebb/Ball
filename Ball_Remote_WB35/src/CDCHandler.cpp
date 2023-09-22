@@ -21,7 +21,7 @@ void CDCHandler::ProcessCommand()
 		return;
 	}
 
-	std::string_view cmd {comCmd};
+	const std::string_view cmd {comCmd};
 
 	// Provide option to switch to USB DFU mode - this allows the MCU to be programmed with STM32CubeProgrammer in DFU mode
 	if (state == serialState::dfuConfirm) {
@@ -187,12 +187,39 @@ void CDCHandler::ProcessCommand()
 }
 
 
+void CDCHandler::PrintString(const char* format, ...)
+{
+	va_list args;
+	va_start (args, format);
+	vsnprintf (buf, bufSize, format, args);
+	va_end (args);
+
+	usb->SendString(buf);
+}
+
+
+char* CDCHandler::HexToString(const uint8_t* v, uint32_t len, const bool spaces) {
+	const uint8_t byteLen = spaces ? 3 : 2;
+	uint32_t pos = 0;
+	len = std::min(maxStrLen / byteLen, len);
+
+	for (uint8_t i = 0; i < len; ++i) {
+		pos += sprintf(&stringBuf[pos], spaces ? "%02X " : "%02X", v[i]);
+	}
+
+	return (char*)&stringBuf;
+}
+
+
+char* CDCHandler::HexToString(const uint16_t v) {
+	sprintf(stringBuf, "%04X", v);
+	return (char*)&stringBuf;
+}
+
+
 void CDCHandler::DataIn()
 {
-	if (inBuffSize > 0 && inBuffSize % USBMain::ep_maxPacket == 0) {
-		inBuffSize = 0;
-		EndPointTransfer(Direction::in, inEP, 0);				// Fixes issue transmitting an exact multiple of max packet size (n x 64)
-	}
+
 }
 
 
@@ -279,7 +306,7 @@ float CDCHandler::ParseFloat(const std::string_view cmd, const char precedingCha
 const uint8_t CDCHandler::Descriptor[] = {
 	// IAD Descriptor - Interface association descriptor for CDC class
 	0x08,									// bLength (8 bytes)
-	USBMain::IadDescriptor,				// bDescriptorType
+	USBMain::IadDescriptor,					// bDescriptorType
 	USBMain::CDCCmdInterface,				// bFirstInterface
 	0x02,									// bInterfaceCount
 	0x02,									// bFunctionClass (Communications and CDC Control)
@@ -329,7 +356,7 @@ const uint8_t CDCHandler::Descriptor[] = {
 	0x07,									// bLength: Endpoint Descriptor size
 	USBMain::EndpointDescriptor,			// bDescriptorType: Endpoint
 	USBMain::CDC_Cmd,						// bEndpointAddress
-	USBMain::Interrupt,					// bmAttributes: Interrupt
+	USBMain::Interrupt,						// bmAttributes: Interrupt
 	0x08,									// wMaxPacketSize
 	0x00,
 	0x10,									// bInterval
