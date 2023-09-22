@@ -76,7 +76,7 @@ void Config::RestoreConfig()
 	if (strcmp((char*)flashConfig, "CFG") == 0 && flashConfig[4] == configVersion) {
 		uint32_t configPos = 8;											// Position in buffer to store data
 
-		// Envelope Settings
+		// HID Settings
 		configPos += hidApp.StoreConfig(&flashConfig[configPos]);
 	}
 }

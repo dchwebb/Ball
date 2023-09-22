@@ -8,7 +8,7 @@ extern "C" {
 }
 #include "app_ble.h"
 #include "ble_hid.h"
-
+#include "configManager.h"
 
 // Check if a command has been received from USB, parse and action as required
 void CDCHandler::ProcessCommand()
@@ -64,6 +64,7 @@ void CDCHandler::ProcessCommand()
 				"outputgyro         -  Periodically output raw gyro data\r\n"
 				"fwversion          -  Read firmware version\r\n"
 				"battery            -  Get Battery Level\r\n"
+				"saveconfig         -  Save current offsets to flash\r\n"
 				"\r\n"
 
 #if (USB_DEBUG)
@@ -103,6 +104,9 @@ void CDCHandler::ProcessCommand()
 
 	} else if (cmd.compare("disconnect") == 0) {					// Disconnect
 		bleApp.DisconnectRequest();
+
+	} else if (cmd.compare("saveconfig") == 0) {					// Save offsets to flash
+		configManager.SaveConfig();
 
 	} else if (cmd.compare("fwversion") == 0) {						// Version of BLE firmware
 		WirelessFwInfo_t fwInfo;

@@ -11,7 +11,7 @@ public:
 	static constexpr uint32_t configVersion = 1;
 	static constexpr uint32_t BufferSize = 2048;
 	static constexpr bool eraseConfig = true;
-	static constexpr uint32_t flashConfigPage = 125;		// 128 pages for WB35; Page address: 4096 * (page - 1)
+	static constexpr uint32_t flashConfigPage = 53;		// 54 pages for WB35; Page address: 4096 * (page - 1)
 	uint32_t* const flashConfigAddr = reinterpret_cast<uint32_t* const>(0x08000000 + 4096 * (flashConfigPage - 1));
 
 	bool scheduleSave = false;

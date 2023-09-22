@@ -41,6 +41,7 @@ void HidApp::HidNotification(int16_t* payload, uint8_t len)
 	}
 
 	if (calibrateCounter == 0) {
+
 		// Adjust calibration offsets on the fly
 		if (abs(hidData.x - offset.x) < 50 && abs(hidData.y - offset.y) < 50 && abs(hidData.z - offset.z) < 50) {
 			offset.x = calibFilter * offset.x + (1.0f - calibFilter) * hidData.x;
