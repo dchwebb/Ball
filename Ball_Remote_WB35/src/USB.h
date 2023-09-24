@@ -13,11 +13,11 @@
 #define USB_DEBUG_COUNT 400
 #endif
 
+// Declare registers for PMA area
+struct USB_PMA_t {
 static constexpr uint32_t pmaBlocksMask = 0x1F << 10;
 static constexpr uint32_t pmaBlkSizeMask = 0x1 << 15;
 
-// Declare registers for PMA area
-typedef struct {
 	volatile uint16_t ADDR_TX;
 	volatile uint16_t COUNT_TX;
 	volatile uint16_t ADDR_RX;
@@ -26,17 +26,17 @@ typedef struct {
 	uint32_t GetRXCount()	{ return COUNT_RX & 0x3FF; }
 	void SetRXBlocks(uint32_t cnt)	{ COUNT_RX = (COUNT_RX & ~pmaBlocksMask) | (cnt << 10); }
 	void SetRXBlkSize(uint32_t cnt)	{ COUNT_RX = (COUNT_RX & ~pmaBlkSizeMask) | (cnt << 15); }
-} USB_PMA_TypeDef;
+};
 
 // Create struct for easy access to endpoint registers
-typedef struct {
+struct USB_EPR_t {
 	volatile uint16_t EPR;
 	volatile uint16_t reserved;
-} USB_EPR_TypeDef;
+};
 
 
-#define USB_PMA  ((USB_PMA_TypeDef*) USB_PMAADDR)
-#define USB_EPR  ((USB_EPR_TypeDef*)(&USBP->EP0R))
+
+
 #define USBP     USB
 
 #define LOBYTE(x)  (static_cast<uint8_t>(x & 0x00FFU))
@@ -81,17 +81,17 @@ private:
 	static constexpr uint8_t usbSerialNoSize = 24;
 	static constexpr uint32_t recipientMask = 0x03;
 	static constexpr uint32_t requestTypeMask = 0x60;
-	static constexpr uint32_t epAddrMask = 0x0F;
+	static constexpr uint8_t epAddrMask = 0x0F;
 
 
 	void ProcessSetupPacket();
-	void ReadPMA(uint16_t pma, USBHandler* handler);
-	void WritePMA(uint16_t pma, uint16_t bytes, USBHandler* handler);
-	void ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointType eptype);
+	void ReadPMA(const uint16_t pma, USBHandler* handler);
+	void WritePMA(const uint16_t pma, const uint16_t bytes, USBHandler* handler);
+	void ActivateEndpoint(uint8_t endpoint, const Direction direction, EndPointType eptype);
 	void GetDescriptor();
-	void EPStartXfer(const Direction direction, uint8_t endpoint, uint32_t xfer_len);
+	void EPStartXfer(const Direction direction, const uint8_t endpoint, uint32_t xfer_len);
 	void EP0In(const uint8_t* buff, uint32_t size);
-	bool ReadInterrupts(uint32_t interrupt);
+	bool ReadInterrupts(const uint32_t interrupt);
 	void IntToUnicode(uint32_t value, uint8_t* pbuf, uint8_t len);
 	uint32_t GetString(const char* desc);
 	uint32_t MakeConfigDescriptor();

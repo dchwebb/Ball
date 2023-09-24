@@ -102,42 +102,32 @@ void CDCHandler::ProcessCommand()
 		printf("x: %d, y:%d, z: %d\n", gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
 
 	} else if (cmd.compare(0, 8, "readspi:") == 0) {				// Read spi register
-		if (hidService.JoystickNotifications) {
-			usb->SendString("Currently connected\r\n");
+		uint8_t regNo;
+		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
+
+		if (res.ec == std::errc()) {
+			uint8_t readData = gyro.ReadRegister(regNo);
+			printf("I2C Register: %#04x Value: %#04x\r\n", regNo, readData);
 		} else {
-
-			uint8_t regNo;
-			auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
-
-			if (res.ec == std::errc()) {
-				uint8_t readData = gyro.ReadRegister(regNo);
-				printf("I2C Register: %#04x Value: %#04x\r\n", regNo, readData);
-			} else {
-				usb->SendString("Invalid register\r\n");
-			}
+			usb->SendString("Invalid register\r\n");
 		}
 
 	} else if (cmd.compare(0, 9, "writespi:") == 0) {			// write i2c register
-		if (hidService.JoystickNotifications) {
-			usb->SendString("Currently connected\r\n");
-		} else {
 
-			uint8_t regNo, value;
-			auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
+		uint8_t regNo, value;
+		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
 
+		if (res.ec == std::errc()) {			// no error
+			auto res = std::from_chars(cmd.data() + cmd.find(",") + 1, cmd.data() + cmd.size(), value, 16);
 			if (res.ec == std::errc()) {			// no error
-				auto res = std::from_chars(cmd.data() + cmd.find(",") + 1, cmd.data() + cmd.size(), value, 16);
-				if (res.ec == std::errc()) {			// no error
-					gyro.WriteCmd(regNo, value);
-					printf("SPI write: Register: %#04x Value: %#04x\r\n", regNo, value);
-				} else {
-					usb->SendString("Invalid value\r\n");
-				}
+				gyro.WriteCmd(regNo, value);
+				printf("SPI write: Register: %#04x Value: %#04x\r\n", regNo, value);
 			} else {
-				usb->SendString("Invalid register\r\n");
+				usb->SendString("Invalid value\r\n");
 			}
+		} else {
+			usb->SendString("Invalid register\r\n");
 		}
-
 
 	} else if (cmd.compare("rssi") == 0) {					// RSSI value
 		if (bleApp.connectionStatus != BleApp::ConnStatus::Connected) {

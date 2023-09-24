@@ -4,29 +4,17 @@
 #include "hw_conf.h"
 #include "hw_if.h"
 
-/**
- * BLE stack Options flags:
- * (bit 0): 1: LL only
- *          0: LL + host
- * (bit 1): 1: no service change desc.
- *          0: with service change desc.
- * (bit 2): 1: device name Read-Only
- *          0: device name R/W
- * (bit 7): 1: LE Power Class 1
- *          0: LE Power Class 2-3
- * other bits: reserved (shall be set to 0)
- */
+/** BLE stack Options flags:
+ * (bit 0): 1: LL only; 0: LL + host
+ * (bit 1): 1: no service change desc; 0: with service change desc.
+ * (bit 2): 1: device name Read-Only; 0: device name R/W
+ * (bit 7): 1: LE Power Class 1; 0: LE Power Class 2-3
+*/
 #define CFG_BLE_OPTIONS  (SHCI_C2_BLE_INIT_OPTIONS_LL_HOST | SHCI_C2_BLE_INIT_OPTIONS_WITH_SVC_CHANGE_DESC | SHCI_C2_BLE_INIT_OPTIONS_DEVICE_NAME_RW | SHCI_C2_BLE_INIT_OPTIONS_POWER_CLASS_2_3)
 
-
-
-/**
- * BLE stack Options_extension flags:
- * (bit 0): 1: appearance Writable
- *          0: appearance Read-Only
- * (bit 1): 1: Enhanced ATT supported
- *          0: Enhanced ATT not supported
- * other bits: reserved (shall be set to 0)
+/** BLE stack Options_extension flags:
+ * (bit 0): 1: appearance Writable; 0: appearance Read-Only
+ * (bit 1): 1: Enhanced ATT supported; 0: Enhanced ATT not supported
  */
 #define CFG_BLE_OPTIONS_EXT  (SHCI_C2_BLE_INIT_OPTIONS_APPEARANCE_READONLY | SHCI_C2_BLE_INIT_OPTIONS_ENHANCED_ATT_NOTSUPPORTED)
 
@@ -200,6 +188,7 @@ typedef enum {
     CFG_TASK_HCI_ASYNCH_EVT_ID,
 	CFG_TASK_JoystickNotification,
 	CFG_TASK_BatteryNotification,
+	CFG_TASK_GyroNotification,
     CFG_LAST_TASK_ID_WITH_HCICMD,                                               // Shall be LAST in the list
 } CFG_Task_Id_With_HCI_Cmd_t;
 

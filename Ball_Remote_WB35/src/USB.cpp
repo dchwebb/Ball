@@ -4,6 +4,9 @@
 bool USBDebug = true;		// Used if outputting debug over USB
 USBMain usb;
 
+USB_PMA_t* USB_PMA = (USB_PMA_t*)USB_PMAADDR;		// To access PMA registers as array
+USB_EPR_t* USB_EPR = (USB_EPR_t*)(&USBP->EP0R);		// To access Endpoint registers as array
+
 extern "C" {
 // To enable USB for printf commands (To print floats enable 'Use float with printf from newlib-nano' MCU Build Settings)
 size_t _write(int handle, const unsigned char* buf, size_t bufSize)
@@ -17,34 +20,34 @@ size_t _write(int handle, const unsigned char* buf, size_t bufSize)
 }
 }
 
-inline void ClearRxInterrupt(uint8_t ep)
+inline void ClearRxInterrupt(const uint8_t ep)
 {
-	uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPREG_MASK) & ~USB_EP_CTR_RX;
+	const uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPREG_MASK) & ~USB_EP_CTR_RX;
 	USB_EPR[ep].EPR = wRegVal | USB_EP_CTR_TX;
 }
 
-inline void ClearTxInterrupt(uint8_t ep)
+inline void ClearTxInterrupt(const uint8_t ep)
 {
-	uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPREG_MASK) & ~USB_EP_CTR_TX;
+	const uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPREG_MASK) & ~USB_EP_CTR_TX;
 	USB_EPR[ep].EPR = wRegVal | USB_EP_CTR_RX;
 }
 
 
-inline void SetTxStatus(uint8_t ep, uint16_t status)		// Set endpoint transmit status - have to use XOR to toggle bits
+inline void SetTxStatus(const uint8_t ep, const uint16_t status)		// Set endpoint transmit status - have to use XOR to toggle bits
 {
-	uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPTX_DTOGMASK) ^ status;
+	const uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPTX_DTOGMASK) ^ status;
 	USB_EPR[ep].EPR = wRegVal | USB_EP_CTR_RX | USB_EP_CTR_TX;
 }
 
 
-inline void SetRxStatus(uint8_t ep, uint16_t status)		// Set endpoint receive status - have to use XOR to toggle bits
+inline void SetRxStatus(const uint8_t ep, const uint16_t status)		// Set endpoint receive status - have to use XOR to toggle bits
 {
-	uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPRX_DTOGMASK) ^ status;
+	const uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPRX_DTOGMASK) ^ status;
 	USB_EPR[ep].EPR = wRegVal | USB_EP_CTR_RX | USB_EP_CTR_TX;
 }
 
 
-void USBMain::ReadPMA(uint16_t pma, USBHandler* handler)
+void USBMain::ReadPMA(const uint16_t pma, USBHandler* handler)
 {
 	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMAADDR + pma);		// Eg 0x40006018
 
@@ -60,7 +63,7 @@ void USBMain::ReadPMA(uint16_t pma, USBHandler* handler)
 }
 
 
-void USBMain::WritePMA(uint16_t pma, uint16_t bytes, USBHandler* handler)
+void USBMain::WritePMA(const uint16_t pma, const uint16_t bytes, USBHandler* handler)
 {
 	volatile uint16_t* pmaBuff = reinterpret_cast<volatile uint16_t*>(USB_PMAADDR + pma);
 
@@ -124,9 +127,9 @@ void USBMain::ProcessSetupPacket()
 
 
 // EPStartXfer setup and starts a transfer over an EP
-void USBMain::EPStartXfer(const Direction direction, uint8_t endpoint, uint32_t len)
+void USBMain::EPStartXfer(const Direction direction, const uint8_t endpoint, uint32_t len)
 {
-	uint8_t epIndex = (endpoint & epAddrMask);
+	const uint8_t epIndex = (endpoint & epAddrMask);
 
 	if (direction == Direction::in) {						// IN endpoint
 		if (len > ep_maxPacket) {
@@ -162,7 +165,7 @@ void USBMain::USBInterruptHandler()							// Originally in Drivers\STM32F4xx_HAL
 
 	/////////// 	8000 		USB_ISTR_CTR: Correct Transfer
 	while (ReadInterrupts(USB_ISTR_CTR)) {					// Originally PCD_EP_ISR_Handler
-		uint8_t epIndex = USBP->ISTR & USB_ISTR_EP_ID;		// Extract highest priority endpoint number
+		const uint8_t epIndex = USBP->ISTR & USB_ISTR_EP_ID;		// Extract highest priority endpoint number
 
 #if (USB_DEBUG)
 		usbDebug[usbDebugNo].endpoint = epIndex;
@@ -172,7 +175,7 @@ void USBMain::USBInterruptHandler()							// Originally in Drivers\STM32F4xx_HAL
 			if ((USBP->ISTR & USB_ISTR_DIR) == 0) {			// DIR = 0: Direction IN
 				ClearTxInterrupt(0);
 
-				uint16_t txBytes = USB_PMA[0].GetTXCount();
+				const uint16_t txBytes = USB_PMA[0].GetTXCount();
 				classByEP[epIndex]->inBuff += txBytes;
 
 				if (classByEP[epIndex]->inBuffRem > ep_maxPacket) {
@@ -319,26 +322,26 @@ void USBMain::InitUSB()
 }
 
 
-void USBMain::ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointType eptype)
+void USBMain::ActivateEndpoint(uint8_t endpoint, const Direction direction, EndPointType endpointType)
 {
-	endpoint = endpoint & 0xF;
-	uint16_t ep_type = 0;
-	switch (eptype) {
-		case Control:		ep_type = USB_EP_CONTROL;		break;
-		case Isochronous:	ep_type = USB_EP_ISOCHRONOUS;	break;
-		case Bulk:			ep_type = USB_EP_BULK;			break;
-		case Interrupt:		ep_type = USB_EP_INTERRUPT;		break;
+	endpoint = endpoint & epAddrMask;
+	uint16_t epType = 0;
+	switch (endpointType) {
+		case Control:		epType = USB_EP_CONTROL;		break;
+		case Isochronous:	epType = USB_EP_ISOCHRONOUS;	break;
+		case Bulk:			epType = USB_EP_BULK;			break;
+		case Interrupt:		epType = USB_EP_INTERRUPT;		break;
 	}
 
 	// Set the address (EA=endpoint) and type (EP_TYPE=ep_type)
-	USB_EPR[endpoint].EPR = (USB_EPR[endpoint].EPR & USB_EP_T_MASK) | (endpoint | ep_type | USB_EP_CTR_RX | USB_EP_CTR_TX);
+	USB_EPR[endpoint].EPR = (USB_EPR[endpoint].EPR & USB_EP_T_MASK) | (endpoint | epType | USB_EP_CTR_RX | USB_EP_CTR_TX);
 
 	if (direction == Direction::in) {
 		USB_PMA[endpoint].ADDR_TX = pmaAddress;						// Offset of PMA used for EP TX
 
 		// Clear tx data toggle (data packets must alternate 1 and 0 in the data field)
 		if ((USB_EPR[endpoint].EPR & USB_EP_DTOG_TX) != 0) {
-			uint16_t wEPVal = USB_EPR[endpoint].EPR & USB_EPREG_MASK;
+			const uint16_t wEPVal = USB_EPR[endpoint].EPR & USB_EPREG_MASK;
 			USB_EPR[endpoint].EPR = wEPVal | USB_EP_CTR_RX | USB_EP_CTR_TX | USB_EP_DTOG_TX;
 		}
 
@@ -348,7 +351,6 @@ void USBMain::ActivateEndpoint(uint8_t endpoint, Direction direction, EndPointTy
 		USB_PMA[endpoint].ADDR_RX = pmaAddress;						// Offset of PMA used for EP RX
 		USB_PMA[endpoint].SetRXBlkSize(1);					// configure block size = 1 (32 Bytes)
 		USB_PMA[endpoint].SetRXBlocks(1);					// number of blocks = 2 (64 bytes)
-		//USB_PMA[endpoint].COUNT_RX = (1 << USB_COUNT0_RX_BLSIZE_Pos) | (1 << USB_COUNT0_RX_NUM_BLOCK_Pos);		// configure block size = 1 (32 Bytes); number of blocks = 2 (64 bytes)
 
 		// Clear rx data toggle
 		if ((USB_EPR[endpoint].EPR & USB_EP_DTOG_RX) != 0) {
@@ -398,26 +400,26 @@ void USBMain::GetDescriptor()
 	case StringDescriptor:
 
 		switch ((uint8_t)(req.Value)) {
-		case StringIndex::LangId:				// 300
+		case StringIndex::LangId:
 			return EP0In(USBD_LangIDDesc, sizeof(USBD_LangIDDesc));
 			break;
 
-		case StringIndex::Manufacturer:			// 301
+		case StringIndex::Manufacturer:
 			strSize = StringToUnicode(manufacturerString, stringDescr);
 			return EP0In(stringDescr, strSize);
 			break;
 
-		case StringIndex::Product:				// 302
+		case StringIndex::Product:
 			strSize = StringToUnicode(productString, stringDescr);
 			return EP0In(stringDescr, strSize);
 			break;
 
-		case StringIndex::Serial:				// 303
+		case StringIndex::Serial:
 			SerialToUnicode();
 			return EP0In(stringDescr, stringDescr[0]);				// length is 24 bytes (x2 for unicode padding) + 2 for header
 			break;
 
-	    case StringIndex::CommunicationClass:	// 306
+	    case StringIndex::CommunicationClass:
 	    	strSize = StringToUnicode(cdcString, stringDescr);
 	    	return EP0In(stringDescr, strSize);
 	      break;
@@ -447,7 +449,7 @@ uint32_t USBMain::MakeConfigDescriptor()
 	for (auto c : classByEP) {
 		if (c != nullptr) {
 			const uint8_t* descBuff = nullptr;
-			uint32_t descSize = c->GetInterfaceDescriptor(&descBuff);
+			const uint32_t descSize = c->GetInterfaceDescriptor(&descBuff);
 			memcpy(&configDescriptor[descPos], descBuff, descSize);
 			descPos += descSize;
 	}
@@ -455,11 +457,11 @@ uint32_t USBMain::MakeConfigDescriptor()
 
 	// Insert config descriptor header
 	const uint8_t descriptorHeader[] = {
-		0x09,								// bLength: Configuration Descriptor size
+		descrHeaderSize,					// bLength: Configuration Descriptor size
 		ConfigurationDescriptor,			// bDescriptorType: Configuration
 		LOBYTE(descPos),					// wTotalLength
 		HIBYTE(descPos),
-		interfaceCount,						// bNumInterfaces: 4 [2 CDC, 2 MIDI]
+		interfaceCount,						// bNumInterfaces
 		0x01,								// bConfigurationValue: Configuration value
 		0x04,								// iConfiguration: Index of string descriptor describing the configuration
 		0xC0,								// bmAttributes: self powered
@@ -500,7 +502,7 @@ void USBMain::SerialToUnicode()
 }
 
 
-bool USBMain::ReadInterrupts(uint32_t interrupt)
+bool USBMain::ReadInterrupts(const uint32_t interrupt)
 {
 #if (USB_DEBUG)
 	if ((USBP->ISTR & interrupt) == interrupt && usbDebugEvent < USB_DEBUG_COUNT) {

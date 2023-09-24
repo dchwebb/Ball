@@ -65,8 +65,8 @@ private:
 	static constexpr uint16_t NumberOfGATTServices = 8;					// Max number of Services stored in the GATT database.
 
 	// number of characteristic + number of characteristic values + number of descriptors, excluding the services
-	// Note: some characteristics and relative descriptors added automatically at initialization so this parameter is 9 + number of user Attributes
-	static constexpr uint16_t NumberOfGATTAttributes = 68;				// Max number of attributes stored in GATT database
+	// Note: some characteristics and relative descriptors added automatically at initialization so this is 9 + number of user Attributes
+	static constexpr uint16_t NumberOfGATTAttributes = 128;				// Max number of attributes stored in GATT database
 
 	// Keys used to derive LTK and CSRK
 	static constexpr uint8_t IdentityRootKey[16] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0};

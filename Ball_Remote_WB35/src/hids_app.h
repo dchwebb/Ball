@@ -34,12 +34,19 @@ private:
 	uint16_t HidInformationHandle;
 	uint16_t HidControlPointHdle;
 	uint16_t ReportMapHandle;
+	uint16_t GyroRegisterHandle;
+
+	struct {
+		uint8_t reg = 0;
+		uint8_t val = 0;
+	} gyroRegister;
 
 	void AppInit();
 	static void UpdateJoystickReportChar();
 	void UpdateReportMapChar();
 	void UpdateHidInformationChar();
 	void ControlPointWrite(uint16_t data);
+	static void UpdateGyroChar();
 };
 
 

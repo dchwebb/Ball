@@ -14,7 +14,7 @@ void HidService::Init()
 	hciCmdResult = aci_gatt_add_service(UUID_TYPE_16,
 			(Service_UUID_t*) &uuid,
 			PRIMARY_SERVICE,
-			12,							// Max_Attribute_Records
+			16,							// Max_Attribute_Records
 			&(ServiceHandle));
 	APP_DBG_MSG("- HIDS: Registered HID Service handle: 0x%X\n", ServiceHandle);
 
@@ -58,6 +58,19 @@ void HidService::Init()
 			CHAR_VALUE_LEN_VARIABLE,
 			&(ReportMapHandle));
 	APP_DBG_MSG("- HIDS: Registered Report Map characteristic handle: 0x%X\n", ReportMapHandle);
+
+	uuid = GYRO_REGISTER_CHAR_UUID;
+	hciCmdResult = aci_gatt_add_char(ServiceHandle,
+			UUID_TYPE_16,
+			(Char_UUID_t*)&uuid,
+			4,
+			CHAR_PROP_READ | CHAR_PROP_WRITE,
+			ATTR_PERMISSION_NONE,
+			GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP | GATT_NOTIFY_ATTRIBUTE_WRITE | GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP, // gattEvtMask
+			10, 							// encryKeySize
+			CHAR_VALUE_LEN_VARIABLE,
+			&(GyroRegisterHandle));
+	APP_DBG_MSG("- HIDS: Registered Gyro characteristic handle: 0x%X\n", GyroRegisterHandle);
 
 	uuid = REPORT_CHAR_UUID;
 	hciCmdResult = aci_gatt_add_char(ServiceHandle,
@@ -111,7 +124,9 @@ void HidService::AppInit()
 
 	// Use the sequencer to update the report char so that to avoid write conflicts
 	UTIL_SEQ_RegTask(1 << CFG_TASK_JoystickNotification, 0, UpdateJoystickReportChar);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_GyroNotification, 0, UpdateGyroChar);
 	UpdateJoystickReportChar();
+	UpdateGyroChar();
 }
 
 
@@ -136,6 +151,12 @@ void HidService::UpdateReportMapChar()
 void HidService::UpdateHidInformationChar()
 {
 	aci_gatt_update_char_value(ServiceHandle, ReportJoystickHandle, 0,	sizeof(joystickReport),	(uint8_t*)&joystickReport);
+}
+
+
+void HidService::UpdateGyroChar()
+{
+	aci_gatt_update_char_value(hidService.ServiceHandle, hidService.GyroRegisterHandle, 0, 2, (uint8_t*)&hidService.gyroRegister);
 }
 
 
@@ -201,6 +222,22 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 			hidService.ControlPointWrite(write_data);
 		}
 
+		if (attribute_modified->Attr_Handle == (hidService.GyroRegisterHandle + ValueOffset)) {
+			// Provide mechanism to read and write gyro registers. If one byte sent then the value of that register can be read; two bytes to write to a register
+			gyroRegister.reg = attribute_modified->Attr_Data[0];			// Store register number in case reading
+			if (attribute_modified->Attr_Data_Length == 1) {
+				if (gyroRegister.reg >= 0x0F && gyroRegister.reg <= 0x38) {
+					gyroRegister.val = gyro.ReadRegister(gyroRegister.reg);
+					UTIL_SEQ_SetTask(1 << CFG_TASK_GyroNotification, CFG_SCH_PRIO_0);
+				}
+			} else {
+				gyroRegister.val = attribute_modified->Attr_Data[1];
+				gyro.WriteCmd(gyroRegister.reg, gyroRegister.val);
+			}
+
+			handled = true;
+		}
+
 		break;
 
 	case ACI_GATT_READ_PERMIT_REQ_VSEVT_CODE:
@@ -220,6 +257,10 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 			handled = true;
 			aci_gatt_allow_read(read_req->Connection_Handle);
 		}
+		if (read_req->Attribute_Handle == (hidService.GyroRegisterHandle + ValueOffset)) {
+			handled = true;
+			aci_gatt_allow_read(read_req->Connection_Handle);
+		}
 		break;
 
 	case ACI_ATT_EXEC_WRITE_RESP_VSEVT_CODE:
@@ -230,15 +271,16 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 		write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
 		if (write_perm_req->Attribute_Handle == (hidService.HidControlPointHdle + ValueOffset)) {
 			handled = true;
-			/* Allow or reject a write request from a client using aci_gatt_write_resp(...) function */
-//				tBleStatus aci_gatt_write_resp( uint16_t Connection_Handle,
-//				                                uint16_t Attr_Handle,
-//				                                uint8_t Write_status,
-//				                                uint8_t Error_Code,
-//				                                uint8_t Attribute_Val_Length,
-//				                                const uint8_t* Attribute_Val )
-//				aci_gatt_write_resp(read_req->Connection_Handle);
 		}
+//		if (write_perm_req->Attribute_Handle == (hidService.GyroRegisterHandle + ValueOffset)) {
+//			uint8_t len = write_perm_req->Data_Length;
+//			gyroRegister = write_perm_req->Data[0];			// Store register number in case reading
+//			if (len == 2) {
+//				uint8_t val = write_perm_req->Data[1];
+//			}
+//
+//			handled = true;
+//		}
 		break;
 
 	default:
