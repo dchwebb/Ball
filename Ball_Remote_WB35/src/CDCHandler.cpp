@@ -164,7 +164,7 @@ void CDCHandler::ProcessCommand()
 		extern bool sleep;
 		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
 
-	} else if (cmd.compare("shutdown") == 0) {				// Enter sleep mode
+	} else if (cmd.compare("shutdown") == 0) {
 		usb->SendString("Shutting down\n");
 		bleApp.lowPowerMode = BleApp::LowPowerMode::Shutdown;
 		extern bool sleep;

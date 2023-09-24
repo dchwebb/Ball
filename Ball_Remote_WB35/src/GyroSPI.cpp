@@ -7,7 +7,9 @@ GyroSPI gyro;		// For use with ST L3GD20
 
 void GyroSPI::Setup()
 {
-	WriteCmd(0x20, 0x6F);									// CTRL_REG1: DR = 01 (200 Hz ODR); BW = 10 (50 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+	//WriteCmd(0x20, 0x6F);									// CTRL_REG1: DR = 01 (200 Hz ODR); BW = 10 (50 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+	WriteCmd(0x20, 0x8F);									// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+//	WriteCmd(0x24, 0x16);									// CTRL_REG5: Enable HP filter: BOOT | FIFO_EN | -- | HPen = 1 | INT1_Sel1 | INT1_Sel0 | Out_Sel1 | Out_Sel0
 
 	// Configure read settings
 	SPI1->CR2 &= ~SPI_CR2_DS;								// Set data size to 8 bit
