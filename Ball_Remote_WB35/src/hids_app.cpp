@@ -155,7 +155,7 @@ void HidService::UpdateHidInformationChar()
 
 void HidService::UpdateGyroChar()
 {
-	aci_gatt_update_char_value(hidService.ServiceHandle, hidService.GyroRegisterHandle, 0, 2, (uint8_t*)&hidService.gyroRegister);
+	aci_gatt_update_char_value(hidService.ServiceHandle, hidService.GyroRegisterHandle, 0, 2, &hidService.gyroRegister.reg);
 }
 
 

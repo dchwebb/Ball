@@ -36,15 +36,15 @@ public:
 private:
 	uint16_t connHandle;							// connection handle
 
-	uint16_t HIDServiceHandle;						// handle of the HID service
-	uint16_t HIDServiceEndHandle;					// end handle of the HID service
-	uint16_t HIDNotificationCharHdle;				// handle of the HID Report characteristic
-	uint16_t HIDNotificationDescHandle;				// handle of the HID report client configuration descriptor
-	uint16_t BatteryServiceHandle;					// handle of the Battery service
-	uint16_t BatteryServiceEndHandle;				// end handle of the Battery service
-	uint16_t BatteryNotificationCharHdle;			// handle of the Rx characteristic - Notification From Server
-	uint16_t BatteryNotificationDescHandle;			// handle of the client configuration descriptor of Rx characteristic
-	uint16_t HIDReportMapHdle;						// handle of report map
+	uint16_t hidServiceHandle;						// handle of the HID service
+	uint16_t hidServiceEndHandle;					// end handle of the HID service
+	uint16_t hidNotificationCharHandle;				// handle of the HID Report characteristic
+	uint16_t hidNotificationDescHandle;				// handle of the HID report client configuration descriptor
+	uint16_t batteryServiceHandle;					// handle of the Battery service
+	uint16_t batteryServiceEndHandle;				// end handle of the Battery service
+	uint16_t batteryNotificationCharHandle;			// handle of the Rx characteristic - Notification From Server
+	uint16_t batteryNotificationDescHandle;			// handle of the client configuration descriptor of Rx characteristic
+	uint16_t hidReportMapHandle;					// handle of report map
 	uint16_t gyroNotificationCharHandle;			// Gyroscope register read/write handle
 	uint16_t gyroNotificationDescHandle;			// Gyroscope register read/write handle
 
