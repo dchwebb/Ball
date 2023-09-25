@@ -104,13 +104,7 @@ bool BasService::EventHandler(hci_event_pckt* event_pckt)
 		auto attribute_modified = (aci_gatt_attribute_modified_event_rp0*)blecore_evt->data;
 		if (attribute_modified->Attr_Handle == (batteryLevelHandle + 2)) {		// 2 = Offset of descriptor from characteristic handle
 			handled = true;
-
-			if (attribute_modified->Attr_Data[0] == 1) {
-				batteryNotifications = true;
-				//UpdateBatteryChar();
-			} else {
-				batteryNotifications = false;
-			}
+			batteryNotifications = (attribute_modified->Attr_Data[0] == 1);
 		}
 		break;
 	}

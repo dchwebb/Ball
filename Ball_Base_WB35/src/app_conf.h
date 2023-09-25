@@ -164,6 +164,8 @@ typedef enum
     CFG_TASK_DisconnectRequest,
 	CFG_TASK_HIDServiceDiscovery,
 	CFG_TASK_GetBatteryLevel,
+	CFG_TASK_SetGyroRegister,
+	CFG_TASK_ReadGyroRegister,
     CFG_TASK_CONN_UPDATE_ID,
     CFG_TASK_HCI_ASYNCH_EVT_ID,
     CFG_LAST_TASK_ID_WITH_HCICMD,                                               // Last in the list

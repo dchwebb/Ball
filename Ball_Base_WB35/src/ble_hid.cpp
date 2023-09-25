@@ -12,6 +12,8 @@ void HidApp::Init(void)
 {
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HIDServiceDiscovery, UTIL_SEQ_RFU, HIDServiceDiscovery);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_GetBatteryLevel, UTIL_SEQ_RFU, GetBatteryLevel);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_SetGyroRegister, UTIL_SEQ_RFU, SetGyroRegister);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_ReadGyroRegister, UTIL_SEQ_RFU, ReadGyroRegister);
 	state = HidState::Idle;
 	SVCCTL_RegisterCltHandler(HIDEventHandler);
 }
@@ -81,6 +83,7 @@ void HidApp::HidNotification(int16_t* payload, uint8_t len)
 	TIM2->CCR1 = static_cast<int16_t>(position3D.x);
 	TIM2->CCR2 = static_cast<int16_t>(position3D.y);
 	TIM2->CCR3 = static_cast<int16_t>(position3D.z);
+
 }
 
 
@@ -90,6 +93,27 @@ void HidApp::GetBatteryLevel()
 		printf("* GATT : Get Battery Level\n");
 		hidApp.action = HidApp::HidAction::BatteryLevel;
 		aci_gatt_read_char_value(hidApp.connHandle, hidApp.BatteryNotificationCharHdle);
+	}
+}
+
+
+void HidApp::SetGyroRegister()
+{
+	// Set the gyroscope register number for subsequent read
+	if (hidApp.state == HidApp::HidState::ClientConnected) {
+		printf("* GATT : Get Gyro Register\n");
+		hidApp.action = HidApp::HidAction::GyroRead;
+		// Write the register value as a single byte - the register value can then be read from the char
+		aci_gatt_write_char_value(hidApp.connHandle, hidApp.gyroNotificationCharHandle, 1, &hidApp.gyroRegister);
+	}
+}
+
+
+void HidApp::ReadGyroRegister()
+{
+	// Set the gyroscope register number for subsequent read
+	if (hidApp.state == HidApp::HidState::ClientConnected && hidApp.action == HidApp::HidAction::GyroRead) {
+		aci_gatt_read_char_value(hidApp.connHandle, hidApp.gyroNotificationCharHandle);
 	}
 }
 
@@ -209,6 +233,11 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 							hidApp.state = HidState::DiscoveredCharacteristics;
 							hidApp.HIDReportMapHdle = handle;
 							break;
+						case 0xFE40:
+							printf("  - UUID: 0x%x handle: 0x%x [Gyro Register]\n", uuid, handle);
+							hidApp.state = HidState::DiscoveredCharacteristics;
+							hidApp.gyroNotificationCharHandle = handle;
+							break;
 						default:
 							printf("  - UUID: 0x%x handle: 0x%x\r\n", uuid, handle);
 						}
@@ -226,7 +255,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 			break;
 
 		case ACI_ATT_FIND_INFO_RESP_VSEVT_CODE:
-			if (hidApp.state == HidState::DiscoveredCharacteristics || hidApp.state == HidState::EnableNotificationDesc  || hidApp.state == HidState::EnableHIDNotificationDesc) {
+			if (hidApp.state == HidState::DiscoveredCharacteristics || hidApp.state == HidState::EnableNotificationDesc || hidApp.state == HidState::EnableHIDNotificationDesc || hidApp.state == HidState::EnableGyroNotificationDesc) {
 				// After finding client configuration descriptor to activate notify event
 				auto *notificationEvent = (aci_att_find_info_resp_event_rp0*)bleCoreEvent->data;
 
@@ -240,15 +269,22 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 						uint16_t handle = *((uint16_t*)&notificationEvent->Handle_UUID_Pair[idx]);
 						uint16_t uuid = *((uint16_t*)&notificationEvent->Handle_UUID_Pair[idx + 2]);
 
-						if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > hidApp.BatteryNotificationCharHdle && handle <= hidApp.BatteryServiceEndHandle) {
-							printf("  - Battery Client Char Config Descriptor: 0x%x\r\n", handle);
-							hidApp.BatteryNotificationDescHandle = handle;
-							hidApp.state = HidState::EnableNotificationDesc;
+						if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID) {
+							if (handle > hidApp.BatteryNotificationCharHdle && handle <= hidApp.BatteryServiceEndHandle) {
+								printf("  - Battery Client Char Config Descriptor: 0x%x\r\n", handle);
+								hidApp.BatteryNotificationDescHandle = handle;
+								hidApp.state = HidState::EnableNotificationDesc;
 
-						} else if (uuid == CLIENT_CHAR_CONFIG_DESCRIPTOR_UUID && handle > hidApp.HIDNotificationCharHdle && handle <= hidApp.HIDServiceEndHandle) {
-							printf("  - HID Client Char Config Descriptor: 0x%x\r\n", handle);
-							hidApp.HIDNotificationDescHandle = handle;
-							hidApp.state = HidState::EnableNotificationDesc;
+							} else if (handle > hidApp.HIDNotificationCharHdle && handle <= hidApp.HIDServiceEndHandle) {
+								printf("  - HID Client Char Config Descriptor: 0x%x\r\n", handle);
+								hidApp.HIDNotificationDescHandle = handle;
+								hidApp.state = HidState::EnableNotificationDesc;
+
+							} else if (handle > hidApp.gyroNotificationCharHandle && handle <= hidApp.HIDServiceEndHandle) {
+								printf("  - Gyro Client Char Config Descriptor: 0x%x\r\n", handle);
+								hidApp.gyroNotificationDescHandle = handle;
+								hidApp.state = HidState::EnableNotificationDesc;
+							}
 						}
 						idx += 4;
 					}
@@ -267,11 +303,19 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 			break;
 
 		case ACI_ATT_READ_RESP_VSEVT_CODE:
-			if (hidApp.action == HidApp::HidAction::BatteryLevel) {
+			{
 				auto *pr = (aci_att_read_resp_event_rp0*)bleCoreEvent->data;
-				printf("Battery Level: %d%%\n\r", pr->Attribute_Value[0]);
-				hidApp.action = HidApp::HidAction::None;
-				handled = SVCCTL_EvtAckFlowEnable;
+
+				if (hidApp.action == HidApp::HidAction::BatteryLevel) {
+					printf("Battery Level: %d%%\n\r", pr->Attribute_Value[0]);
+					hidApp.action = HidApp::HidAction::None;
+					handled = SVCCTL_EvtAckFlowEnable;
+				}
+				if (hidApp.action == HidApp::HidAction::GyroRead) {
+					printf("Gyroscope Register: %04X\n\r", *(uint16_t*)pr->Attribute_Value);
+					hidApp.action = HidApp::HidAction::None;
+					handled = SVCCTL_EvtAckFlowEnable;
+				}
 			}
 			break;
 
@@ -285,6 +329,11 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 				}
 				if (pr->Attribute_Handle == hidApp.HIDNotificationCharHdle) {
 					hidApp.HidNotification((int16_t*)&pr->Attribute_Value[0], pr->Attribute_Value_Length);
+					handled = SVCCTL_EvtAckFlowEnable;
+				}
+				if (pr->Attribute_Handle == hidApp.gyroNotificationCharHandle) {
+					printf("Gyroscope Register: %04X\n\r", *(uint16_t*)pr->Attribute_Value);
+					hidApp.action = HidApp::HidAction::None;
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
 			}
@@ -393,6 +442,13 @@ void HidApp::HIDServiceDiscovery()
 		case HidState::EnableHIDNotificationDesc:
 			printf("* GATT : Enable HID Notification\n");
 			aci_gatt_write_char_desc(hidApp.connHandle, hidApp.HIDNotificationDescHandle, 2, &enable);
+
+			hidApp.state = HidState::EnableGyroNotificationDesc;
+			break;
+
+		case HidState::EnableGyroNotificationDesc:
+			printf("* GATT : Enable Gyro Notification\n");
+			aci_gatt_write_char_desc(hidApp.connHandle, hidApp.gyroNotificationDescHandle, 2, &enable);
 
 			hidApp.state = HidState::ClientConnected;
 			break;

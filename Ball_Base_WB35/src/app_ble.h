@@ -2,7 +2,7 @@
 #include "app_conf.h"
 #include "hci_tl.h"
 #include <string>
-#include "uartHandler.h"
+#include <memory>
 
 // Advertising report created on the fly to preserve data for parsing and diagnostic output
 struct AdvertisingReport {

@@ -58,6 +58,7 @@ void CDCHandler::ProcessCommand()
 				"disconnect         -  Disconnect to HID BLE device\r\n"
 				"hidmap:x12         -  Print HID report map at 12 hex digit device address\r\n"
 				"sensitivity:x      -  Amount to divide raw gyro data\r\n"
+				"readgyro:HH        -  Read Gyro register\r\n"
 				"offset:x=?         -  X/Y/Z offset (more negative if falling)\r\n"
 				"calibrate          -  Recenter and calibrate gyro offsets\r\n"
 				"recenter           -  Recenter all channels\r\n"
@@ -85,6 +86,21 @@ void CDCHandler::ProcessCommand()
 
 	} else if (cmd.compare("scan") == 0) {							// List ble devices
 		bleApp.ScanInfo();
+
+	} else if (cmd.compare(0, 9, "readgyro:") == 0) {				// Read gyroscope register
+		uint8_t regNo;
+		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
+
+		if (res.ec == std::errc()) {
+			hidApp.gyroRegister = regNo;
+			UTIL_SEQ_SetTask(1 << CFG_TASK_SetGyroRegister, CFG_SCH_PRIO_0);
+			printf("Requesting register: %#02x\r\n", regNo);
+		} else {
+			usb->SendString("Invalid register\r\n");
+		}
+
+	} else if (cmd.compare(0, 9, "gyroreg") == 0) {				// Read gyroscope register
+		UTIL_SEQ_SetTask(1 << CFG_TASK_ReadGyroRegister, CFG_SCH_PRIO_0);
 
 	} else if (cmd.compare(0, 7, "hidmap:") == 0) {					// Print Hid repot map for given address
 

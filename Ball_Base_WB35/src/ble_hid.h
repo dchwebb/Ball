@@ -8,9 +8,9 @@ struct HidApp {
 public:
 	// state of the HID Client state machine
 	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverServices, DiscoverCharacteristics, DiscoveredCharacteristics, DiscoveringCharacteristics,
-		EnableNotificationDesc, EnableHIDNotificationDesc} state;
+		EnableNotificationDesc, EnableHIDNotificationDesc, EnableGyroNotificationDesc} state;
 
-	enum class HidAction {None, Connect, GetReportMap, BatteryLevel} action;
+	enum class HidAction {None, Connect, GetReportMap, BatteryLevel, GyroRead} action;
 
 	struct Pos3D {
 		float x = 2047.0;
@@ -21,12 +21,15 @@ public:
 	Pos3D offset = {0.0f, 0.0f, 0.0f};				// Calibrated adjustment for gyroscope offsets and drift
 	float divider = 600.0f;							// Divider for raw gyroscope data (increase for more sensitivity)
 	bool outputGyro = false;						// Set to true to output raw gyro and received
+	uint8_t gyroRegister = 0;
 
 	void Init();
 	void HIDConnectionNotification();
 	void Calibrate();
 	void GetReportMap();
 	static void GetBatteryLevel();
+	static void SetGyroRegister();
+	static void ReadGyroRegister();
 	uint32_t SerialiseConfig(uint8_t** buff);
 	uint32_t StoreConfig(uint8_t* buff);
 
@@ -42,6 +45,8 @@ private:
 	uint16_t BatteryNotificationCharHdle;			// handle of the Rx characteristic - Notification From Server
 	uint16_t BatteryNotificationDescHandle;			// handle of the client configuration descriptor of Rx characteristic
 	uint16_t HIDReportMapHdle;						// handle of report map
+	uint16_t gyroNotificationCharHandle;			// Gyroscope register read/write handle
+	uint16_t gyroNotificationDescHandle;			// Gyroscope register read/write handle
 
 	static constexpr float calibFilter = 0.9999f;	// 1 pole filter co-efficient for smoothing long-term drift adjustments
 	static constexpr int32_t calibrateCount = 200;	// Total number of readings to use when calibrating
