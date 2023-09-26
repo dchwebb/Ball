@@ -26,6 +26,7 @@ inline void ClearRxInterrupt(const uint8_t ep)
 	USB_EPR[ep].EPR = wRegVal | USB_EP_CTR_TX;
 }
 
+
 inline void ClearTxInterrupt(const uint8_t ep)
 {
 	const uint16_t wRegVal = (USB_EPR[ep].EPR & USB_EPREG_MASK) & ~USB_EP_CTR_TX;

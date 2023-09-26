@@ -119,7 +119,7 @@ void CDCHandler::ProcessCommand()
 				if (res.ec == std::errc()) {			// no error
 					hidApp.gyroCommand = regNo | value << 8;
 					hidApp.gyroCmdType = HidApp::GyroCmdType::write;
-					printf("Gyro write: Register: %#04x Value: %#04x\r\n", regNo, value);
+					printf("Gyro write: Register: %#02x Value: %#02x\r\n", regNo, value);
 					UTIL_SEQ_SetTask(1 << CFG_TASK_GyroCommand, CFG_SCH_PRIO_0);
 				} else {
 					usb->SendString("Invalid value\r\n");

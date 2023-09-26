@@ -121,7 +121,7 @@ void HidApp::ReadGyroRegister()
 		tBleStatus result = 0x0C;
 		uint32_t retryCount = 0;
 
-		// this command returns error 0x0C which is not documented but seems to clear after a while, so probably a 'not ready' error
+		// this command returns error 0x0C which is undocumented but clears after a while, so probably a 'not ready' error
 		while (result != BLE_STATUS_SUCCESS && retryCount < 1000) {
 			result = aci_gatt_read_char_value(hidApp.connHandle, hidApp.gyroRegNotificationCharHandle);
 			++retryCount;
@@ -327,12 +327,12 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 				auto *pr = (aci_att_read_resp_event_rp0*)bleCoreEvent->data;
 
 				if (hidApp.action == HidApp::HidAction::BatteryLevel) {
-					printf("Battery Level: %d%%\n\r", pr->Attribute_Value[0]);
+					printf("Battery Level: 0x%d%%\r\n", pr->Attribute_Value[0]);
 					hidApp.action = HidApp::HidAction::None;
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
 				if (hidApp.action == HidApp::HidAction::GyroRead) {
-					printf("Gyroscope Value: %02X\n\r", pr->Attribute_Value[0]);
+					printf("Gyroscope Value: %#02x\r\n", pr->Attribute_Value[0]);
 					hidApp.action = HidApp::HidAction::None;
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
@@ -460,12 +460,12 @@ void HidApp::HIDServiceDiscovery()
 			printf("* GATT : Enable HID Notification\n");
 			aci_gatt_write_char_desc(hidApp.connHandle, hidApp.hidNotificationDescHandle, 2, &enable);
 			hidApp.state = HidState::ClientConnected;
+			hidApp.action = HidAction::None;
 			break;
 
 		case HidState::Disconnect:
 			printf("* GATT : Disconnect\n");
 			bleApp.DisconnectRequest();
-
 			break;
 
 		default:

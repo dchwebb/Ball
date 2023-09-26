@@ -8,7 +8,7 @@ struct HidApp {
 public:
 	// state of the HID Client state machine
 	enum class HidState {Idle, ClientConnected, Disconnect, DiscoverServices, DiscoverCharacteristics, DiscoveredCharacteristics, DiscoveringCharacteristics,
-		EnableNotificationDesc, EnableHIDNotificationDesc, EnableGyroNotificationDesc} state;
+		EnableNotificationDesc, EnableHIDNotificationDesc} state;
 
 	enum class HidAction {None, Connect, GetReportMap, BatteryLevel, GyroRead} action;
 
@@ -63,7 +63,6 @@ private:
 	int32_t calibrateCounter = 0;					// When calibrating offsets keeps count of readings averaged
 	float calibX, calibY, calibZ;					// Temporary totals used during calibration
 	uint32_t lastPrint = 0;							// For perdiodic printing of gyro output
-	uint32_t gyroLastRead = 0;
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void HIDServiceDiscovery();
