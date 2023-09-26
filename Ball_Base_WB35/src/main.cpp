@@ -3,7 +3,6 @@
 #include "app_ble.h"
 #include "USB.h"
 #include "configManager.h"
-#include "HidApp.h"
 
 volatile uint32_t SysTickVal = 0;
 extern uint32_t SystemCoreClock;
@@ -25,7 +24,6 @@ int main()
 		}
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
 		bleApp.LedFlash();			// Check if connection LED needs to be flashed
-		hidApp.IdleTasks();			// Used to handle gyroscope register reading
 	}
 }
 

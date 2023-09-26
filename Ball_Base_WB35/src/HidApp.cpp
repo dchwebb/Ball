@@ -118,17 +118,14 @@ void HidApp::ReadGyroRegister()
 	// Set the gyroscope register number for subsequent read
 	if (hidApp.state == HidApp::HidState::ClientConnected) {
 		hidApp.action = HidApp::HidAction::GyroRead;
-		aci_gatt_read_char_value(hidApp.connHandle, hidApp.gyroRegNotificationCharHandle);
-	}
-}
+		tBleStatus result = 0x0C;
+		uint32_t retryCount = 0;
 
-
-void HidApp::IdleTasks()
-{
-	// Notification does not always fire so trigger periodic reads to get value
-	if (hidApp.action == HidApp::HidAction::GyroRead && gyroLastRead < SysTickVal - 5) {
-		UTIL_SEQ_SetTask(1 << CFG_TASK_ReadGyroRegister, CFG_SCH_PRIO_0);
-		gyroLastRead = SysTickVal;
+		// this command returns error 0x0C which is not documented but seems to clear after a while, so probably a not ready error
+		while (result != BLE_STATUS_SUCCESS && retryCount < 1000) {
+			result = aci_gatt_read_char_value(hidApp.connHandle, hidApp.gyroRegNotificationCharHandle);
+			++retryCount;
+		}
 	}
 }
 

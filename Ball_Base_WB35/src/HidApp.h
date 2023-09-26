@@ -33,7 +33,6 @@ public:
 	static void ReadGyroRegister();
 	uint32_t SerialiseConfig(uint8_t** buff);
 	uint32_t StoreConfig(uint8_t* buff);
-	void IdleTasks();
 
 private:
 	static constexpr uint16_t GYRO_CMD_CHAR_UUID = 0xFE40;
