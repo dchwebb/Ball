@@ -22,7 +22,7 @@ void BasService::Init()
 	hciCmdResult = aci_gatt_add_char(serviceHandle,
 			UUID_TYPE_16,
 			(Char_UUID_t*)&uuid,
-			4,										// Char value length
+			2,										// Char value length
 			CHAR_PROP_READ | CHAR_PROP_NOTIFY,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP,

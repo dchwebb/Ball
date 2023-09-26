@@ -62,12 +62,12 @@ void HidService::Init()
 	hciCmdResult = aci_gatt_add_char(ServiceHandle,
 			UUID_TYPE_16,
 			(Char_UUID_t*)&uuid,
-			4,
+			2,
 			CHAR_PROP_READ | CHAR_PROP_WRITE | CHAR_PROP_NOTIFY,
 			ATTR_PERMISSION_NONE,
 			GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP | GATT_NOTIFY_ATTRIBUTE_WRITE,
 			10,
-			CHAR_VALUE_LEN_VARIABLE,
+			CHAR_VALUE_LEN_CONSTANT,
 			&(GyroRegisterHandle));
 	APP_DBG_MSG("- HIDS: Registered Gyro characteristic handle: 0x%X\n", GyroRegisterHandle);
 
@@ -155,7 +155,7 @@ void HidService::UpdateHidInformationChar()
 
 void HidService::UpdateGyroChar()
 {
-	aci_gatt_update_char_value(hidService.ServiceHandle, hidService.GyroRegisterHandle, 0, 2, &hidService.gyroRegister.reg);
+	aci_gatt_update_char_value(hidService.ServiceHandle, hidService.GyroRegisterHandle, 0, 2, (uint8_t*)&hidService.gyroRegister);
 }
 
 
@@ -224,15 +224,15 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 		if (attribute_modified->Attr_Handle == (hidService.GyroRegisterHandle + ValueOffset)) {
 			// Provide mechanism to read and write gyro registers
 			// If one byte sent then the value of that register can be read; two bytes to write to a register
-			gyroRegister.reg = attribute_modified->Attr_Data[0];			// Store register number in case reading
-			if (attribute_modified->Attr_Data_Length == 1) {
+			gyroRegister.reg = attribute_modified->Attr_Data[0] & 0x7F;			// Store register number in case reading (high bit to indicate write)
+			if (attribute_modified->Attr_Data[0] & 0x80) {
+				gyroRegister.val = attribute_modified->Attr_Data[1];
+				gyro.WriteCmd(gyroRegister.reg, gyroRegister.val);
+			} else {
 				if (gyroRegister.reg >= 0x0F && gyroRegister.reg <= 0x38) {
 					gyroRegister.val = gyro.ReadRegister(gyroRegister.reg);
 					UTIL_SEQ_SetTask(1 << CFG_TASK_GyroNotification, CFG_SCH_PRIO_0);
 				}
-			} else {
-				gyroRegister.val = attribute_modified->Attr_Data[1];
-				gyro.WriteCmd(gyroRegister.reg, gyroRegister.val);
 			}
 			handled = true;
 		}

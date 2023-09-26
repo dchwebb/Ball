@@ -104,7 +104,7 @@ void HidApp::SetGyroRegister()
 		printf("* GATT : Get Gyro Register\n");
 		hidApp.action = HidApp::HidAction::GyroRead;
 		// Write the register value as a single byte - the register value can then be read from the char
-		aci_gatt_write_char_value(hidApp.connHandle, hidApp.gyroNotificationCharHandle, 1, &hidApp.gyroRegister);
+		aci_gatt_write_char_value(hidApp.connHandle, hidApp.gyroNotificationCharHandle, 2, &hidApp.gyroRegister);
 	}
 }
 
@@ -312,7 +312,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
 				if (hidApp.action == HidApp::HidAction::GyroRead) {
-					printf("Gyroscope Register: %02X\n\r", pr->Attribute_Value[0]);		// FIXME - read is only returning one byte - should be two and not sure why
+					printf("Gyroscope Register: %02X Value: %02X\n\r", pr->Attribute_Value[0], pr->Attribute_Value[1]);
 					hidApp.action = HidApp::HidAction::None;
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
@@ -332,7 +332,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
 				if (pr->Attribute_Handle == hidApp.gyroNotificationCharHandle) {
-					printf("Gyroscope Register: %04X\n\r", *(uint16_t*)pr->Attribute_Value);
+					printf("Gyroscope Register: %02X Value: %02X\n\r", pr->Attribute_Value[0], pr->Attribute_Value[1]);
 					hidApp.action = HidApp::HidAction::None;
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
