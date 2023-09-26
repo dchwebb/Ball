@@ -1,15 +1,11 @@
 #pragma once
 
 #include "hw.h"
-//#include "hw_conf.h"
 #include "hw_if.h"
-//#include "ble_bufsize.h"
 
 /******************************************************************************
  * Application Config
  ******************************************************************************/
-
-
 #define CONN_L(x) ((int)((x)/0.625f))
 #define CONN_P(x) ((int)((x)/1.25f))
 #define SCAN_P (0x320)
@@ -122,7 +118,7 @@
  * for a CC/CS event, In that case, the notification TL_BLE_HCI_ToNot() is called to indicate
  * to the application a HCI command did not receive its command event within 30s (Default HCI Timeout).
  */
-#define CFG_TLBLE_EVT_QUEUE_LENGTH 5
+#define CFG_TLBLE_EVT_QUEUE_LENGTH 8
 /**
  * This parameter should be set to fit most events received by the HCI layer. It defines the buffer size of each element
  * allocated in the queue of received events and can be used to optimize the amount of RAM allocated by the Memory Manager.
@@ -164,7 +160,7 @@ typedef enum
     CFG_TASK_DisconnectRequest,
 	CFG_TASK_HIDServiceDiscovery,
 	CFG_TASK_GetBatteryLevel,
-	CFG_TASK_SetGyroRegister,
+	CFG_TASK_GyroCommand,
 	CFG_TASK_ReadGyroRegister,
     CFG_TASK_CONN_UPDATE_ID,
     CFG_TASK_HCI_ASYNCH_EVT_ID,

@@ -21,19 +21,24 @@ public:
 	Pos3D offset = {0.0f, 0.0f, 0.0f};				// Calibrated adjustment for gyroscope offsets and drift
 	float divider = 600.0f;							// Divider for raw gyroscope data (increase for more sensitivity)
 	bool outputGyro = false;						// Set to true to output raw gyro and received
-	uint8_t gyroRegister = 0;
+	uint16_t gyroCommand = 0;						// If reading a register set to a single byte value; if writing set register and value
+	enum class GyroCmdType : uint8_t {read = 1, write = 2} gyroCmdType;
 
 	void Init();
 	void HIDConnectionNotification();
 	void Calibrate();
 	void GetReportMap();
 	static void GetBatteryLevel();
-	static void SetGyroRegister();
+	static void GyroCommand();
 	static void ReadGyroRegister();
 	uint32_t SerialiseConfig(uint8_t** buff);
 	uint32_t StoreConfig(uint8_t* buff);
+	void IdleTasks();
 
 private:
+	static constexpr uint16_t GYRO_CMD_CHAR_UUID = 0xFE40;
+	static constexpr uint16_t GYRO_REG_CHAR_UUID = 0xFE41;
+
 	uint16_t connHandle;							// connection handle
 
 	uint16_t hidServiceHandle;						// handle of the HID service
@@ -45,14 +50,17 @@ private:
 	uint16_t batteryNotificationCharHandle;			// handle of the Rx characteristic - Notification From Server
 	uint16_t batteryNotificationDescHandle;			// handle of the client configuration descriptor of Rx characteristic
 	uint16_t hidReportMapHandle;					// handle of report map
-	uint16_t gyroNotificationCharHandle;			// Gyroscope register read/write handle
-	uint16_t gyroNotificationDescHandle;			// Gyroscope register read/write handle
+	uint16_t gyroCmdNotificationCharHandle;			// Gyroscope command read/write handle
+	uint16_t gyroCmdNotificationDescHandle;			// Gyroscope command read/write handle
+	uint16_t gyroRegNotificationCharHandle;			// Gyroscope register read/write handle
+	uint16_t gyroRegNotificationDescHandle;			// Gyroscope register read/write handle
 
 	static constexpr float calibFilter = 0.9999f;	// 1 pole filter co-efficient for smoothing long-term drift adjustments
 	static constexpr int32_t calibrateCount = 200;	// Total number of readings to use when calibrating
 	int32_t calibrateCounter = 0;					// When calibrating offsets keeps count of readings averaged
 	float calibX, calibY, calibZ;					// Temporary totals used during calibration
 	uint32_t lastPrint = 0;							// For perdiodic printing of gyro output
+	uint32_t gyroLastRead = 0;
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void HIDServiceDiscovery();

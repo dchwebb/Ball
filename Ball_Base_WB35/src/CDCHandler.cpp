@@ -59,6 +59,7 @@ void CDCHandler::ProcessCommand()
 				"hidmap:x12         -  Print HID report map at 12 hex digit device address\r\n"
 				"sensitivity:x      -  Amount to divide raw gyro data\r\n"
 				"readgyro:HH        -  Read Gyro register\r\n"
+				"writegyro:RR,VV    -  Write value 0xVV to gyro register 0xRR\r\n"
 				"offset:x=?         -  X/Y/Z offset (more negative if falling)\r\n"
 				"calibrate          -  Recenter and calibrate gyro offsets\r\n"
 				"recenter           -  Recenter all channels\r\n"
@@ -92,13 +93,32 @@ void CDCHandler::ProcessCommand()
 		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
 
 		if (res.ec == std::errc()) {
-			hidApp.gyroRegister = regNo;
-			UTIL_SEQ_SetTask(1 << CFG_TASK_SetGyroRegister, CFG_SCH_PRIO_0);
+			hidApp.gyroCommand = regNo;
+			hidApp.gyroCmdType = HidApp::GyroCmdType::read;
+			UTIL_SEQ_SetTask(1 << CFG_TASK_GyroCommand, CFG_SCH_PRIO_0);
 			printf("Requesting register: %#02x\r\n", regNo);
 		} else {
 			usb->SendString("Invalid register\r\n");
 		}
 
+	} else if (cmd.compare(0, 10, "writegyro:") == 0) {				// write value to gyroscope register
+
+		uint8_t regNo, value;
+		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
+
+		if (res.ec == std::errc()) {			// no error
+			auto res = std::from_chars(cmd.data() + cmd.find(",") + 1, cmd.data() + cmd.size(), value, 16);
+			if (res.ec == std::errc()) {			// no error
+				hidApp.gyroCommand = regNo | value << 8;
+				hidApp.gyroCmdType = HidApp::GyroCmdType::write;
+				printf("SPI write: Register: %#04x Value: %#04x\r\n", regNo, value);
+				UTIL_SEQ_SetTask(1 << CFG_TASK_GyroCommand, CFG_SCH_PRIO_0);
+			} else {
+				usb->SendString("Invalid value\r\n");
+			}
+		} else {
+			usb->SendString("Invalid register\r\n");
+		}
 	} else if (cmd.compare(0, 9, "gyroreg") == 0) {				// Read gyroscope register
 		hidApp.action = HidApp::HidAction::GyroRead;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_ReadGyroRegister, CFG_SCH_PRIO_0);

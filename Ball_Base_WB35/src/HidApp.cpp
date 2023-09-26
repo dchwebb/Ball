@@ -12,7 +12,7 @@ void HidApp::Init(void)
 {
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HIDServiceDiscovery, UTIL_SEQ_RFU, HIDServiceDiscovery);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_GetBatteryLevel, UTIL_SEQ_RFU, GetBatteryLevel);
-	UTIL_SEQ_RegTask(1 << CFG_TASK_SetGyroRegister, UTIL_SEQ_RFU, SetGyroRegister);
+	UTIL_SEQ_RegTask(1 << CFG_TASK_GyroCommand, UTIL_SEQ_RFU, GyroCommand);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_ReadGyroRegister, UTIL_SEQ_RFU, ReadGyroRegister);
 	state = HidState::Idle;
 	SVCCTL_RegisterCltHandler(HIDEventHandler);
@@ -97,14 +97,18 @@ void HidApp::GetBatteryLevel()
 }
 
 
-void HidApp::SetGyroRegister()
+void HidApp::GyroCommand()
 {
-	// Set the gyroscope register number for subsequent read
+	// Set the gyroscope command (register number for read, register and value for write)
 	if (hidApp.state == HidApp::HidState::ClientConnected) {
-		printf("* GATT : Get Gyro Register\n");
-		hidApp.action = HidApp::HidAction::GyroRead;
-		// Write the register value as a single byte - the register value can then be read from the char
-		aci_gatt_write_char_value(hidApp.connHandle, hidApp.gyroNotificationCharHandle, 1, &hidApp.gyroRegister);
+		aci_gatt_write_char_value(hidApp.connHandle,
+				hidApp.gyroCmdNotificationCharHandle,
+				(uint8_t)hidApp.gyroCmdType,
+				(uint8_t*)&hidApp.gyroCommand);
+
+		if (hidApp.gyroCmdType == GyroCmdType::read) {
+			UTIL_SEQ_SetTask(1 << CFG_TASK_ReadGyroRegister, CFG_SCH_PRIO_0);
+		}
 	}
 }
 
@@ -112,8 +116,19 @@ void HidApp::SetGyroRegister()
 void HidApp::ReadGyroRegister()
 {
 	// Set the gyroscope register number for subsequent read
-	if (hidApp.state == HidApp::HidState::ClientConnected && hidApp.action == HidApp::HidAction::GyroRead) {
-		aci_gatt_read_char_value(hidApp.connHandle, hidApp.gyroNotificationCharHandle);
+	if (hidApp.state == HidApp::HidState::ClientConnected) {
+		hidApp.action = HidApp::HidAction::GyroRead;
+		aci_gatt_read_char_value(hidApp.connHandle, hidApp.gyroRegNotificationCharHandle);
+	}
+}
+
+
+void HidApp::IdleTasks()
+{
+	// Notification does not always fire so trigger periodic reads to get value
+	if (hidApp.action == HidApp::HidAction::GyroRead && gyroLastRead < SysTickVal - 5) {
+		UTIL_SEQ_SetTask(1 << CFG_TASK_ReadGyroRegister, CFG_SCH_PRIO_0);
+		gyroLastRead = SysTickVal;
 	}
 }
 
@@ -233,10 +248,15 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 							hidApp.state = HidState::DiscoveredCharacteristics;
 							hidApp.hidReportMapHandle = handle;
 							break;
-						case 0xFE40:
+						case GYRO_CMD_CHAR_UUID:
+							printf("  - UUID: 0x%x handle: 0x%x [Gyro Command]\n", uuid, handle);
+							hidApp.state = HidState::DiscoveredCharacteristics;
+							hidApp.gyroCmdNotificationCharHandle = handle;
+							break;
+						case GYRO_REG_CHAR_UUID:
 							printf("  - UUID: 0x%x handle: 0x%x [Gyro Register]\n", uuid, handle);
 							hidApp.state = HidState::DiscoveredCharacteristics;
-							hidApp.gyroNotificationCharHandle = handle;
+							hidApp.gyroRegNotificationCharHandle = handle;
 							break;
 						default:
 							printf("  - UUID: 0x%x handle: 0x%x\r\n", uuid, handle);
@@ -280,9 +300,14 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 								hidApp.hidNotificationDescHandle = handle;
 								hidApp.state = HidState::EnableNotificationDesc;
 
-							} else if (handle > hidApp.gyroNotificationCharHandle && handle <= hidApp.hidServiceEndHandle) {
-								printf("  - Gyro Client Char Config Descriptor: 0x%x\r\n", handle);
-								hidApp.gyroNotificationDescHandle = handle;
+							} else if (handle > hidApp.gyroCmdNotificationCharHandle && handle <= hidApp.hidServiceEndHandle) {
+								printf("  - Gyro Cmd Client Char Config Descriptor: 0x%x\r\n", handle);
+								hidApp.gyroCmdNotificationDescHandle = handle;
+								hidApp.state = HidState::EnableNotificationDesc;
+
+							} else if (handle > hidApp.gyroRegNotificationCharHandle && handle <= hidApp.hidServiceEndHandle) {
+								printf("  - Gyro Reg Client Char Config Descriptor: 0x%x\r\n", handle);
+								hidApp.gyroRegNotificationDescHandle = handle;
 								hidApp.state = HidState::EnableNotificationDesc;
 							}
 						}
@@ -331,8 +356,8 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 					hidApp.HidNotification((int16_t*)&pr->Attribute_Value[0], pr->Attribute_Value_Length);
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
-				if (pr->Attribute_Handle == hidApp.gyroNotificationCharHandle) {
-					printf("Gyroscope Register: %02X Value: %02X\n\r", pr->Attribute_Value[0], pr->Attribute_Value[1]);
+				if (pr->Attribute_Handle == hidApp.gyroRegNotificationCharHandle) {
+					printf("Gyroscope Value: %02X\n\r", pr->Attribute_Value[0]);
 					hidApp.action = HidApp::HidAction::None;
 					handled = SVCCTL_EvtAckFlowEnable;
 				}
@@ -445,7 +470,7 @@ void HidApp::HIDServiceDiscovery()
 
 		case HidState::EnableGyroNotificationDesc:
 			printf("* GATT : Enable Gyro Notification\n");
-			aci_gatt_write_char_desc(hidApp.connHandle, hidApp.gyroNotificationDescHandle, 2, &enable);
+			aci_gatt_write_char_desc(hidApp.connHandle, hidApp.gyroRegNotificationDescHandle, 2, &enable);
 			hidApp.state = HidState::ClientConnected;
 			break;
 
