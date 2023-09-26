@@ -74,12 +74,6 @@ void InitHardware()
 	LL_EXTI_DisableIT_0_31(~0);
 	LL_EXTI_DisableIT_32_63( (~0) & (~(LL_EXTI_LINE_36 | LL_EXTI_LINE_38)) );
 
-//	RCC->CFGR |= RCC_CFGR_STOPWUCK;					// 1: HSI16 oscillator selected as wakeup from stop clock and CSS backup clock
-
-	// These bits select the low-power mode entered when CPU2 enters the deepsleep mode. The
-	// system low-power mode entered depend also on the PWR_CR1.LPMS allowed low-power mode from CPU1.
-//	PWR->C2CR1 |= 4 & PWR_C2CR1_LPMS_Msk;			// 1xx: Shutdown mode
-
 	InitGPIO();
 }
 
@@ -158,7 +152,6 @@ static void InitIPCC()
 	NVIC_EnableIRQ(IPCC_C1_RX_IRQn);
 	NVIC_SetPriority(IPCC_C1_TX_IRQn, 0);
 	NVIC_EnableIRQ(IPCC_C1_TX_IRQn);
-
 
 	IPCC->C1CR |= (IPCC_CR_RXOIE | IPCC_CR_TXFIE);	// Activate the interrupts
 }

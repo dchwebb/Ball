@@ -64,6 +64,7 @@ void CDCHandler::ProcessCommand()
 				"calibrate          -  Recenter and calibrate gyro offsets\r\n"
 				"recenter           -  Recenter all channels\r\n"
 				"outputgyro         -  Periodically output raw gyro data\r\n"
+				"notifybatt         -  Display battery notifications on/off\r\n"
 				"fwversion          -  Read firmware version\r\n"
 				"battery            -  Get Battery Level\r\n"
 				"saveconfig         -  Save current offsets to flash\r\n"
@@ -99,7 +100,7 @@ void CDCHandler::ProcessCommand()
 				hidApp.gyroCommand = regNo;
 				hidApp.gyroCmdType = HidApp::GyroCmdType::read;
 				UTIL_SEQ_SetTask(1 << CFG_TASK_GyroCommand, CFG_SCH_PRIO_0);
-				printf("Requesting register: %#02x\r\n", regNo);
+				printf("Requesting gyro register: %#02x\r\n", regNo);
 			} else {
 				usb->SendString("Invalid register\r\n");
 			}
@@ -118,7 +119,7 @@ void CDCHandler::ProcessCommand()
 				if (res.ec == std::errc()) {			// no error
 					hidApp.gyroCommand = regNo | value << 8;
 					hidApp.gyroCmdType = HidApp::GyroCmdType::write;
-					printf("SPI write: Register: %#04x Value: %#04x\r\n", regNo, value);
+					printf("Gyro write: Register: %#04x Value: %#04x\r\n", regNo, value);
 					UTIL_SEQ_SetTask(1 << CFG_TASK_GyroCommand, CFG_SCH_PRIO_0);
 				} else {
 					usb->SendString("Invalid value\r\n");
@@ -201,6 +202,9 @@ void CDCHandler::ProcessCommand()
 
 	} else if (cmd.compare("outputgyro") == 0) {					// Output raw gyro data
 		hidApp.outputGyro = !hidApp.outputGyro;
+
+	} else if (cmd.compare("notifybatt") == 0) {					// Output battery notifications
+		hidApp.outputBattery = !hidApp.outputBattery;
 
 	} else if (cmd.compare("battery") == 0) {						// read battery level
 		UTIL_SEQ_SetTask(1 << CFG_TASK_GetBatteryLevel, CFG_SCH_PRIO_0);

@@ -20,7 +20,11 @@ public:
 
 	Pos3D offset = {0.0f, 0.0f, 0.0f};				// Calibrated adjustment for gyroscope offsets and drift
 	float divider = 600.0f;							// Divider for raw gyroscope data (increase for more sensitivity)
-	bool outputGyro = false;						// Set to true to output raw gyro and received
+	bool outputGyro = false;						// Set to true to output gyro data periodically
+	bool outputBattery = false;						// Set to true to output battery level when received
+	uint8_t batteryLevel = 0;						// Battery level as notified by remote unit
+
+	// Used to read and write gyro registers
 	uint16_t gyroCommand = 0;						// If reading a register set to a single byte value; if writing set register and value
 	enum class GyroCmdType : uint8_t {read = 1, write = 2} gyroCmdType;
 

@@ -246,7 +246,6 @@ void BleApp::ServiceControlCallback(void* pckt)
 						}
 					}
 				}
-
 				break;
 
 				default:
@@ -279,7 +278,6 @@ void BleApp::PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
 			ar->serviceClasses,
 			usb.cdc.HexToString(ar->manufactData, ar->manufactLen, true)
 	);
-
 }
 
 
@@ -485,14 +483,14 @@ void BleApp::LedFlash(bool startStop)
 }
 
 
-void BleApp::LedFlash() {
+void BleApp::LedFlash()
+{
 	// Called periodically to manage flash state
 	if (ledFlashing && SysTickVal - ledFlashTime > 200) {
 		LedOnOff(!ledState);
 		ledFlashTime = SysTickVal;
 	}
 }
-
 
 
 void BleApp::UserEvtRx(void* pPayload)

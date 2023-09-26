@@ -19,17 +19,11 @@
 /******************************************************************************
  * BLE Stack
  ******************************************************************************/
-/**
- * Maximum number of simultaneous connections that the device will support.
- * Valid values are from 1 to 8
- */
+
+// Maximum number of simultaneous connections that the device will support (1 to 8)
 #define CFG_BLE_NUM_LINK            2
 
-
-/**
- * Maximum supported ATT_MTU size
- * This parameter is ignored by the CPU2 when CFG_BLE_OPTIONS is set to 1"
- */
+// Maximum supported ATT_MTU size. Parameter is ignored by the CPU2 when CFG_BLE_OPTIONS is set to 1"
 #define CFG_BLE_MAX_ATT_MTU             (156)
 
 /**
@@ -45,16 +39,11 @@
  */
 #define CFG_BLE_ATT_VALUE_ARRAY_SIZE    (1344)
 
-/**
- * Prepare Write List size in terms of number of packet
- * This parameter is ignored by the CPU2 when CFG_BLE_OPTIONS is set to 1"
- */
+// Prepare Write List size in terms of number of packet. Parameter is ignored by the CPU2 when CFG_BLE_OPTIONS is set to 1
 #define CFG_BLE_PREPARE_WRITE_LIST_SIZE         BLE_PREP_WRITE_X_ATT(CFG_BLE_MAX_ATT_MTU)
 
-/**
- * Number of allocated memory blocks
- * This parameter is overwritten by the CPU2 with an hardcoded optimal value when the parameter when CFG_BLE_OPTIONS is set to 1
- */
+
+// Number of allocated memory blocks. Parameter is overwritten by CPU2 with hardcoded optimal value when CFG_BLE_OPTIONS is set to 1
 #define CFG_BLE_MBLOCK_COUNT            (BLE_MBLOCKS_CALC(CFG_BLE_PREPARE_WRITE_LIST_SIZE, CFG_BLE_MAX_ATT_MTU, CFG_BLE_NUM_LINK))
 
 
@@ -134,10 +123,6 @@
 
 #define CFG_TS_TICK_VAL           DIVR( (CFG_RTCCLK_DIV * 1000000), LSE_VALUE )			// tick timer value in us
 
-typedef enum
-{
-  CFG_TIM_PROC_ID_ISR,
-} CFG_TimProcID_t;
 
 
 
