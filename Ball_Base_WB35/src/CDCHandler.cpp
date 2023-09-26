@@ -7,7 +7,7 @@ extern "C" {
 #include "ble_hci_le.h"
 }
 #include "app_ble.h"
-#include "ble_hid.h"
+#include <HidApp.h>
 #include "configManager.h"
 
 // Check if a command has been received from USB, parse and action as required
@@ -100,6 +100,7 @@ void CDCHandler::ProcessCommand()
 		}
 
 	} else if (cmd.compare(0, 9, "gyroreg") == 0) {				// Read gyroscope register
+		hidApp.action = HidApp::HidAction::GyroRead;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_ReadGyroRegister, CFG_SCH_PRIO_0);
 
 	} else if (cmd.compare(0, 7, "hidmap:") == 0) {					// Print Hid repot map for given address

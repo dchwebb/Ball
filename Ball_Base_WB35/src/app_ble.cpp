@@ -1,5 +1,5 @@
+#include <HidApp.h>
 #include "app_ble.h"
-#include "ble_hid.h"
 #include "ble.h"
 #include "stm32_seq.h"
 #include "shci.h"

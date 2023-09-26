@@ -1,2 +1,0 @@
-../STM_Files/system_stm32wbxx.c:206:6:SystemInit	4	static
-../STM_Files/system_stm32wbxx.c:291:6:SystemCoreClockUpdate	32	static

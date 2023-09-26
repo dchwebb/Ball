@@ -1,5 +1,5 @@
+#include <HidService.h>
 #include "gyroSPI.h"
-#include "hids_app.h"
 #include <stdio.h>
 
 GyroSPI gyro;		// For use with ST L3GD20

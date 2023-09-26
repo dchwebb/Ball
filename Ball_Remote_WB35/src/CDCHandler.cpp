@@ -9,8 +9,8 @@ extern "C" {
 #include "gyroSPI.h"
 #include "stm32_seq.h"
 #include "app_ble.h"
-#include "hids_app.h"
-#include "bas_app.h"
+#include <HidService.h>
+#include <BasService.h>
 
 
 

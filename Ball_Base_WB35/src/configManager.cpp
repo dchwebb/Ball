@@ -1,7 +1,7 @@
+#include <HidApp.h>
 #include "configManager.h"
 #include <cmath>
 #include <cstring>
-#include "ble_hid.h"
 
 Config configManager;
 

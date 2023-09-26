@@ -1,2 +1,0 @@
-../src/dis_app.cpp:7:6:void DisService::Init()	48	static
-../src/dis_app.cpp:44:6:void DisService::AppInit()	24	static

@@ -1,6 +1,6 @@
+#include <BasService.h>
+#include <HidService.h>
 #include "main.h"
-#include "hids_app.h"
-#include "bas_app.h"
 #include "initialisation.h"
 #include "app_entry.h"
 #include "USB.h"

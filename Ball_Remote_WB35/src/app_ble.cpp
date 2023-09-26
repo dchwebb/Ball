@@ -1,12 +1,12 @@
+#include <BasService.h>
+#include <DisService.h>
+#include <HidService.h>
 #include "main.h"
 #include "ble.h"
 #include "app_ble.h"
 #include "stm32_seq.h"
 #include "shci.h"
 
-#include "dis_app.h"
-#include "hids_app.h"
-#include "bas_app.h"
 
 BleApp bleApp;
 
@@ -97,7 +97,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 			connectionStatus = ConnStatus::Idle;
 			hidService.Disconnect();
 
-			APP_DBG_MSG("\r\n\r** Client Disconnected\n");
+			printf("\r\n\r** Client Disconnected\n");
 
 			EnableAdvertising(ConnStatus::FastAdv);			// Restart advertising
 
@@ -115,7 +115,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 
 				HW_TS_Stop(lowPowerAdvTimerId);				// connected: no need anymore to schedule the LP ADV
 
-				APP_DBG_MSG("Client connected: handle 0x%x\n", connCompleteEvent->Connection_Handle);
+				printf("Client connected: handle 0x%x\n", connCompleteEvent->Connection_Handle);
 				connectionStatus = ConnStatus::Connected;
 				connectionHandle = connCompleteEvent->Connection_Handle;
 
@@ -133,14 +133,14 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 					break;
 
 				case ACI_GAP_PROC_COMPLETE_VSEVT_CODE:
-					APP_DBG_MSG("\r\n\r** ACI_GAP_PROC_COMPLETE_VSEVT_CODE \n");
+					printf("\r\n\r** ACI_GAP_PROC_COMPLETE_VSEVT_CODE \n");
 					break;
 
 				case ACI_HAL_END_OF_RADIO_ACTIVITY_VSEVT_CODE:
 					break;
 
 				case (ACI_GAP_KEYPRESS_NOTIFICATION_VSEVT_CODE):
-					APP_DBG_MSG("\r\n\r** ACI_GAP_KEYPRESS_NOTIFICATION_VSEVT_CODE \n");
+					printf("\r\n\r** ACI_GAP_KEYPRESS_NOTIFICATION_VSEVT_CODE \n");
 					break;
 
 				case ACI_GAP_PASS_KEY_REQ_VSEVT_CODE:
@@ -150,14 +150,14 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 				case ACI_GAP_NUMERIC_COMPARISON_VALUE_VSEVT_CODE: {
 					auto evt_numeric_value = (aci_gap_numeric_comparison_value_event_rp0*)blecore_evt->data;
 					uint32_t numeric_value = evt_numeric_value->Numeric_Value;
-					APP_DBG_MSG("numeric_value = %ld\n", numeric_value);
+					printf("numeric_value = %ld\n", numeric_value);
 					aci_gap_numeric_comparison_value_confirm_yesno(connectionHandle, true);
 					break;
 				}
 
 				case ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE: {
 					auto pairing_complete = (aci_gap_pairing_complete_event_rp0*)blecore_evt->data;
-					APP_DBG_MSG("ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE: Status = %d\n", pairing_complete->Status);
+					printf("ACI_GAP_PAIRING_COMPLETE_VSEVT_CODE: Status = %d\n", pairing_complete->Status);
 					break;
 				}
 			}
@@ -218,11 +218,11 @@ void BleApp::HciGapGattInit()
 			GapDeviceName.length(),
 			(uint8_t*)std::string(GapDeviceName).c_str())
 		) {
-		APP_DBG_MSG("Device Name aci_gatt_update_char_value failed.\n");
+		printf("Device Name aci_gatt_update_char_value failed.\n");
 	}
 
 	if (aci_gatt_update_char_value(gap_service_handle, gap_appearance_char_handle, 0, 2, (uint8_t*)&appearance)) {
-		APP_DBG_MSG("Appearance aci_gatt_update_char_value failed.\n");
+		printf("Appearance aci_gatt_update_char_value failed.\n");
 	}
 
 	// Initialize Default PHY - specify preference for 1 or 2Mbit Phy for TX and RX
@@ -262,9 +262,9 @@ void BleApp::EnableAdvertising(ConnStatus newStatus)
 	if ((newStatus == ConnStatus::LPAdv) && ((connectionStatus == ConnStatus::FastAdv) || (connectionStatus == ConnStatus::LPAdv))) {
 		ret = aci_gap_set_non_discoverable();
 		if (ret == BLE_STATUS_SUCCESS) {
-			APP_DBG_MSG("Stopped Fast Advertising \n");
+			printf("Stopped Fast Advertising \n");
 		} else {
-			APP_DBG_MSG("Stop Advertising Failed , result: %d \n", ret);
+			printf("Stop Advertising Failed , result: %d \n", ret);
 		}
 	}
 	connectionStatus = newStatus;
@@ -276,14 +276,14 @@ void BleApp::EnableAdvertising(ConnStatus newStatus)
 
 	if (ret == BLE_STATUS_SUCCESS) {
 		if (newStatus == ConnStatus::FastAdv)	{
-			APP_DBG_MSG("Start Fast Advertising \n");
+			printf("Start Fast Advertising \n");
 			// Start Timer to STOP ADV - TIMEOUT
 			HW_TS_Start(lowPowerAdvTimerId, FastAdvTimeout);
 		} else {
-			APP_DBG_MSG("Start Low Power Advertising \n");
+			printf("Start Low Power Advertising \n");
 		}
 	} else {
-		APP_DBG_MSG("Start Advertising Failed , result: %d \n", ret);
+		printf("Start Advertising Failed , result: %d \n", ret);
 	}
 
 }
@@ -345,9 +345,9 @@ void BleApp::CancelAdvertising()
 
 		bleApp.connectionStatus = ConnStatus::Idle;
 		if (result == BLE_STATUS_SUCCESS) {
-			APP_DBG_MSG("Stop advertising \r\n");
+			printf("Stop advertising \r\n");
 		} else {
-			APP_DBG_MSG("Stop advertising Failed \r\n");
+			printf("Stop advertising Failed \r\n");
 		}
 	}
 
@@ -437,7 +437,7 @@ void BleApp::WakeFromSleep()
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;			// Restart Systick interrupt
 
-	APP_DBG_MSG("\nWaking up\n");
+	printf("\nWaking up\n");
 	EnableAdvertising(ConnStatus::FastAdv);
 }
 

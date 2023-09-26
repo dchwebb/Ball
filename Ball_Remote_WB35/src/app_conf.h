@@ -166,10 +166,6 @@ typedef enum
 } CFG_TimProcID_t;
 
 
-#define APP_DBG_MSG                 printf
-
-
-
 
 /******************************************************************************
  * Scheduler
