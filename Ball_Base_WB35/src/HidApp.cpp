@@ -327,7 +327,7 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 				auto *pr = (aci_att_read_resp_event_rp0*)bleCoreEvent->data;
 
 				if (hidApp.action == HidApp::HidAction::BatteryLevel) {
-					printf("Battery Level: 0x%d%%\r\n", pr->Attribute_Value[0]);
+					printf("Battery Level: %d%%\r\n", pr->Attribute_Value[0]);
 					hidApp.action = HidApp::HidAction::None;
 					handled = SVCCTL_EvtAckFlowEnable;
 				}

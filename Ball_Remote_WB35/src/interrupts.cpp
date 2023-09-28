@@ -1,8 +1,9 @@
-#include "main.h"
+//#include "main.h"
 #include "app_common.h"
 #include "stm32_seq.h"
 #include "gyroSPI.h"
 #include "USB.h"
+#include "app_ble.h"
 
 extern "C" {
 void SysTick_Handler() {
@@ -14,8 +15,12 @@ void USB_LP_IRQHandler() {
 }
 
 void EXTI4_IRQHandler() {
+	// Connect Button pressed (used for sleeping/wakeup)
 	EXTI->PR1 = EXTI_PR1_PIF4;
-	// FIXME Button pressed
+	if (bleApp.sleepState == BleApp::SleepState::Awake) {
+		extern bool sleep;
+		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
+	}
 }
 
 

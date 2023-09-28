@@ -94,7 +94,6 @@ void CDCHandler::ProcessCommand()
 			gyro.ContinualRead(hidService.outputGyro);
 		}
 
-
 	} else if (cmd.compare("gyroread") == 0) {						// Trigger a gyroscope read
 		if (!hidService.JoystickNotifications) {
 			gyro.GyroRead();
@@ -104,7 +103,6 @@ void CDCHandler::ProcessCommand()
 	} else if (cmd.compare(0, 8, "readspi:") == 0) {				// Read spi register
 		uint8_t regNo;
 		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
-
 		if (res.ec == std::errc()) {
 			uint8_t readData = gyro.ReadRegister(regNo);
 			printf("I2C Register: %#04x Value: %#04x\r\n", regNo, readData);
@@ -112,11 +110,10 @@ void CDCHandler::ProcessCommand()
 			usb->SendString("Invalid register\r\n");
 		}
 
-	} else if (cmd.compare(0, 9, "writespi:") == 0) {			// write i2c register
+	} else if (cmd.compare(0, 9, "writespi:") == 0) {				// write i2c register
 
 		uint8_t regNo, value;
 		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), regNo, 16);
-
 		if (res.ec == std::errc()) {			// no error
 			auto res = std::from_chars(cmd.data() + cmd.find(",") + 1, cmd.data() + cmd.size(), value, 16);
 			if (res.ec == std::errc()) {			// no error
@@ -129,7 +126,7 @@ void CDCHandler::ProcessCommand()
 			usb->SendString("Invalid register\r\n");
 		}
 
-	} else if (cmd.compare("rssi") == 0) {					// RSSI value
+	} else if (cmd.compare("rssi") == 0) {							// RSSI value
 		if (bleApp.connectionStatus != BleApp::ConnStatus::Connected) {
 			printf("Not connected\r\n");
 		} else {
@@ -141,7 +138,7 @@ void CDCHandler::ProcessCommand()
 			}
 		}
 
-	} else if (cmd.compare("fwversion") == 0) {			// Version of BLE firmware
+	} else if (cmd.compare("fwversion") == 0) {						// Version of BLE firmware
 		WirelessFwInfo_t fwInfo;
 		if (SHCI_GetWirelessFwInfo(&fwInfo) == 0) {
 			printf("BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n",
@@ -149,7 +146,7 @@ void CDCHandler::ProcessCommand()
 					fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub);
 		}
 
-	} else if (cmd.compare("sleep") == 0) {				// Enter sleep mode
+	} else if (cmd.compare("sleep") == 0) {							// Enter sleep mode
 		usb->SendString("Going to sleep\n");
 		extern bool sleep;
 		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
@@ -160,17 +157,17 @@ void CDCHandler::ProcessCommand()
 		extern bool sleep;
 		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
 
-	} else if (cmd.compare("canceladv") == 0) {			// Cancel advertising
+	} else if (cmd.compare("canceladv") == 0) {						// Cancel advertising
 		UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
 
-	} else if (cmd.compare("startadv") == 0) {				// Start advertising
+	} else if (cmd.compare("startadv") == 0) {						// Start advertising
 		UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchFastAdvertising, CFG_SCH_PRIO_0);
 
-	} else if (cmd.compare("disconnect") == 0) {				// Disconnect client
+	} else if (cmd.compare("disconnect") == 0) {					// Disconnect client
 		bleApp.DisconnectRequest();
 
 	} else {
-		usb->SendString("Unrecognised command: " + std::string(cmd) + "Type 'help' for supported commands\r\n");
+		usb->SendString("Unrecognised command: " + std::string(cmd) + " Type 'help' for supported commands\r\n");
 	}
 
 	cmdPending = false;

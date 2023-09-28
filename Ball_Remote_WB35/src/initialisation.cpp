@@ -161,9 +161,13 @@ static void InitGPIO()
 	// Configure GPIO pin : PA4 Connect Button
 	GPIOA->MODER &= ~GPIO_MODER_MODE4_Msk;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
 	GPIOA->PUPDR |= GPIO_PUPDR_PUPD4_0;				// Activate pull up
+
+	// Enable EXTI WKUP4 on PA4 (marked as 'Connect') to wake up from shutdown
 	SYSCFG->EXTICR[1] |= SYSCFG_EXTICR2_EXTI4_PA;	// Enable external interrupt
-	EXTI->IMR1 |= EXTI_IMR1_IM4;					// 1: Wakeup with interrupt request from Line x is unmasked
+	EXTI->IMR1 |= EXTI_IMR1_IM4;					// 1: CPU1 Wakeup with interrupt request from Line x is unmasked
 	EXTI->FTSR1 |= EXTI_FTSR1_FT4;					// Enable falling edge trigger
+	PWR->CR4 &= ~PWR_CR4_WP4;						// Wake-Up pin polarity (0 = rising 1 = falling edge)
+	PWR->CR3 |= PWR_CR3_EWUP4;						// Enable WKUP4 on PA4
 
 	NVIC_SetPriority(EXTI4_IRQn, 3);				// EXTI interrupt init
 	NVIC_EnableIRQ(EXTI4_IRQn);
@@ -171,13 +175,7 @@ static void InitGPIO()
 
 	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;			// Configure LED pins : PA3 Connect LED
 
-	// Enable EXTI WKUP4 on PA2 to wake up from shutdown
-	//EXTI->EMR1 |= EXTI_EMR1_EM4;
-	PWR->CR4 &= ~PWR_CR4_WP4;		// Wake-Up pin polarity (0=rising 1 = falling edge)
-	PWR->CR3 |= PWR_CR3_EWUP4;		// Enable WKUP4 on PA2
-
-	// Configure pin PB8 for debug output
-	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;
+	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// Configure pin PB8 (marked as I2C CLK) for debug output
 }
 
 
