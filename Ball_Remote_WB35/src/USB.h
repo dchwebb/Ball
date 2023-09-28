@@ -61,6 +61,7 @@ public:
 
 	void USBInterruptHandler();
 	void InitUSB();
+	void Disable();
 	size_t SendData(const uint8_t* data, uint16_t len, uint8_t endpoint);
 	void SendString(const char* s);
 	void SendString(const std::string& s);

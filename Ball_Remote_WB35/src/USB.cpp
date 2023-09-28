@@ -298,7 +298,6 @@ void USBMain::USBInterruptHandler()							// Originally in Drivers\STM32F4xx_HAL
 
 void USBMain::InitUSB()
 {
-
     // PA11 USB_DM; PA12 USB_DP
 	GPIOA->MODER &= ~(GPIO_MODER_MODE11_0 | GPIO_MODER_MODE12_0);
 	GPIOA->AFR[1] |= ((0xA << GPIO_AFRH_AFSEL11_Pos) | (0xA << GPIO_AFRH_AFSEL12_Pos));
@@ -321,6 +320,18 @@ void USBMain::InitUSB()
 	USBP->BCDR |= USB_BCDR_DPPU;						// Connect internal PU resistor on USB DP line
 }
 
+
+
+void USBMain::Disable()
+{
+	USBP->CNTR = USB_CNTR_FRES;							// disable all interrupts and force USB reset
+	USBP->ISTR = 0;										// clear interrupt status register
+	USBP->CNTR = USB_CNTR_FRES | USB_CNTR_PDWN;			// switch-off device
+	USBP->BCDR &= ~USB_BCDR_DPPU;						// Disconnect internal PU resistor on USB DP line
+
+	transmitting = false;
+	devState = DeviceState::Suspended;
+}
 
 void USBMain::ActivateEndpoint(uint8_t endpoint, const Direction direction, EndPointType endpointType)
 {

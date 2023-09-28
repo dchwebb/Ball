@@ -6,7 +6,7 @@
 #include "app_ble.h"
 #include "stm32_seq.h"
 #include "shci.h"
-
+#include "usb.h"
 
 BleApp bleApp;
 
@@ -101,7 +101,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 
 			EnableAdvertising(ConnStatus::FastAdv);			// Restart advertising
 
-			GPIOA->ODR &= ~GPIO_ODR_OD3;					// Turn off connected LED
+			bleApp.LedOn(false);							// Turn off connected LED
 		}
 
 		break;
@@ -119,7 +119,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 				connectionStatus = ConnStatus::Connected;
 				connectionHandle = connCompleteEvent->Connection_Handle;
 
-				GPIOA->ODR |= GPIO_ODR_OD3;					// Turn on connected LED
+				bleApp.LedOn(true);						// Turn on connected LED
 			}
 		}
 		break;
@@ -336,6 +336,7 @@ void BleApp::SwitchFastAdvertising()
 	bleApp.EnableAdvertising(ConnStatus::FastAdv);
 }
 
+
 void BleApp::CancelAdvertising()
 {
 	if (bleApp.connectionStatus == ConnStatus::FastAdv || bleApp.connectionStatus == ConnStatus::LPAdv) {
@@ -355,6 +356,15 @@ void BleApp::CancelAdvertising()
 	if (bleApp.sleepState == SleepState::CancelAdv) {
 		bleApp.sleepState = SleepState::GoToSleep;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_EnterSleepMode, CFG_SCH_PRIO_0);
+	}
+}
+
+
+void BleApp::LedOn(bool on){
+	if (on) {
+		GPIOA->ODR |= GPIO_ODR_OD3;								// Turn on connected LED
+	} else {
+		GPIOA->ODR &= ~GPIO_ODR_OD3;							// Turn off connected LED
 	}
 }
 
@@ -381,6 +391,9 @@ static void SwitchToHSI()
 
 void BleApp::EnterSleepMode()
 {
+	bleApp.LedOn(false);												// Turn off connected LED
+	usb.Disable();
+
 	uint32_t primask_bit = __get_PRIMASK();
 	__disable_irq();													// Disable interrupts
 
@@ -437,7 +450,8 @@ void BleApp::WakeFromSleep()
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;			// Restart Systick interrupt
 
-	printf("\nWaking up\n");
+	usb.InitUSB();
+
 	EnableAdvertising(ConnStatus::FastAdv);
 }
 
