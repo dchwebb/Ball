@@ -174,9 +174,30 @@ void HidService::UpdateGyroChar()
 
 void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 {
+	oldPos = joystickReport;
+
 	joystickReport.x = x;
 	joystickReport.y = y;
 	joystickReport.z = z;
+
+	// Check if not changing to go to sleep
+
+
+	if (abs(oldPos.x - x) > compareLimit || abs(oldPos.y - y) > compareLimit || abs(oldPos.z - z) > compareLimit) {
+		++countChange[changeArrCounter];
+	}
+	if (++changeBitCounter == 0) {
+		if (++changeArrCounter > 7) {
+			changeArrCounter = 0;
+		}
+		countChange[changeArrCounter] = 0;
+		moving &= ~(1 << changeArrCounter);		// Clear the moving bit for the current movement count
+	}
+
+	// If none of the previous 8 change counts registered movement do not sent the data
+	if (countChange[changeArrCounter] > maxChange) {
+		moving |= (1 << changeArrCounter);		// Set the moving bit for this value
+	}
 
 	static uint32_t lastPrint = 0;
 
@@ -185,7 +206,9 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 		lastPrint = SysTickVal;
 	}
 
-	UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
+	if (moving) {
+		UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
+	}
 }
 
 

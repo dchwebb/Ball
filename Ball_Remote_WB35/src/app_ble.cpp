@@ -440,15 +440,15 @@ void BleApp::EnterSleepMode()
 void BleApp::WakeFromSleep()
 {
 	// Executes on wake-up
-	RCC->CR |= RCC_CR_HSEON;							// Turn on external oscillator
-	while ((RCC->CR & RCC_CR_HSERDY) == 0);				// Wait till HSE is ready
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);			// 10: HSE selected as system clock
-	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);			// Wait until HSE is selected
+	RCC->CR |= RCC_CR_HSEON;											// Turn on external oscillator
+	while ((RCC->CR & RCC_CR_HSERDY) == 0);								// Wait till HSE is ready
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);							// 10: HSE selected as system clock
+	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
 
-	SystemCoreClockUpdate();							// Read configured clock speed into SystemCoreClock (system clock frequency)
+	SystemCoreClockUpdate();											// Read configured clock speed into SystemCoreClock
 	sleepState = SleepState::Awake;
 
-	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;			// Restart Systick interrupt
+	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
 
 	usb.InitUSB();
 

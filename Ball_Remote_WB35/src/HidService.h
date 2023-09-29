@@ -26,7 +26,16 @@ private:
 		uint8_t  flags = {RemoteWake | NormallyConnectable};          // See http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.hid_information.xml
 	} hidInformation;
 
-	struct {uint16_t x; uint16_t y; uint16_t z;} joystickReport;
+	struct Pos3D {int16_t x; int16_t y; int16_t z;} joystickReport;
+
+	// Variables to track whether gyro is static and variations in measurements just noise
+	Pos3D oldPos;
+	static constexpr uint32_t compareLimit = 70;	// Difference of current x/y/z from previous position that counts as possible movement
+	static constexpr uint32_t maxChange = 15;		// if there are more than maxChange measurement variations above compareLimit update moving bit array
+	uint32_t countChange[8] = {};					// Store previous sums of 256 measurements potential movement sums
+	uint8_t changeArrCounter = 0;
+	uint8_t changeBitCounter = 0;
+	uint8_t moving = 0xFF;						// Bit array - each bit shows whether one set of 256 measurements had movement
 
 	uint16_t ServiceHandle;				 	// Service handle
 	uint16_t ReportJoystickHandle;

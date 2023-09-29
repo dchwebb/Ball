@@ -79,10 +79,14 @@ private:
 	static constexpr std::string_view manufacturerString = "Mountjoy Modular";
 	static constexpr std::string_view productString      = "Mountjoy Ball Remote";
 	static constexpr std::string_view cdcString          = "Mountjoy Ball Remote CDC";
+	static constexpr uint8_t selfPowered = 0;
+	static constexpr uint16_t ProductId = 65433;
+
 	static constexpr uint8_t usbSerialNoSize = 24;
 	static constexpr uint32_t recipientMask = 0x03;
 	static constexpr uint32_t requestTypeMask = 0x60;
 	static constexpr uint8_t epAddrMask = 0x0F;
+				// Set to 1 if self powered
 
 
 	void ProcessSetupPacket();
@@ -111,7 +115,6 @@ private:
 
 	// USB standard device descriptor
 	static constexpr uint16_t VendorID = 1155;	// STMicroelectronics
-	static constexpr uint16_t ProductId = 65432;
 
 	// USB standard device descriptor - in usbd_desc.c
 	const uint8_t USBD_FS_DeviceDesc[0x12] = {

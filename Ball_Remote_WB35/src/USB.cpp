@@ -284,6 +284,11 @@ void USBMain::USBInterruptHandler()							// Originally in Drivers\STM32F4xx_HAL
 		USBP->DADDR = USB_DADDR_EF;						// Enable endpoint and set address to 0
 	}
 
+	/////////// 	80 			USB_ISTR_L1REQ: Low Power Mode request
+	if (ReadInterrupts(USB_ISTR_L1REQ)) {
+		[[maybe_unused]] int x = 1;
+	}
+
 	/////////// 	100 		USB_ISTR_ESOF: Expected Start of frame
 	if (ReadInterrupts(USB_ISTR_ESOF)) {
 		USBP->ISTR &= ~USB_ISTR_ESOF;
@@ -316,7 +321,7 @@ void USBMain::InitUSB()
 	USBP->CNTR = USB_CNTR_FRES;							// Force USB Reset
 	USBP->BTABLE = 0;									// Set Buffer table Address BTABLE_ADDRESS
 	USBP->ISTR = 0;										// Clear pending interrupts
-	USBP->CNTR = USB_CNTR_CTRM  | USB_CNTR_WKUPM | USB_CNTR_SUSPM | USB_CNTR_ERRM | USB_CNTR_RESETM;
+	USBP->CNTR = USB_CNTR_CTRM  | USB_CNTR_WKUPM | USB_CNTR_SUSPM | USB_CNTR_ERRM | USB_CNTR_RESETM | USB_CNTR_L1REQM;
 	USBP->BCDR |= USB_BCDR_DPPU;						// Connect internal PU resistor on USB DP line
 }
 
@@ -332,6 +337,7 @@ void USBMain::Disable()
 	transmitting = false;
 	devState = DeviceState::Suspended;
 }
+
 
 void USBMain::ActivateEndpoint(uint8_t endpoint, const Direction direction, EndPointType endpointType)
 {
@@ -475,7 +481,7 @@ uint32_t USBMain::MakeConfigDescriptor()
 		interfaceCount,						// bNumInterfaces
 		0x01,								// bConfigurationValue: Configuration value
 		0x04,								// iConfiguration: Index of string descriptor describing the configuration
-		0xC0,								// bmAttributes: self powered
+		0x80 | (selfPowered << 6),			// bmAttributes: self powered
 		0x32,								// MaxPower 0 mA
 	};
 	memcpy(&configDescriptor[0], descriptorHeader, descrHeaderSize);

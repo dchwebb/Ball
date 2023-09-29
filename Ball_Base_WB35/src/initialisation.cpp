@@ -44,15 +44,12 @@ void SystemClock_Config()
 	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 3);	// Increase Flash latency to 3 Wait States (see manual p.77)
 	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 3);
 
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_PLL);		// 11: PLL selected as system clock
+	RCC->CFGR |= RCC_CFGR_SW;						// 11: PLL selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until PLL is selected
 
 	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
 
-	// Peripheral clocks already set to default: RTC, USART, LPUSART
-	//RCC->CSR |=  RCC_CSR_RFWKPSEL_0;				// RF system wakeup clock source selection: 01: LSE oscillator clock
-
-	RCC->CSR |= RCC_CSR_RFWKPSEL_0 | RCC_CSR_RFWKPSEL_1;				// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
+	RCC->CSR |= RCC_CSR_RFWKPSEL;					// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
 }
 
 
