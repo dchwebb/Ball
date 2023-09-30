@@ -171,10 +171,20 @@ static void InitGPIO()
 	NVIC_SetPriority(EXTI4_IRQn, 3);				// EXTI interrupt init
 	NVIC_EnableIRQ(EXTI4_IRQn);
 
+	// Enable EXTI WKUP9 on PB9 (marked as 'I2C SDA') to wake up from shutdown on gyro interrupt
+	GPIOB->MODER &= ~GPIO_MODER_MODE9_Msk;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+	SYSCFG->EXTICR[2] |= SYSCFG_EXTICR3_EXTI9_PB;	// Enable external interrupt
+	EXTI->IMR1 |= EXTI_IMR1_IM9;					// 1: CPU1 Wakeup with interrupt request from Line x is unmasked
+	EXTI->RTSR1 |= EXTI_RTSR1_RT9;					// Enable rising edge trigger
+
+	NVIC_SetPriority(EXTI9_5_IRQn, 3);				// EXTI interrupt init
+	NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;			// Configure LED pins : PA3 Connect LED
 
 	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// Configure pin PB8 (marked as I2C CLK) for debug output
+
+	// NB p159 Footnote 11: The I/Os with wake-up from Standby/Shutdown capability are PA0 and PA2
 }
 
 

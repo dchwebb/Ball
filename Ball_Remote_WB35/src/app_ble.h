@@ -7,14 +7,12 @@
 
 struct BleApp {
 public:
-	enum class ConnStatus {Idle, FastAdv, LPAdv, Scan, LPConnecting, Connected};
-	enum class LowPowerMode {Stop, Shutdown};
+	enum class ConnStatus {Idle, FastAdv, LPAdv, Scan, LPConnecting, Connected} connectionStatus {ConnStatus::Idle};
+	enum class LowPowerMode {Sleep, Stop, Shutdown} lowPowerMode {LowPowerMode::Sleep};
 	enum class SleepState {CancelAdv, GoToSleep, Awake} sleepState {SleepState::Awake};
 	static constexpr uint8_t bdAddrSize = 6;
 
 	uint16_t connectionHandle = 0xFFFF;									// When disconnected handle is set to 0xFFFF
-	ConnStatus connectionStatus = ConnStatus::Idle;
-	LowPowerMode lowPowerMode {LowPowerMode::Stop};
 	bool coprocessorFailure = false;
 
 	void Init();

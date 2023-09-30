@@ -11,6 +11,12 @@ void GyroSPI::Setup()
 	WriteCmd(0x20, 0x8F);									// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
 //	WriteCmd(0x24, 0x16);									// CTRL_REG5: Enable HP filter: BOOT | FIFO_EN | -- | HPen = 1 | INT1_Sel1 | INT1_Sel0 | Out_Sel1 | Out_Sel0
 
+//	WriteCmd(0x22, 0x80);									// CTRL_REG3: Enable Interrupt output pin
+	WriteCmd(0x30, 0x2A);									// INT1_CFG: Enable Interrupts on X/Y/Z high
+	WriteCmd(0x32, 0x07);									// INT1_THS_XH: Set X high threshold to 1792
+	WriteCmd(0x34, 0x07);									// INT1_THS_YH: Set Y high threshold to 1792
+	WriteCmd(0x36, 0x07);									// INT1_THS_ZH: Set Z high threshold to 1792
+
 	// Configure read settings
 	SPI1->CR2 &= ~SPI_CR2_DS;								// Set data size to 8 bit
 	SPI1->CR2 |= SPI_CR2_FRXTH;								// Set FIFO threshold to 8 bits
@@ -106,5 +112,6 @@ void GyroSPI::ContinualRead(bool on)
 		NVIC_EnableIRQ(TIM2_IRQn);
 	} else {
 		TIM2->CR1 &= ~TIM_CR1_CEN;
+		NVIC_DisableIRQ(TIM2_IRQn);
 	}
 }

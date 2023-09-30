@@ -7,6 +7,7 @@
 #include "stm32_seq.h"
 #include "shci.h"
 #include "usb.h"
+#include "gyroSPI.h"
 
 BleApp bleApp;
 
@@ -391,11 +392,23 @@ static void SwitchToHSI()
 
 void BleApp::EnterSleepMode()
 {
-	bleApp.LedOn(false);												// Turn off connected LED
-	usb.Disable();
+	const uint32_t primask_bit = __get_PRIMASK();
 
-	uint32_t primask_bit = __get_PRIMASK();
-	__disable_irq();													// Disable interrupts
+	bleApp.LedOn(false);												// Turn off connected LED
+
+	if (bleApp.lowPowerMode != LowPowerMode::Shutdown) {
+		gyro.WriteCmd(0x22, 0x80);										// CTRL_REG3: Enable Gyroscope Interrupt output pin for wakeup
+	} else {
+		gyro.WriteCmd(0x20, 0x00);										// CTRL_REG1: Power down
+	}
+
+	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
+		usb.Disable();
+
+		__disable_irq();												// Disable interrupts
+	} else {
+		gyro.ContinualRead(false);										// Disable gyroscope timer
+	}
 
 	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
 
@@ -414,12 +427,15 @@ void BleApp::EnterSleepMode()
 
 	// See p153 for LP modes entry and wake up
 	RCC->CFGR |= RCC_CFGR_STOPWUCK;										// HSI16 selected as wakeup from stop clock and CSS backup clock
-	SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;									// SLEEPDEEP must be set for STOP, STANDBY or SHUTDOWN modes
+	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
+		SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;								// SLEEPDEEP must be set for STOP, STANDBY or SHUTDOWN modes
+	}
 
 	if (bleApp.lowPowerMode == LowPowerMode::Stop) {
 		MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP1);			// CPU1: 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
 		//MODIFY_REG(PWR->C2CR1, PWR_C2CR1_LPMS, LL_PWR_MODE_STANDBY);	// CPU2 low power mode: note this doesn't do anything in most cases as CPU2
-	} else {
+
+	} else if (bleApp.lowPowerMode == LowPowerMode::Shutdown){
 		MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_SHUTDOWN);
 		MODIFY_REG(PWR->C2CR1, PWR_C2CR1_LPMS, LL_PWR_MODE_SHUTDOWN);
 
@@ -427,7 +443,7 @@ void BleApp::EnterSleepMode()
 		for (int x = 0; x < 1000000; ++x) {								// Force a delay as otherwise something was using 4mA
 			__attribute__((unused)) volatile int y = 1;
 		}
-	}
+	} //else if (bleApp.lowPowerMode == LowPowerMode::Sleep){
 
 	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
 	__set_PRIMASK(primask_bit);											// Re-enable interrupts for exiting sleep mode
@@ -440,19 +456,29 @@ void BleApp::EnterSleepMode()
 void BleApp::WakeFromSleep()
 {
 	// Executes on wake-up
+	bleApp.LedOn(true);													// For Debug: Turn on connected LED
+
 	RCC->CR |= RCC_CR_HSEON;											// Turn on external oscillator
 	while ((RCC->CR & RCC_CR_HSERDY) == 0);								// Wait till HSE is ready
 	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);							// 10: HSE selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
 
 	SystemCoreClockUpdate();											// Read configured clock speed into SystemCoreClock
-	sleepState = SleepState::Awake;
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
 
-	usb.InitUSB();
+	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
+		usb.InitUSB();
+	}
 
-	EnableAdvertising(ConnStatus::FastAdv);
+	gyro.WriteCmd(0x22, 0x00);											// CTRL_REG3: Disable Gyroscope Interrupt output pin
+	if (connectionStatus == ConnStatus::Connected) {
+		gyro.ContinualRead(true);
+	} else {
+		EnableAdvertising(ConnStatus::FastAdv);
+	}
+
+	sleepState = SleepState::Awake;
 }
 
 

@@ -46,10 +46,13 @@ void CDCHandler::ProcessCommand()
 		SHCI_GetWirelessFwInfo(&fwInfo);
 
 		sprintf(buf, "\r\nMountjoy Ball Remote v1.0 - Current Settings:\r\n\r\n"
+				"Connected: %s; handle: %#04x\r\n"
 				"Battery: %.2fv  %d%%\r\n"
 				"Wireless Stack: %s\r\n"
 				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
 				"RSSI Value: %d dBm\r\n",
+				bleApp.connectionStatus == BleApp::ConnStatus::Connected ? "Yes" : "No",
+				bleApp.connectionHandle,
 				basService.GetBatteryLevel(), basService.Level,
 				(bleApp.coprocessorFailure ? "Off" : "Running"),
 				fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
@@ -146,8 +149,15 @@ void CDCHandler::ProcessCommand()
 					fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub);
 		}
 
+	} else if (cmd.compare("stop") == 0) {							// Enter stop mode
+		usb->SendString("Going into stop mode\n");
+		bleApp.lowPowerMode = BleApp::LowPowerMode::Stop;
+		extern bool sleep;
+		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
+
 	} else if (cmd.compare("sleep") == 0) {							// Enter sleep mode
 		usb->SendString("Going to sleep\n");
+		bleApp.lowPowerMode = BleApp::LowPowerMode::Sleep;
 		extern bool sleep;
 		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
 

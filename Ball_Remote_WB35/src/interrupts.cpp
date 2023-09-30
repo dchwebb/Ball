@@ -24,6 +24,12 @@ void EXTI4_IRQHandler() {
 }
 
 
+void EXTI9_5_IRQHandler() {
+	// Gyro wake up
+	EXTI->PR1 = EXTI_PR1_PIF9;
+}
+
+
 void TIM2_IRQHandler() {
 	TIM2->SR &= ~TIM_SR_UIF;
 	GPIOB->ODR |= GPIO_ODR_OD8;
