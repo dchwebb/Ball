@@ -18,15 +18,16 @@ private:
 	enum Characteristic {ReportMap, HidInformation, ReportJoystick};
 	enum CharOffset {ValueOffset = 1, DescriptorOffset = 2};
 
-	static constexpr uint16_t JoystickReportID {0x0101};	// First Byte: Input Report (0x01) | Second Byte: Report ID (0x1 ... 0x03)
+	static constexpr uint16_t JoystickReportID {0x0101};		// First Byte: Input Report (0x01) | Second Byte: Report ID (0x1 ... 0x03)
 
 	const struct HIDInformation {
-		uint16_t bcdHID {0x0101};			// Binary coded decimal HID version
-		uint8_t  bcountryCode {0};  		// 0 = not localized
-		uint8_t  flags = {RemoteWake | NormallyConnectable};          // See http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.hid_information.xml
+		uint16_t bcdHID {0x0101};					// Binary coded decimal HID version
+		uint8_t  bcountryCode {0};  				// 0 = not localized
+		uint8_t  flags = {RemoteWake | NormallyConnectable};	// See http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.hid_information.xml
 	} hidInformation;
 
 	struct Pos3D {int16_t x; int16_t y; int16_t z;} joystickReport;
+	struct {float x; float y; float z;} averageMovement;
 
 	// Variables to track whether gyro is static and variations in measurements just noise
 	Pos3D oldPos;
@@ -35,21 +36,25 @@ private:
 	uint32_t countChange[8] = {};					// Store previous sums of 256 measurements potential movement sums
 	uint8_t changeArrCounter = 0;
 	uint8_t changeBitCounter = 0;
-	uint8_t moving = 0xFF;						// Bit array - each bit shows whether one set of 256 measurements had movement
+	uint8_t moving = 0xFF;							// Bit array - each bit shows whether one set of 256 measurements had movement
+	uint32_t noMovementCount = 0;					// Tracks how long there was since there was last movement to trigger sleep
 
-	uint16_t ServiceHandle;				 	// Service handle
-	uint16_t ReportJoystickHandle;
-	uint16_t ReportJoystickRefDescHandle;
-	uint16_t HidInformationHandle;
-	uint16_t HidControlPointHdle;
-	uint16_t ReportMapHandle;
-	uint16_t GyroCommandHandle;
-	uint16_t GyroRegisterHandle;
+	uint16_t serviceHandle;				 			// Service handle
+	uint16_t reportJoystickHandle;
+	uint16_t reportJoystickRefDescHandle;
+	uint16_t hidInformationHandle;
+	uint16_t hidControlPointHandle;
+	uint16_t reportMapHandle;
+	uint16_t gyroCommandHandle;						// For receiving register read/write commands
+	uint16_t gyroRegisterValHandle;					// For the gyroscope register value
+
+	uint32_t lastSend = 0;							// For periodic sending of data, even if no movement
+	uint32_t lastPrint = 0;							// For periodic printing out current gyroscope values
 
 	struct {
 		uint8_t reg = 0;
 		uint8_t val = 0;
-	} gyroRegister;
+	} gyroRegister;									// To allow gyroscope registers to be written and read over BLE
 
 	void AppInit();
 	static void UpdateJoystickReportChar();
