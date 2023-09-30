@@ -2,6 +2,7 @@
 #include "ble.h"
 #include "gyroSPI.h"
 #include "stm32_seq.h"
+#include "app_ble.h"
 
 HidService hidService;
 
@@ -193,9 +194,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	if (++changeBitCounter == 0) {				// store potential movement counts in 8 blocks of 256 readings
 		if (++changeArrCounter > 7) {
 			changeArrCounter = 0;
-			if (moving) {						// Store long-term count of non-motion to enable sleep
-				noMovementCount = 0;
-			} else {
+			if (!moving) {						// Store long-term count of non-motion to enable sleep
 				++noMovementCount;
 			}
 		}
@@ -204,6 +203,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	}
 	if (countChange[changeArrCounter] > maxChange) {
 		moving |= (1 << changeArrCounter);		// Set the moving bit for this value
+		noMovementCount = 0;
 	}
 
 
@@ -215,6 +215,15 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	if (moving) {								// If none of the previous 8 change counts registered movement do not sent the data
 		UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
 	} else {
+		// If inactive for a while go to sleep
+		if (noMovementCount > 10) {
+			noMovementCount = 0;				// Or will go back to sleep the moment it wakes up
+			bleApp.lowPowerMode = BleApp::LowPowerMode::Sleep;
+			extern bool sleep;
+			sleep = true;
+			return;
+		}
+
 		// If not moving store smoothed movement data to send periodically
 		static constexpr float smooth = 0.999f;
 		averageMovement.x = (smooth * averageMovement.x) + (1.0f - smooth) * (float)x;
