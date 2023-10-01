@@ -8,6 +8,7 @@
 #include "shci.h"
 #include "usb.h"
 #include "gyroSPI.h"
+#include "led.h"
 
 BleApp bleApp;
 
@@ -101,8 +102,6 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 			printf("\r\n\r** Client Disconnected\n");
 
 			EnableAdvertising(ConnStatus::FastAdv);			// Restart advertising
-
-			bleApp.LedOn(false);							// Turn off connected LED
 		}
 
 		break;
@@ -119,8 +118,6 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 				printf("Client connected: handle 0x%x\n", connCompleteEvent->Connection_Handle);
 				connectionStatus = ConnStatus::Connected;
 				connectionHandle = connCompleteEvent->Connection_Handle;
-
-				bleApp.LedOn(true);						// Turn on connected LED
 			}
 		}
 		break;
@@ -361,14 +358,6 @@ void BleApp::CancelAdvertising()
 }
 
 
-void BleApp::LedOn(bool on){
-	if (on) {
-		GPIOA->ODR |= GPIO_ODR_OD3;								// Turn on connected LED
-	} else {
-		GPIOA->ODR &= ~GPIO_ODR_OD3;							// Turn off connected LED
-	}
-}
-
 
 void BleApp::DisconnectRequest()
 {
@@ -394,7 +383,7 @@ void BleApp::EnterSleepMode()
 {
 	const uint32_t primask_bit = __get_PRIMASK();
 
-	bleApp.LedOn(false);												// Turn off connected LED
+	led.Update();														// Force LED to switch off
 
 	if (bleApp.lowPowerMode != LowPowerMode::Shutdown) {
 		gyro.WriteCmd(0x22, 0x80);										// CTRL_REG3: Enable Gyroscope Interrupt output pin for wakeup
@@ -443,7 +432,7 @@ void BleApp::EnterSleepMode()
 		for (int x = 0; x < 1000000; ++x) {								// Force a delay as otherwise something was using 4mA
 			__attribute__((unused)) volatile int y = 1;
 		}
-	} //else if (bleApp.lowPowerMode == LowPowerMode::Sleep){
+	}
 
 	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
 	__set_PRIMASK(primask_bit);											// Re-enable interrupts for exiting sleep mode
@@ -456,8 +445,6 @@ void BleApp::EnterSleepMode()
 void BleApp::WakeFromSleep()
 {
 	// Executes on wake-up
-	bleApp.LedOn(true);													// For Debug: Turn on connected LED
-
 	RCC->CR |= RCC_CR_HSEON;											// Turn on external oscillator
 	while ((RCC->CR & RCC_CR_HSERDY) == 0);								// Wait till HSE is ready
 	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);							// 10: HSE selected as system clock

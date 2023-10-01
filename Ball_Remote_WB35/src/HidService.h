@@ -8,6 +8,7 @@ struct HidService
 public:
 	bool JoystickNotifications;
 	bool outputGyro {false};
+	uint8_t moving = 0xFF;							// Bit array - each bit shows whether one set of 256 measurements had movement
 
 	void Init();
 	void JoystickNotification(int16_t x, int16_t y, int16_t z);
@@ -36,7 +37,6 @@ private:
 	uint32_t countChange[8] = {};					// Store previous sums of 256 measurements potential movement sums
 	uint8_t changeArrCounter = 0;
 	uint8_t changeBitCounter = 0;
-	uint8_t moving = 0xFF;							// Bit array - each bit shows whether one set of 256 measurements had movement
 	uint32_t noMovementCount = 0;					// Tracks how long there was since there was last movement to trigger sleep
 
 	uint16_t serviceHandle;				 			// Service handle

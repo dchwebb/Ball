@@ -9,7 +9,7 @@ struct BleApp {
 public:
 	enum class ConnStatus {Idle, FastAdv, LPAdv, Scan, LPConnecting, Connected} connectionStatus {ConnStatus::Idle};
 	enum class LowPowerMode {Sleep, Stop, Shutdown} lowPowerMode {LowPowerMode::Sleep};
-	enum class SleepState {CancelAdv, GoToSleep, Awake} sleepState {SleepState::Awake};
+	enum class SleepState {Awake, RequestSleep, CancelAdv, GoToSleep} sleepState {SleepState::Awake};
 	static constexpr uint8_t bdAddrSize = 6;
 
 	uint16_t connectionHandle = 0xFFFF;									// When disconnected handle is set to 0xFFFF
@@ -18,7 +18,6 @@ public:
 	void Init();
 	void ServiceControlCallback(hci_event_pckt* pckt);
 	static void DisconnectRequest();
-	void LedOn(bool on);
 private:
 	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
 	enum class AdvertisingType : uint8_t {Indirect = 0, DirectIndirect = 1, ScanIndirect = 2, NonConnInd = 3, DirectIndirectLDC = 4};

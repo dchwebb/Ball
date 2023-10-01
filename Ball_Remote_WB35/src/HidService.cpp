@@ -219,8 +219,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 		if (noMovementCount > 10) {
 			noMovementCount = 0;				// Or will go back to sleep the moment it wakes up
 			bleApp.lowPowerMode = BleApp::LowPowerMode::Sleep;
-			extern bool sleep;
-			sleep = true;
+			bleApp.sleepState = BleApp::SleepState::RequestSleep;
 			return;
 		}
 

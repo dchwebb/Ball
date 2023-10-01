@@ -92,9 +92,7 @@ void RunPendingTasks(void)
 
 void UTIL_SEQ_Idle()
 {
-	extern bool sleep;
-	if (sleep) {
-		sleep = false;
+	if (bleApp.sleepState == BleApp::SleepState::RequestSleep) {
 		UTIL_SEQ_SetTask(1 << CFG_TASK_GoToSleep, CFG_SCH_PRIO_0);
 	}
 }

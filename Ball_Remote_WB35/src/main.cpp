@@ -1,13 +1,12 @@
 #include <BasService.h>
 #include <HidService.h>
-#include "main.h"
+//#include "main.h"
 #include "initialisation.h"
 #include "app_entry.h"
 #include "USB.h"
 #include "gyroSPI.h"
+#include "led.h"
 
-
-bool sleep = false;
 volatile uint32_t SysTickVal;
 
 int main(void)
@@ -26,6 +25,7 @@ int main(void)
 		RunPendingTasks();			// Run any tasks pending in the sequencer
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
 		basService.TimedRead();		// Updates battery level every few seconds if changed
+		led.Update();				// Check if LED needs to be updated (flashing etc)
 	}
 }
 

@@ -152,20 +152,17 @@ void CDCHandler::ProcessCommand()
 	} else if (cmd.compare("stop") == 0) {							// Enter stop mode
 		usb->SendString("Going into stop mode\n");
 		bleApp.lowPowerMode = BleApp::LowPowerMode::Stop;
-		extern bool sleep;
-		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
+		bleApp.sleepState = BleApp::SleepState::RequestSleep;
 
 	} else if (cmd.compare("sleep") == 0) {							// Enter sleep mode
 		usb->SendString("Going to sleep\n");
 		bleApp.lowPowerMode = BleApp::LowPowerMode::Sleep;
-		extern bool sleep;
-		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
+		bleApp.sleepState = BleApp::SleepState::RequestSleep;
 
 	} else if (cmd.compare("shutdown") == 0) {
 		usb->SendString("Shutting down\n");
 		bleApp.lowPowerMode = BleApp::LowPowerMode::Shutdown;
-		extern bool sleep;
-		sleep = true;		// Triggers idle routine UTIL_SEQ_Idle() in app_entry.c
+		bleApp.sleepState = BleApp::SleepState::RequestSleep;
 
 	} else if (cmd.compare("canceladv") == 0) {						// Cancel advertising
 		UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
