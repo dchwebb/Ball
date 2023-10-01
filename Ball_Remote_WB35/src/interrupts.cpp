@@ -1,9 +1,7 @@
-//#include "main.h"
 #include "app_common.h"
-#include "stm32_seq.h"
 #include "gyroSPI.h"
 #include "USB.h"
-#include "app_ble.h"
+#include "BleApp.h"
 
 extern "C" {
 void SysTick_Handler() {

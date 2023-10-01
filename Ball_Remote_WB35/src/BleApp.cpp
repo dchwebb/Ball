@@ -1,9 +1,8 @@
-#include <BasService.h>
-#include <DisService.h>
-#include <HidService.h>
-#include "main.h"
+#include "BleApp.h"
 #include "ble.h"
-#include "app_ble.h"
+#include "BasService.h"
+#include "DisService.h"
+#include "HidService.h"
 #include "stm32_seq.h"
 #include "shci.h"
 #include "usb.h"
@@ -24,7 +23,7 @@ PLACE_IN_SECTION("TAG_OTA_START") const uint32_t MagicKeywordAddress = (uint32_t
 
 void BleApp::Init()
 {
-	SHCI_C2_Ble_Init_Cmd_Packet_t ble_init_cmd_packet =	{
+	SHCI_C2_Ble_Init_Cmd_Packet_t initCmdPacket = {
 			{{0,0,0}},                          // Header unused
 			{0,                                 // pBleBufferAddress not used
 			0,                         			// BleBufferSize not used
@@ -62,7 +61,7 @@ void BleApp::Init()
 	// Register the hci transport layer to handle BLE User Asynchronous Events
 	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
 
-	auto result = SHCI_C2_BLE_Init(&ble_init_cmd_packet);		// Starts the BLE Stack on CPU2
+	auto result = SHCI_C2_BLE_Init(&initCmdPacket);		// Start the BLE Stack on CPU2
 	if (result != SHCI_Success) {
 		coprocessorFailure = true;
 		return;
@@ -113,7 +112,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 			if (meta_evt->subevent == HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE) {
 				auto connCompleteEvent = (hci_le_connection_complete_event_rp0*) meta_evt->data;
 
-				HW_TS_Stop(lowPowerAdvTimerId);				// connected: no need anymore to schedule the LP ADV
+				HW_TS_Stop(lowPowerAdvTimerId);				// connected: no need anymore to schedule the LP advertising
 
 				printf("Client connected: handle 0x%x\n", connCompleteEvent->Connection_Handle);
 				connectionStatus = ConnStatus::Connected;
@@ -247,11 +246,9 @@ void BleApp::HciGapGattInit()
 }
 
 
-void BleApp::EnableAdvertising(ConnStatus newStatus)
+void BleApp::EnableAdvertising(const ConnStatus newStatus)
 {
 	tBleStatus ret = BLE_STATUS_INVALID_PARAMS;
-	uint16_t MinInterval = (newStatus == ConnStatus::FastAdv) ? FastAdvIntervalMin : LPAdvIntervalMin;
-	uint16_t MaxInterval = (newStatus == ConnStatus::FastAdv) ? FastAdvIntervalMax : LPAdvIntervalMax;
 
 	// Stop the timer, it will be restarted for a new shot; It does not hurt if the timer was not running
 	HW_TS_Stop(lowPowerAdvTimerId);
@@ -260,25 +257,24 @@ void BleApp::EnableAdvertising(ConnStatus newStatus)
 	if ((newStatus == ConnStatus::LPAdv) && ((connectionStatus == ConnStatus::FastAdv) || (connectionStatus == ConnStatus::LPAdv))) {
 		ret = aci_gap_set_non_discoverable();
 		if (ret == BLE_STATUS_SUCCESS) {
-			printf("Stopped Fast Advertising \n");
+			printf("Stopped Fast Advertising\r\n");
 		} else {
 			printf("Stop Advertising Failed , result: %d \n", ret);
 		}
 	}
 	connectionStatus = newStatus;
 
-	ret = aci_gap_set_discoverable((uint8_t)AdvertisingType::Indirect, MinInterval, MaxInterval, Security.BLEAddressType, HCI_ADV_FILTER_NO, 0, 0, 0, 0, 0, 0);
-
-	// Update Advertising data
-	ret = aci_gap_update_adv_data(sizeof(ad_data), ad_data);
+	const uint16_t minInterval = (newStatus == ConnStatus::FastAdv) ? FastAdvIntervalMin : LPAdvIntervalMin;
+	const uint16_t maxInterval = (newStatus == ConnStatus::FastAdv) ? FastAdvIntervalMax : LPAdvIntervalMax;
+	ret = aci_gap_set_discoverable((uint8_t)AdvertisingType::Indirect, minInterval, maxInterval, Security.BLEAddressType, HCI_ADV_FILTER_NO, 0, 0, 0, 0, 0, 0);
+	ret = aci_gap_update_adv_data(sizeof(ad_data), ad_data);			// Update Advertising data
 
 	if (ret == BLE_STATUS_SUCCESS) {
 		if (newStatus == ConnStatus::FastAdv)	{
-			printf("Start Fast Advertising \n");
-			// Start Timer to STOP ADV - TIMEOUT
-			HW_TS_Start(lowPowerAdvTimerId, FastAdvTimeout);
+			printf("Start Fast Advertising\r\n");
+			HW_TS_Start(lowPowerAdvTimerId, FastAdvTimeout);			// Start Timer to switch to low power advertising
 		} else {
-			printf("Start Low Power Advertising \n");
+			printf("Start Low Power Advertising\r\n");
 		}
 	} else {
 		printf("Start Advertising Failed , result: %d \n", ret);
@@ -289,9 +285,9 @@ void BleApp::EnableAdvertising(ConnStatus newStatus)
 
 uint8_t* BleApp::GetBdAddress()
 {
-	uint32_t udn = LL_FLASH_GetUDN();
-	uint32_t company_id = LL_FLASH_GetSTCompanyID();
-	uint32_t device_id = LL_FLASH_GetDeviceID();
+	const uint32_t udn = LL_FLASH_GetUDN();
+	const uint32_t company_id = LL_FLASH_GetSTCompanyID();
+	const uint32_t device_id = LL_FLASH_GetDeviceID();
 
 	// Public Address with the ST company ID
 	// bit[47:24] : 24 bits (OUI) equal to the company ID
@@ -344,9 +340,9 @@ void BleApp::CancelAdvertising()
 
 		bleApp.connectionStatus = ConnStatus::Idle;
 		if (result == BLE_STATUS_SUCCESS) {
-			printf("Stop advertising \r\n");
+			printf("Stop advertising\r\n");
 		} else {
-			printf("Stop advertising Failed \r\n");
+			printf("Stop advertising Failed\r\n");
 		}
 	}
 
@@ -393,7 +389,6 @@ void BleApp::EnterSleepMode()
 
 	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
 		usb.Disable();
-
 		__disable_irq();												// Disable interrupts
 	} else {
 		gyro.ContinualRead(false);										// Disable gyroscope timer

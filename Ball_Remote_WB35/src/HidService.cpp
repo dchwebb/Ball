@@ -2,7 +2,7 @@
 #include "ble.h"
 #include "gyroSPI.h"
 #include "stm32_seq.h"
-#include "app_ble.h"
+#include "BleApp.h"
 
 HidService hidService;
 
@@ -216,7 +216,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 		UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
 	} else {
 		// If inactive for a while go to sleep
-		if (noMovementCount > 10) {
+		if (noMovementCount > 5) {
 			noMovementCount = 0;				// Or will go back to sleep the moment it wakes up
 			bleApp.lowPowerMode = BleApp::LowPowerMode::Sleep;
 			bleApp.sleepState = BleApp::SleepState::RequestSleep;

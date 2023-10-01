@@ -1,5 +1,5 @@
+#include <BleApp.h>
 #include "led.h"
-#include "app_ble.h"
 #include "HidService.h"
 
 LED led;
@@ -32,8 +32,8 @@ void LED::Update()
 		flashUpdated = SysTickVal;
 		switch (state) {
 		case State::FastFlash:
-			flashOn = 500;
-			flashOff = 500;
+			flashOn = 50;
+			flashOff = 1000;
 			break;
 		case State::SlowFlash:
 			flashOn = 10;

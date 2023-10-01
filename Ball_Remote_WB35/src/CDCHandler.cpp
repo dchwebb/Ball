@@ -8,7 +8,7 @@ extern "C" {
 }
 #include "gyroSPI.h"
 #include "stm32_seq.h"
-#include "app_ble.h"
+#include "BleApp.h"
 #include <HidService.h>
 #include <BasService.h>
 

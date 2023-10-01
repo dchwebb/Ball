@@ -12,7 +12,7 @@ static void InitGyroTimer();
 
 uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference
 
-void SystemClock_Config()
+void InitClocks()
 {
 	FLASH->ACR |= FLASH_ACR_PRFTEN;					// Flash prefetch enable
 	FLASH->SR &= ~FLASH_SR_OPERR;					// Clear Flash Option Validity flag
@@ -58,6 +58,7 @@ void SystemClock_Config()
 	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
 
 	RCC->CSR |= RCC_CSR_RFWKPSEL;					// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
+	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
 }
 
 
@@ -177,12 +178,19 @@ static void InitGPIO()
 	EXTI->IMR1 |= EXTI_IMR1_IM9;					// 1: CPU1 Wakeup with interrupt request from Line x is unmasked
 	EXTI->RTSR1 |= EXTI_RTSR1_RT9;					// Enable rising edge trigger
 
+	// Enable EXTI WKUP8 on PB8 (marked as 'I2C CLK') to interrupt on gyro ready pin
+	GPIOB->MODER &= ~GPIO_MODER_MODE8_Msk;			// 00: Input mode; 01: General purpose output mode; 10: Alternate function mode; 11: Analog mode (default)
+	SYSCFG->EXTICR[2] |= SYSCFG_EXTICR3_EXTI8_PB;	// Enable external interrupt
+	EXTI->IMR1 |= EXTI_IMR1_IM8;					// 1: CPU1 Wakeup with interrupt request from Line x is unmasked
+	EXTI->RTSR1 |= EXTI_RTSR1_RT8;					// Enable rising edge trigger
+
 	NVIC_SetPriority(EXTI9_5_IRQn, 3);				// EXTI interrupt init
 	NVIC_EnableIRQ(EXTI9_5_IRQn);
 
+
 	GPIOA->MODER &= ~GPIO_MODER_MODE3_1;			// Configure LED pins : PA3 Connect LED
 
-	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// Configure pin PB8 (marked as I2C CLK) for debug output
+//	GPIOB->MODER &= ~GPIO_MODER_MODE8_1;			// Configure pin PB8 (marked as I2C CLK) for debug output
 
 	// NB p159 Footnote 11: The I/Os with wake-up from Standby/Shutdown capability are PA0 and PA2
 }
@@ -256,3 +264,11 @@ void InitGyroTimer()
 	NVIC_SetPriority(TIM2_IRQn, 2);					// Lower is higher priority
 }
 
+
+void Init_Smps()
+{
+	//  To use the SMPS an inductor and capacitor need to be fitted (not on current hardware revision) Datasheet p27
+	LL_PWR_SMPS_SetStartupCurrent(LL_PWR_SMPS_STARTUP_CURRENT_80MA);
+	LL_PWR_SMPS_SetOutputVoltageLevel(LL_PWR_SMPS_OUTPUT_VOLTAGE_1V40);
+	LL_PWR_SMPS_Enable();
+}

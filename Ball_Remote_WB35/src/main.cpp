@@ -1,23 +1,24 @@
-#include <BasService.h>
-#include <HidService.h>
-//#include "main.h"
 #include "initialisation.h"
+#include "BasService.h"
+#include "HidService.h"
 #include "app_entry.h"
 #include "USB.h"
 #include "gyroSPI.h"
 #include "led.h"
 
+/* TODO
+ * Shutdown if advertising exceeds time limit
+ *
+ */
+
 volatile uint32_t SysTickVal;
 
 int main(void)
 {
-	SystemClock_Config();			// Set system clocks
-	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
-
+	InitClocks();					// Set system clocks
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
 	usb.InitUSB();
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE
-
 	gyro.Setup();					// Setup address and settings for gyroscope
 
 
