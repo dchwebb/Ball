@@ -36,7 +36,7 @@ private:
 
 	static constexpr std::string_view GapDeviceName = "Ball_Remote";
 	static constexpr uint8_t  TransmitPower = 16;				 		// PA_Level Power amplifier output level (0-35)
-	static constexpr uint32_t FastAdvTimeout = (30 * 1000 * 1000 / CFG_TS_TICK_VAL); 	// 30s
+	static constexpr uint32_t FastAdvTimeout = (10 * 1000 * 1000 / CFG_TS_TICK_VAL); 	// 30s = 61475
 	static constexpr uint16_t FastAdvIntervalMin = 128;					// Intervals for fast advertising
 	static constexpr uint16_t FastAdvIntervalMax = 160;
 	static constexpr uint16_t LPAdvIntervalMin = 1600;					// Intervals for low power advertising
@@ -93,7 +93,6 @@ private:
 	static void SwitchLPAdvertising();
 	static void SwitchFastAdvertising();
 	static void QueueLPAdvertising();
-	static void QueueFastAdvertising();
 	static void CancelAdvertising();
 	static void GoToSleep();
 	static void GoToShutdown();

@@ -58,7 +58,7 @@ void InitClocks()
 	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
 
 	RCC->CSR |= RCC_CSR_RFWKPSEL;					// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
-	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
+	SystemCoreClockUpdate();						// Read configured clock speed into SystemCoreClock (system clock frequency)
 }
 
 
@@ -219,6 +219,7 @@ static void InitIPCC()
 
 static void InitRTC()
 {
+	// NB RTC->PRER prescaler is already configured to give a 1Hz clock from the 32.768kHz external crystal
 	RCC->BDCR |= RCC_BDCR_RTCEN;					// Enable RTC
 	RCC->BDCR |= RCC_BDCR_RTCSEL_0;					// Set RTC Clock to source to LSE
 
@@ -228,12 +229,6 @@ static void InitRTC()
 	RTC->ISR = 0xFFFFFFFF;							// Enter the Initialization mode (Just setting the Init Flag does not seem to work)
 	while ((RTC->ISR & RTC_ISR_INITF) == 0);
 
-#ifdef USEBASEBOARD
-	RCC->BDCR |= RCC_BDCR_RTCSEL_1;					// Set RTC Clock to source to LSI
-	RTC->PRER = (255 << RTC_PRER_PREDIV_S_Pos) | (124 << RTC_PRER_PREDIV_A_Pos);		// Set prescaler for 32kHz input clock (1Hz = 32k / (124[PREDIV_A] + 1) * (255[PREDIV_S] + 1)
-#else
-	RCC->BDCR |= RCC_BDCR_RTCSEL_0;					// Set RTC Clock to source to LSE
-#endif
 	RCC->APB1ENR1 |= RCC_APB1ENR1_RTCAPBEN;			// CPU1 RTC APB clock enable
 	while ((RCC->APB1ENR1 & RCC_APB1ENR1_RTCAPBEN) == 0);
 
@@ -241,6 +236,9 @@ static void InitRTC()
 	RTC->ISR &= ~RTC_ISR_INIT;						// Exit Initialization mode
 
 	RTC->WPR = 0xFFU;								// Enable the write protection for RTC registers.
+
+	NVIC_SetPriority(RTC_WKUP_IRQn, 2);
+	NVIC_EnableIRQ(RTC_WKUP_IRQn);
 }
 
 

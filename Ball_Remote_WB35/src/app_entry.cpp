@@ -22,7 +22,7 @@ void APPE_Init()
 	// Initialize the TimerServer - manages switching between advertising states
 	hrtc.Instance = RTC;
 	hrtc.State = HAL_RTC_STATE_READY;
-	HW_TS_Init(hw_ts_InitMode_Full, &hrtc);
+	//HW_TS_Init(hw_ts_InitMode_Full, &hrtc);
 
 	// Initialize transport layers
 	TL_Init();

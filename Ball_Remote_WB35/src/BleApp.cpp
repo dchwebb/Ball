@@ -245,7 +245,7 @@ void BleApp::HciGapGattInit()
 	}
 }
 
-
+uint32_t debugTimStamp = 0;
 void BleApp::EnableAdvertising(const ConnStatus newStatus)
 {
 	tBleStatus ret = BLE_STATUS_INVALID_PARAMS;
@@ -256,9 +256,7 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 	// If switching to LP advertising first disable fast advertising
 	if ((newStatus == ConnStatus::LPAdv) && ((connectionStatus == ConnStatus::FastAdv) || (connectionStatus == ConnStatus::LPAdv))) {
 		ret = aci_gap_set_non_discoverable();
-		if (ret == BLE_STATUS_SUCCESS) {
-			printf("Stopped Fast Advertising\r\n");
-		} else {
+		if (ret) {
 			printf("Stop Advertising Failed , result: %d \n", ret);
 		}
 	}
@@ -272,7 +270,33 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 	if (ret == BLE_STATUS_SUCCESS) {
 		if (newStatus == ConnStatus::FastAdv)	{
 			printf("Start Fast Advertising\r\n");
-			HW_TS_Start(lowPowerAdvTimerId, FastAdvTimeout);			// Start Timer to switch to low power advertising
+			//HW_TS_Start(lowPowerAdvTimerId, FastAdvTimeout);			// Start Timer to switch to low power advertising
+
+			// Manually start trigger
+			RTC->WPR = 0xCAU;									// Disable the write protection for RTC registers - see p.919
+			RTC->WPR = 0x53U;
+
+			RTC->ISR |= RTC_ISR_INIT;							// Enter the Initialization mode (Just setting the Init Flag does not seem to work)
+			while ((RTC->ISR & RTC_ISR_INITF) == 0);
+
+			RTC->CR &= ~RTC_CR_WUTE;							// Clear Wake up timer
+			while ((RTC->ISR & RTC_ISR_WUTWF) == 0);
+
+			RTC->CR |= RTC_CR_WUCKSEL_2;						// 10x: ck_spre (usually 1 Hz) clock is selected
+			RTC->WUTR = 10;										// Set to 10 seconds
+			RTC->ISR &= ~RTC_ISR_WUTF;							// Clear Wake up timer flag
+			RTC->CR |= RTC_CR_WUTE;								// Enable Wake up timer
+
+			EXTI->IMR1 |= EXTI_IMR1_IM19;						// Enable wake up timer interrupt on EXTI RTC_WKUP
+			EXTI->RTSR1 |= EXTI_RTSR1_RT19;						// Trigger EXTI on rising edge
+			EXTI->PR1 = EXTI_PR1_PIF19;							// Clear pending register
+			NVIC_ClearPendingIRQ(RTC_WKUP_IRQn);
+
+			RTC->ISR &= ~RTC_ISR_INIT;							// Exit Initialization mode
+			RTC->WPR = 0xFFU;									// Enable the write protection for RTC registers.
+
+			debugTimStamp = RTC->TR;
+
 		} else {
 			printf("Start Low Power Advertising\r\n");
 		}
@@ -309,13 +333,6 @@ void BleApp::QueueLPAdvertising()
 {
 	// Queues transition from fast to low power advertising
 	UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchLPAdvertising, CFG_SCH_PRIO_0);
-}
-
-
-void BleApp::QueueFastAdvertising()
-{
-	// Queues activation of fast advertising
-	UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchFastAdvertising, CFG_SCH_PRIO_0);
 }
 
 

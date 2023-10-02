@@ -17,9 +17,9 @@ int main(void)
 {
 	InitClocks();					// Set system clocks
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
-	usb.InitUSB();
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE
 	gyro.Setup();					// Setup address and settings for gyroscope
+	usb.InitUSB();
 
 
 	while (1) {
