@@ -233,6 +233,7 @@ static void InitRTC()
 	while ((RCC->APB1ENR1 & RCC_APB1ENR1_RTCAPBEN) == 0);
 
 	RTC->CR |= RTC_CR_WUTE;							// Enable Wake up timer see p918
+	RTC->CR |= RTC_CR_WUTIE;						// Enable interrupt in RTC module
 	RTC->ISR &= ~RTC_ISR_INIT;						// Exit Initialization mode
 
 	RTC->WPR = 0xFFU;								// Enable the write protection for RTC registers.
@@ -241,6 +242,42 @@ static void InitRTC()
 	NVIC_EnableIRQ(RTC_WKUP_IRQn);
 }
 
+
+
+
+void RTCInterrupt(uint32_t seconds)
+{
+	// Pass seconds = 0 to disable
+
+	RTC->WPR = 0xCAU;									// Disable the write protection for RTC registers - see p.919
+	RTC->WPR = 0x53U;
+
+	RTC->ISR |= RTC_ISR_INIT;							// Enter the Initialization mode (Just setting the Init Flag does not seem to work)
+	while ((RTC->ISR & RTC_ISR_INITF) == 0);
+
+	RTC->CR &= ~RTC_CR_WUTE;							// Clear Wake up timer
+	while ((RTC->ISR & RTC_ISR_WUTWF) == 0);
+
+	RTC->ISR &= ~RTC_ISR_WUTF;							// Clear Wake up timer flag
+
+	if (seconds) {
+		RTC->CR |= RTC_CR_WUCKSEL_2;					// 10x: ck_spre (usually 1 Hz) clock is selected
+		RTC->WUTR = seconds;							// Set countdown time
+		RTC->CR |= RTC_CR_WUTE;							// Enable Wake up timer
+
+		EXTI->IMR1 |= EXTI_IMR1_IM19;					// Enable wake up timer interrupt on EXTI RTC_WKUP
+		EXTI->RTSR1 |= EXTI_RTSR1_RT19;					// Trigger EXTI on rising edge
+
+	} else {
+		RTC->CR &= ~RTC_CR_WUTE;						// Disable Wake up timer// Diable
+	}
+	EXTI->PR1 = EXTI_PR1_PIF19;							// Clear pending register
+	NVIC_ClearPendingIRQ(RTC_WKUP_IRQn);
+
+	RTC->ISR &= ~RTC_ISR_INIT;							// Exit Initialization mode
+	RTC->WPR = 0xFFU;									// Enable the write protection for RTC registers.
+
+}
 
 static void InitSysTick()
 {

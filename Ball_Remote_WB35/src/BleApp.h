@@ -18,6 +18,7 @@ public:
 	void Init();
 	void ServiceControlCallback(hci_event_pckt* pckt);
 	static void DisconnectRequest();
+	static void QueueLPAdvertising();
 private:
 	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
 	enum class AdvertisingType : uint8_t {Indirect = 0, DirectIndirect = 1, ScanIndirect = 2, NonConnInd = 3, DirectIndirectLDC = 4};
@@ -92,7 +93,6 @@ private:
 	void EnableAdvertising(ConnStatus status);
 	static void SwitchLPAdvertising();
 	static void SwitchFastAdvertising();
-	static void QueueLPAdvertising();
 	static void CancelAdvertising();
 	static void GoToSleep();
 	static void GoToShutdown();

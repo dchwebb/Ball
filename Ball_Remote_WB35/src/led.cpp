@@ -33,7 +33,7 @@ void LED::Update()
 		switch (state) {
 		case State::FastFlash:
 			flashOn = 50;
-			flashOff = 1000;
+			flashOff = 600;
 			break;
 		case State::SlowFlash:
 			flashOn = 10;

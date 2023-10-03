@@ -17,12 +17,27 @@ static void APPE_SysStatusNotify(SHCI_TL_CmdStatus_t status);
 static void APPE_SysUserEvtRx(void* pPayload);
 
 
+void HW_TS_InitTest(HW_TS_InitMode_t TimerInitMode, RTC_HandleTypeDef *phrtc)
+{
+	__HAL_RTC_WRITEPROTECTION_DISABLE( &hrtc );
+	SET_BIT(RTC->CR, RTC_CR_BYPSHAD);
+
+	RTC->CR &= ~RTC_CR_WUTE;						//  Disable the Wakeup Timer
+	RTC->ISR &= ~RTC_FLAG_WUTF; 				    //  Clear flag in RTC module
+	EXTI->PR1 = RTC_EXTI_LINE_WAKEUPTIMER_EVENT;	//  Clear flag in EXTI module
+	NVIC_ClearPendingIRQ(RTC_WKUP_IRQn);			//  Clear pending bit in NVIC
+	RTC->CR |= RTC_CR_WUTIE;						//  Enable interrupt in RTC module
+
+	__HAL_RTC_WRITEPROTECTION_ENABLE(&hrtc);
+}
+
+
 void APPE_Init()
 {
 	// Initialize the TimerServer - manages switching between advertising states
 	hrtc.Instance = RTC;
 	hrtc.State = HAL_RTC_STATE_READY;
-	//HW_TS_Init(hw_ts_InitMode_Full, &hrtc);
+	//HW_TS_InitTest(hw_ts_InitMode_Full, &hrtc);
 
 	// Initialize transport layers
 	TL_Init();

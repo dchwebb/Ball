@@ -40,7 +40,9 @@ void HSEM_IRQHandler() {		// This doesn't seem to be being used
 }
 
 void RTC_WKUP_IRQHandler() {
-	HW_TS_RTC_Wakeup_Handler();
+	BleApp::QueueLPAdvertising();
+	RTCInterrupt(0);
+	//HW_TS_RTC_Wakeup_Handler();
 }
 
 void IPCC_C1_RX_IRQHandler() {
