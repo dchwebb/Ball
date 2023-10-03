@@ -7,10 +7,10 @@
 
 struct BleApp {
 public:
-	enum class ConnStatus {Idle, FastAdv, LPAdv, Scan, LPConnecting, Connected} connectionStatus {ConnStatus::Idle};
-	enum class SleepState {Awake, RequestSleep, CancelAdv, GoToSleep} sleepState {SleepState::Awake};
-	enum class LowPowerMode {Sleep, Stop, Shutdown} lowPowerMode;		// Specify low power mode when  sleep requested
-	enum class WakeAction {LPAdvertising, Shutdown} wakeAction;			// action to carry out when waking up from RTC interrupt
+	enum class ConnStatus {Idle, FastAdv, LPAdv, Scan, Connected} connectionStatus {ConnStatus::Idle};
+	enum class SleepState {Awake, RequestSleep, CancelAdv, GoToSleep, WakeToShutdown} sleepState {SleepState::Awake};
+	enum class LowPowerMode {Sleep, Stop, Shutdown} lowPowerMode;		// Specify low power mode when sleep requested
+	enum class WakeAction {LPAdvertising, Shutdown} wakeAction;			// Action to carry out when waking up from RTC interrupt
 	static constexpr uint8_t bdAddrSize = 6;
 
 	uint16_t connectionHandle = 0xFFFF;									// When disconnected handle is set to 0xFFFF
@@ -18,7 +18,8 @@ public:
 
 	void Init();
 	static void DisconnectRequest();
-	void WakeUp();
+	void RTCWakeUp();
+
 private:
 	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
 	enum class AdvertisingType : uint8_t {Indirect = 0, DirectIndirect = 1, ScanIndirect = 2, NonConnInd = 3, DirectIndirectLDC = 4};
@@ -37,7 +38,8 @@ private:
 
 	static constexpr std::string_view GapDeviceName = "Ball_Remote";
 	static constexpr uint8_t  TransmitPower = 16;				 		// PA_Level Power amplifier output level (0-35)
-	static constexpr uint32_t FastAdvTimeout = (10 * 1000 * 1000 / CFG_TS_TICK_VAL); 	// 30s = 61475
+	static constexpr uint32_t FastAdvTimeout = 6;					 	// Period of fast advertising FIXME 6s for testing
+	static constexpr uint32_t LPAdvTimeout = 60;					 	// Shutdown if not connected for a minute
 	static constexpr uint16_t FastAdvIntervalMin = 128;					// Intervals for fast advertising
 	static constexpr uint16_t FastAdvIntervalMax = 160;
 	static constexpr uint16_t LPAdvIntervalMin = 1600;					// Intervals for low power advertising
@@ -71,7 +73,7 @@ private:
 	static constexpr uint8_t IdentityRootKey[16] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0};
 	static constexpr uint8_t EncryptionRootKey[16] = {0xFE, 0xDC, 0xBA, 0x09, 0x87, 0x65, 0x43, 0x21, 0xFE, 0xDC, 0xBA, 0x09, 0x87, 0x65, 0x43, 0x21};
 
-	uint8_t bd_addr_udn[bdAddrSize];
+	uint8_t bdAddrUdn[bdAddrSize];
 
 	struct {
 		uint8_t ioCapability = (uint8_t)IOCapability::NoIO;				// IO capability of the device

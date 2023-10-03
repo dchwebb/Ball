@@ -23,6 +23,16 @@ PLACE_IN_SECTION("TAG_OTA_START") const uint32_t MagicKeywordAddress = (uint32_t
 
 void BleApp::Init()
 {
+	// Initialize BLE Transport Layer
+	HCI_TL_HciInitConf_t Hci_Tl_Init_Conf;
+	Hci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&bleCmdBuffer;
+	Hci_Tl_Init_Conf.StatusNotCallBack = StatusNotify;
+	hci_init(UserEvtRx, (void*) &Hci_Tl_Init_Conf);
+
+	// Register the hci transport layer to handle BLE User Asynchronous Events
+	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
+
+
 	SHCI_C2_Ble_Init_Cmd_Packet_t initCmdPacket = {
 			{{0,0,0}},                          // Header unused
 			{0,                                 // pBleBufferAddress not used
@@ -54,12 +64,6 @@ void BleApp::Init()
 			BLECoreVersion,
 			CFG_BLE_OPTIONS_EXT}
 	};
-
-
-	TransportLayerInit();						// Initialize BLE Transport Layer
-
-	// Register the hci transport layer to handle BLE User Asynchronous Events
-	UTIL_SEQ_RegTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, UTIL_SEQ_RFU, hci_user_evt_proc);
 
 	auto result = SHCI_C2_BLE_Init(&initCmdPacket);		// Start the BLE Stack on CPU2
 	if (result != SHCI_Success) {
@@ -164,16 +168,6 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 }
 
 
-void BleApp::TransportLayerInit()
-{
-	HCI_TL_HciInitConf_t Hci_Tl_Init_Conf;
-
-	Hci_Tl_Init_Conf.p_cmdbuffer = (uint8_t*)&bleCmdBuffer;
-	Hci_Tl_Init_Conf.StatusNotCallBack = StatusNotify;
-	hci_init(UserEvtRx, (void*) &Hci_Tl_Init_Conf);
-}
-
-
 void BleApp::HciGapGattInit()
 {
 	uint16_t gap_service_handle, gap_dev_name_char_handle, gap_appearance_char_handle;
@@ -185,10 +179,8 @@ void BleApp::HciGapGattInit()
 	// Write the BD Address
 	aci_hal_write_config_data(CONFIG_DATA_PUBADDR_OFFSET, bdAddrSize, GetBdAddress());
 
-	// Write Identity root key used to derive LTK and CSRK
+	// Write root keys used to derive LTK and CSRK
 	aci_hal_write_config_data(CONFIG_DATA_IR_OFFSET, CONFIG_DATA_IR_LEN, IdentityRootKey);
-
-	// Write Encryption root key used to derive LTK and CSRK
 	aci_hal_write_config_data(CONFIG_DATA_ER_OFFSET, CONFIG_DATA_ER_LEN, EncryptionRootKey);
 
 	aci_hal_set_tx_power_level(0, TransmitPower);	// Set TX Power to 0dBm.
@@ -235,6 +227,7 @@ void BleApp::HciGapGattInit()
 			Security.fixedPin,
 			Security.BLEAddressType
 	);
+
 	// Initialize whitelist
 	if (Security.bondingMode) {
 		aci_gap_configure_whitelist();
@@ -264,9 +257,11 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 		if (newStatus == ConnStatus::FastAdv)	{
 			printf("Start Fast Advertising\r\n");
 			wakeAction = WakeAction::LPAdvertising;					// Set action when waking up
-			RTCInterrupt(6);										// Trigger RTC interrupt to start low speed advertising
+			RTCInterrupt(FastAdvTimeout);							// Trigger RTC interrupt to start low speed advertising
 		} else {
-			printf("Start Low Power Advertising\r\n");
+			printf("Switch to Low Power Advertising\r\n");
+			wakeAction = WakeAction::Shutdown;						// Set ato shutdown if not connected after LP adv period
+			RTCInterrupt(LPAdvTimeout);
 		}
 	} else {
 		printf("Start Advertising Failed , result: %d \n", ret);
@@ -275,14 +270,17 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 }
 
 
-void BleApp::WakeUp()
+void BleApp::RTCWakeUp()
 {
 	// Manage RTC timer interrupts
+	RTCInterrupt(0);						// Clear RTC wakeup interrupt
+
 	switch (wakeAction) {
 	case WakeAction::LPAdvertising:
 		UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchLPAdvertising, CFG_SCH_PRIO_0);
 		break;
 	case WakeAction::Shutdown:
+		bleApp.sleepState = BleApp::SleepState::WakeToShutdown;
 		break;
 	}
 }
@@ -291,22 +289,22 @@ void BleApp::WakeUp()
 uint8_t* BleApp::GetBdAddress()
 {
 	const uint32_t udn = LL_FLASH_GetUDN();
-	const uint32_t company_id = LL_FLASH_GetSTCompanyID();
-	const uint32_t device_id = LL_FLASH_GetDeviceID();
+	const uint32_t companyId = LL_FLASH_GetSTCompanyID();
+	const uint32_t deviceId = LL_FLASH_GetDeviceID();
 
 	// Public Address with the ST company ID
 	// bit[47:24] : 24 bits (OUI) equal to the company ID
 	// bit[23:16] : Device ID.
 	// bit[15:0]  : The last 16 bits from the UDN
 	// Note: In order to use the Public Address in a final product, a dedicated 24 bit company ID (OUI) must be bought.
-	bd_addr_udn[0] = (uint8_t)(udn & 0x000000FF);
-	bd_addr_udn[1] = (uint8_t)((udn & 0x0000FF00) >> 8);
-	bd_addr_udn[2] = (uint8_t)device_id;
-	bd_addr_udn[3] = (uint8_t)(company_id & 0x000000FF);
-	bd_addr_udn[4] = (uint8_t)((company_id & 0x0000FF00) >> 8);
-	bd_addr_udn[5] = (uint8_t)((company_id & 0x00FF0000) >> 16);
+	bdAddrUdn[0] = (uint8_t)(udn & 0x000000FF);
+	bdAddrUdn[1] = (uint8_t)((udn & 0x0000FF00) >> 8);
+	bdAddrUdn[2] = (uint8_t)deviceId;
+	bdAddrUdn[3] = (uint8_t)(companyId & 0x000000FF);
+	bdAddrUdn[4] = (uint8_t)((companyId & 0x0000FF00) >> 8);
+	bdAddrUdn[5] = (uint8_t)((companyId & 0x00FF0000) >> 16);
 
-	return bd_addr_udn;
+	return bdAddrUdn;
 }
 
 
@@ -338,7 +336,6 @@ void BleApp::CancelAdvertising()
 }
 
 
-
 void BleApp::DisconnectRequest()
 {
 	aci_gap_terminate(bleApp.connectionHandle, 0x16);			// 0x16: Connection Terminated by Local Host
@@ -348,7 +345,9 @@ void BleApp::DisconnectRequest()
 void BleApp::GoToSleep()
 {
 	bleApp.sleepState = SleepState::CancelAdv;
-	RTCInterrupt(0);					// Cancel timer to activate LP Advertising
+	if (bleApp.connectionStatus != ConnStatus::Connected) {
+		RTCInterrupt(0);					// Cancel advertising timers (if connected interrupt will be used for inactivity shutdown)
+	}
 	UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
 }
 
@@ -356,7 +355,7 @@ void BleApp::GoToSleep()
 static void SwitchToHSI()
 {
 	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_HSI);			// Set HSI as clock source
-	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSE is selected
+	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSI is selected
 }
 
 
@@ -377,7 +376,7 @@ void BleApp::EnterSleepMode()
 		__disable_irq();												// Disable interrupts
 	}
 
-	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));				// Lock the RCC semaphore
+	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
 
 	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
 		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Shutdown mode
@@ -387,8 +386,7 @@ void BleApp::EnterSleepMode()
 	} else {
 		SwitchToHSI();
 	}
-	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);					// Release RCC semaphore
-
+	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
 	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
 
@@ -412,6 +410,7 @@ void BleApp::EnterSleepMode()
 		}
 	}
 
+	//RCC->CR &= ~RCC_CR_HSEON;											// Turn off external oscillator
 	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
 	__set_PRIMASK(primask_bit);											// Re-enable interrupts for exiting sleep mode
 	__WFI();															// Activates sleep (wait for interrupts)
@@ -422,14 +421,18 @@ void BleApp::EnterSleepMode()
 
 void BleApp::WakeFromSleep()
 {
-	// Executes on wake-up
-	//if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
-		RCC->CR |= RCC_CR_HSEON;										// Turn on external oscillator
-		while ((RCC->CR & RCC_CR_HSERDY) == 0);							// Wait till HSE is ready
-		MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);				// 10: PLL selected as system clock
-		while ((RCC->CFGR & RCC_CFGR_SWS) == 0);						// Wait until HSE is selected
-		SystemCoreClockUpdate();										// Read configured clock speed into SystemCoreClock
-	//}
+	if (sleepState == SleepState::WakeToShutdown) {						// If no activity for a long time sleeping RTC wake up to shutdown
+		lowPowerMode = LowPowerMode::Shutdown;
+		EnterSleepMode();
+		return;
+	}
+
+
+//	RCC->CR |= RCC_CR_HSEON;											// Turn on external oscillator
+//	while ((RCC->CR & RCC_CR_HSERDY) == 0);								// Wait till HSE is ready
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);					// 10: PLL selected as system clock
+	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
+//	SystemCoreClockUpdate();											// Read configured clock speed into SystemCoreClock
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
 
@@ -438,6 +441,7 @@ void BleApp::WakeFromSleep()
 	}
 
 	if (connectionStatus == ConnStatus::Connected) {
+		RTCInterrupt(0);												// Cancel shutdown timeout
 		gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Turn Gyroscope back on
 	} else {
 		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
@@ -472,7 +476,7 @@ void BleApp::UserEvtRx(void* pPayload)
 	// If not handled will then call bleApp.ServiceControlCallback() for connection/security handling
 
 	auto pParam = (tHCI_UserEvtRxParam*)pPayload;
-	auto event_pckt = (hci_event_pckt *)&(pParam->pckt->evtserial.evt);
+	auto event_pckt = (hci_event_pckt*)&(pParam->pckt->evtserial.evt);
 
 	if (event_pckt->evt == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
 		if (hidService.EventHandler(event_pckt)) {

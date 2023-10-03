@@ -37,10 +37,7 @@ void TIM2_IRQHandler() {
 
 
 void RTC_WKUP_IRQHandler() {
-	//BleApp::QueueLPAdvertising();
-	bleApp.WakeUp();
-	RTCInterrupt(0);
-	//HW_TS_RTC_Wakeup_Handler();
+	bleApp.RTCWakeUp();
 }
 
 

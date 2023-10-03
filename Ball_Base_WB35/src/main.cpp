@@ -4,6 +4,8 @@
 #include "USB.h"
 #include "configManager.h"
 
+// FIXME - LED keeps flashing if trying to connect with no remote module available
+
 volatile uint32_t SysTickVal = 0;
 extern uint32_t SystemCoreClock;
 

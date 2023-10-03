@@ -221,6 +221,8 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 			noMovementCount = 0;				// Or will go back to sleep the moment it wakes up
 			bleApp.lowPowerMode = BleApp::LowPowerMode::Sleep;
 			bleApp.sleepState = BleApp::SleepState::RequestSleep;
+			bleApp.wakeAction = BleApp::WakeAction::Shutdown;			// Shutdown if movement for significant period
+			RTCInterrupt(inactivityTimeout);							// Trigger RTC to wake up from sleep and shutdown after timeout
 			return;
 		}
 
