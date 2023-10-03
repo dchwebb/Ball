@@ -70,13 +70,9 @@ void BleApp::Init()
 	HciGapGattInit();							// Initialization of HCI & GATT & GAP layer
 
 	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchLPAdvertising, UTIL_SEQ_RFU, SwitchLPAdvertising);
-	UTIL_SEQ_RegTask(1 << CFG_TASK_SwitchFastAdvertising, UTIL_SEQ_RFU, SwitchFastAdvertising);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_CancelAdvertising, UTIL_SEQ_RFU, CancelAdvertising);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_GoToSleep, UTIL_SEQ_RFU, GoToSleep);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_EnterSleepMode, UTIL_SEQ_RFU, EnterSleepMode);
-
-	// Create timer to switch to Low Power advertising
-	HW_TS_Create(CFG_TIM_PROC_ID_ISR, &(lowPowerAdvTimerId), hw_ts_SingleShot, QueueLPAdvertising);
 
 	disService.Init();							// Initialize Device Information Service
 	basService.Init();							// Initialize Battery level Service
@@ -112,7 +108,7 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 			if (meta_evt->subevent == HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE) {
 				auto connCompleteEvent = (hci_le_connection_complete_event_rp0*) meta_evt->data;
 
-				HW_TS_Stop(lowPowerAdvTimerId);				// connected: no need anymore to schedule the LP advertising
+				RTCInterrupt(0);								// Disable low power advertising timer
 
 				printf("Client connected: handle 0x%x\n", connCompleteEvent->Connection_Handle);
 				connectionStatus = ConnStatus::Connected;
@@ -250,11 +246,8 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 {
 	tBleStatus ret = BLE_STATUS_INVALID_PARAMS;
 
-	// Stop the timer, it will be restarted for a new shot; It does not hurt if the timer was not running
-	HW_TS_Stop(lowPowerAdvTimerId);
-
 	// If switching to LP advertising first disable fast advertising
-	if ((newStatus == ConnStatus::LPAdv) && ((connectionStatus == ConnStatus::FastAdv) || (connectionStatus == ConnStatus::LPAdv))) {
+	if (newStatus == ConnStatus::LPAdv && connectionStatus == ConnStatus::FastAdv) {
 		ret = aci_gap_set_non_discoverable();
 		if (ret) {
 			printf("Stop Advertising Failed , result: %d \n", ret);
@@ -265,14 +258,13 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 	const uint16_t minInterval = (newStatus == ConnStatus::FastAdv) ? FastAdvIntervalMin : LPAdvIntervalMin;
 	const uint16_t maxInterval = (newStatus == ConnStatus::FastAdv) ? FastAdvIntervalMax : LPAdvIntervalMax;
 	ret = aci_gap_set_discoverable((uint8_t)AdvertisingType::Indirect, minInterval, maxInterval, Security.BLEAddressType, HCI_ADV_FILTER_NO, 0, 0, 0, 0, 0, 0);
-	ret = aci_gap_update_adv_data(sizeof(ad_data), ad_data);			// Update Advertising data
+	ret = aci_gap_update_adv_data(sizeof(ad_data), ad_data);		// Update Advertising data
 
 	if (ret == BLE_STATUS_SUCCESS) {
 		if (newStatus == ConnStatus::FastAdv)	{
 			printf("Start Fast Advertising\r\n");
-			//HW_TS_Start(lowPowerAdvTimerId, FastAdvTimeout);			// Start Timer to switch to low power advertising
-			RTCInterrupt(6);						// Trigger RTC interrupt to start low speed advertising
-
+			wakeAction = WakeAction::LPAdvertising;					// Set action when waking up
+			RTCInterrupt(6);										// Trigger RTC interrupt to start low speed advertising
 		} else {
 			printf("Start Low Power Advertising\r\n");
 		}
@@ -280,6 +272,19 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 		printf("Start Advertising Failed , result: %d \n", ret);
 	}
 
+}
+
+
+void BleApp::WakeUp()
+{
+	// Manage RTC timer interrupts
+	switch (wakeAction) {
+	case WakeAction::LPAdvertising:
+		UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchLPAdvertising, CFG_SCH_PRIO_0);
+		break;
+	case WakeAction::Shutdown:
+		break;
+	}
 }
 
 
@@ -305,33 +310,19 @@ uint8_t* BleApp::GetBdAddress()
 }
 
 
-void BleApp::QueueLPAdvertising()
-{
-	// Queues transition from fast to low power advertising
-	UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchLPAdvertising, CFG_SCH_PRIO_0);
-}
-
-
 void BleApp::SwitchLPAdvertising()
 {
 	bleApp.EnableAdvertising(ConnStatus::LPAdv);
 }
 
 
-void BleApp::SwitchFastAdvertising()
-{
-	bleApp.EnableAdvertising(ConnStatus::FastAdv);
-}
-
-
 void BleApp::CancelAdvertising()
 {
+	// Used to initiate sleep process
 	if (bleApp.connectionStatus == ConnStatus::FastAdv || bleApp.connectionStatus == ConnStatus::LPAdv) {
-		HW_TS_Stop(bleApp.lowPowerAdvTimerId);					// Cancel timer to activate LP Advertising
+		bleApp.connectionStatus = ConnStatus::Idle;
 
 		tBleStatus result = aci_gap_set_non_discoverable();
-
-		bleApp.connectionStatus = ConnStatus::Idle;
 		if (result == BLE_STATUS_SUCCESS) {
 			printf("Stop advertising\r\n");
 		} else {
@@ -357,6 +348,7 @@ void BleApp::DisconnectRequest()
 void BleApp::GoToSleep()
 {
 	bleApp.sleepState = SleepState::CancelAdv;
+	RTCInterrupt(0);					// Cancel timer to activate LP Advertising
 	UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
 }
 
@@ -375,21 +367,17 @@ void BleApp::EnterSleepMode()
 	led.Update();														// Force LED to switch off
 
 	if (bleApp.lowPowerMode != LowPowerMode::Shutdown) {
-		gyro.WriteCmd(0x22, 0x80);										// CTRL_REG3: Enable Gyroscope Interrupt output pin for wakeup
+		gyro.Configure(GyroSPI::SetConfig::WakeupInterrupt);			// Enable Gyroscope Interrupt output pin for wakeup
 	} else {
-		gyro.WriteCmd(0x20, 0x00);										// CTRL_REG1: Power down
+		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 	}
 
 	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
 		usb.Disable();
 		__disable_irq();												// Disable interrupts
-	} else {
-		gyro.ContinualRead(false);										// Disable gyroscope timer
 	}
 
-	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
-
-	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
+	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));				// Lock the RCC semaphore
 
 	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
 		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Shutdown mode
@@ -399,8 +387,10 @@ void BleApp::EnterSleepMode()
 	} else {
 		SwitchToHSI();
 	}
+	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);					// Release RCC semaphore
 
-	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
+
+	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
 
 	// See p153 for LP modes entry and wake up
 	RCC->CFGR |= RCC_CFGR_STOPWUCK;										// HSI16 selected as wakeup from stop clock and CSS backup clock
@@ -433,12 +423,13 @@ void BleApp::EnterSleepMode()
 void BleApp::WakeFromSleep()
 {
 	// Executes on wake-up
-	RCC->CR |= RCC_CR_HSEON;											// Turn on external oscillator
-	while ((RCC->CR & RCC_CR_HSERDY) == 0);								// Wait till HSE is ready
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, 0b10);							// 10: HSE selected as system clock
-	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
-
-	SystemCoreClockUpdate();											// Read configured clock speed into SystemCoreClock
+	//if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
+		RCC->CR |= RCC_CR_HSEON;										// Turn on external oscillator
+		while ((RCC->CR & RCC_CR_HSERDY) == 0);							// Wait till HSE is ready
+		MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);				// 10: PLL selected as system clock
+		while ((RCC->CFGR & RCC_CFGR_SWS) == 0);						// Wait until HSE is selected
+		SystemCoreClockUpdate();										// Read configured clock speed into SystemCoreClock
+	//}
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
 
@@ -446,10 +437,10 @@ void BleApp::WakeFromSleep()
 		usb.InitUSB();
 	}
 
-	gyro.WriteCmd(0x22, 0x00);											// CTRL_REG3: Disable Gyroscope Interrupt output pin
 	if (connectionStatus == ConnStatus::Connected) {
-		gyro.ContinualRead(true);
+		gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Turn Gyroscope back on
 	} else {
+		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 		EnableAdvertising(ConnStatus::FastAdv);
 	}
 

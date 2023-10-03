@@ -215,6 +215,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	if (moving) {								// If none of the previous 8 change counts registered movement do not sent the data
 		UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
 	} else {
+
 		// If inactive for a while go to sleep
 		if (noMovementCount > 5) {
 			noMovementCount = 0;				// Or will go back to sleep the moment it wakes up
@@ -249,7 +250,7 @@ void HidService::ControlPointWrite(uint16_t data) {
 
 void HidService::Disconnect() {
 	JoystickNotifications = false;
-	gyro.ContinualRead(false);
+	gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 }
 
 
@@ -271,12 +272,11 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 		if (attribute_modified->Attr_Handle == (hidService.reportJoystickHandle + DescriptorOffset)) {
 			handled = true;
 
-			if (attribute_modified->Attr_Data[0] == 1) {
-				hidService.JoystickNotifications = true;
-				gyro.ContinualRead(true);
+			hidService.JoystickNotifications = (attribute_modified->Attr_Data[0] == 1);
+			if (hidService.JoystickNotifications) {
+				gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Start Gyroscope readings
 			} else {
-				hidService.JoystickNotifications = false;
-				gyro.ContinualRead(false);
+				gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 			}
 		}
 

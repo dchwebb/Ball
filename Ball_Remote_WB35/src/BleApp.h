@@ -8,17 +8,17 @@
 struct BleApp {
 public:
 	enum class ConnStatus {Idle, FastAdv, LPAdv, Scan, LPConnecting, Connected} connectionStatus {ConnStatus::Idle};
-	enum class LowPowerMode {Sleep, Stop, Shutdown} lowPowerMode {LowPowerMode::Sleep};
 	enum class SleepState {Awake, RequestSleep, CancelAdv, GoToSleep} sleepState {SleepState::Awake};
+	enum class LowPowerMode {Sleep, Stop, Shutdown} lowPowerMode;		// Specify low power mode when  sleep requested
+	enum class WakeAction {LPAdvertising, Shutdown} wakeAction;			// action to carry out when waking up from RTC interrupt
 	static constexpr uint8_t bdAddrSize = 6;
 
 	uint16_t connectionHandle = 0xFFFF;									// When disconnected handle is set to 0xFFFF
 	bool coprocessorFailure = false;
 
 	void Init();
-	void ServiceControlCallback(hci_event_pckt* pckt);
 	static void DisconnectRequest();
-	static void QueueLPAdvertising();
+	void WakeUp();
 private:
 	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
 	enum class AdvertisingType : uint8_t {Indirect = 0, DirectIndirect = 1, ScanIndirect = 2, NonConnInd = 3, DirectIndirectLDC = 4};
@@ -71,11 +71,7 @@ private:
 	static constexpr uint8_t IdentityRootKey[16] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0};
 	static constexpr uint8_t EncryptionRootKey[16] = {0xFE, 0xDC, 0xBA, 0x09, 0x87, 0x65, 0x43, 0x21, 0xFE, 0xDC, 0xBA, 0x09, 0x87, 0x65, 0x43, 0x21};
 
-
-
 	uint8_t bd_addr_udn[bdAddrSize];
-	uint8_t lowPowerAdvTimerId;
-	//SleepState sleepState {SleepState::Awake};
 
 	struct {
 		uint8_t ioCapability = (uint8_t)IOCapability::NoIO;				// IO capability of the device
@@ -90,9 +86,9 @@ private:
 		uint32_t fixedPin = 111111;										// Fixed pin for pairing process if Use_Fixed_Pin = 1
 	} Security;
 
+	void ServiceControlCallback(hci_event_pckt* pckt);
 	void EnableAdvertising(ConnStatus status);
 	static void SwitchLPAdvertising();
-	static void SwitchFastAdvertising();
 	static void CancelAdvertising();
 	static void GoToSleep();
 	static void GoToShutdown();

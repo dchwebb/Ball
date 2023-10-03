@@ -177,7 +177,6 @@ typedef enum
 // List of tasks that send ACI/HCI commands
 typedef enum {
     CFG_TASK_SwitchLPAdvertising,
-	CFG_TASK_SwitchFastAdvertising,
     CFG_TASK_CancelAdvertising,
 	CFG_TASK_GoToSleep,
 	CFG_TASK_EnterSleepMode,

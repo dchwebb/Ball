@@ -8,7 +8,7 @@ GyroSPI gyro;		// For use with ST L3GD20
 void GyroSPI::Setup()
 {
 	//WriteCmd(0x20, 0x6F);									// CTRL_REG1: DR = 01 (200 Hz ODR); BW = 10 (50 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
-	WriteCmd(0x20, 0x8F);									// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+//	WriteCmd(0x20, 0x8F);									// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
 //	WriteCmd(0x24, 0x16);									// CTRL_REG5: Enable HP filter: BOOT | FIFO_EN | -- | HPen = 1 | INT1_Sel1 | INT1_Sel0 | Out_Sel1 | Out_Sel0
 
 //	WriteCmd(0x22, 0x80);									// CTRL_REG3: Enable Interrupt output pin
@@ -21,6 +21,30 @@ void GyroSPI::Setup()
 	SPI1->CR2 &= ~SPI_CR2_DS;								// Set data size to 8 bit
 	SPI1->CR2 |= SPI_CR2_FRXTH;								// Set FIFO threshold to 8 bits
 }
+
+
+
+void GyroSPI::Configure(SetConfig mode)
+{
+	switch (mode) {
+	case SetConfig::PowerDown:
+		TimerOn(false);
+		WriteCmd(0x22, 0x00);							// CTRL_REG3: Clear Gyroscope Interrupt output pin for wakeup
+		WriteCmd(0x20, 0x00);							// CTRL_REG1: Power down
+		break;
+	case SetConfig::WakeupInterrupt:
+		TimerOn(false);
+		WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+		WriteCmd(0x22, 0x80);							// CTRL_REG3: Enable Gyroscope Interrupt output pin for wakeup
+		break;
+	case SetConfig::ContinousOutput:
+		WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+		WriteCmd(0x22, 0x00);							// CTRL_REG3: Clear Gyroscope Interrupt output pin for wakeup
+		TimerOn(true);
+		break;
+	}
+}
+
 
 
 // Writes data to a register
@@ -104,7 +128,7 @@ void GyroSPI::OutputGyro()
 }
 
 
-void GyroSPI::ContinualRead(bool on)
+void GyroSPI::TimerOn(bool on)
 {
 	// Initiate Timer to output continual readings
 	if (on) {

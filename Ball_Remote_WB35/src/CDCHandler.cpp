@@ -71,8 +71,6 @@ void CDCHandler::ProcessCommand()
 				"fwversion       -  Read firmware version\r\n"
 				"sleep           -  Enter sleep mode\r\n"
 				"shutdown        -  Enter shutdown mode\r\n"
-				"canceladv       -  Cancel advertising\r\n"
-				"startadv        -  Start advertising\r\n"
 				"disconnect      -  Disconnects clients\r\n"
 				"gyroread        -  Returns gyro x, y and z\r\n"
 				"outputgyro      -  Periodically output raw gyro data\r\n"
@@ -93,8 +91,8 @@ void CDCHandler::ProcessCommand()
 
 	} else if (cmd.compare("outputgyro") == 0) {					// Output raw gyro data
 		hidService.outputGyro = !hidService.outputGyro;
-		if (!hidService.JoystickNotifications) {					// If not outputting to BLE client start timer interrupt
-			gyro.ContinualRead(hidService.outputGyro);
+		if (!hidService.JoystickNotifications) {					// If not outputting to BLE client start gyro output
+			gyro.Configure(GyroSPI::SetConfig::ContinousOutput);
 		}
 
 	} else if (cmd.compare("gyroread") == 0) {						// Trigger a gyroscope read
@@ -163,12 +161,6 @@ void CDCHandler::ProcessCommand()
 		usb->SendString("Shutting down\n");
 		bleApp.lowPowerMode = BleApp::LowPowerMode::Shutdown;
 		bleApp.sleepState = BleApp::SleepState::RequestSleep;
-
-	} else if (cmd.compare("canceladv") == 0) {						// Cancel advertising
-		UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
-
-	} else if (cmd.compare("startadv") == 0) {						// Start advertising
-		UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchFastAdvertising, CFG_SCH_PRIO_0);
 
 	} else if (cmd.compare("disconnect") == 0) {					// Disconnect client
 		bleApp.DisconnectRequest();
