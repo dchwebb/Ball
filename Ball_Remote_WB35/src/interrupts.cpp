@@ -35,9 +35,6 @@ void TIM2_IRQHandler() {
 	GPIOB->ODR &= ~GPIO_ODR_OD8;
 }
 
-void HSEM_IRQHandler() {		// This doesn't seem to be being used
-//	HAL_HSEM_IRQHandler();
-}
 
 void RTC_WKUP_IRQHandler() {
 	BleApp::QueueLPAdvertising();
@@ -45,13 +42,16 @@ void RTC_WKUP_IRQHandler() {
 	//HW_TS_RTC_Wakeup_Handler();
 }
 
+
 void IPCC_C1_RX_IRQHandler() {
 	HW_IPCC_Rx_Handler();
 }
 
+
 void IPCC_C1_TX_IRQHandler() {
 	HW_IPCC_Tx_Handler();
 }
+
 
 void NMI_Handler() {
 	while (1) {	}
