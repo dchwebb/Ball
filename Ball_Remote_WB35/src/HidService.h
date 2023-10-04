@@ -1,6 +1,5 @@
 #pragma once
 
-//#include "ble_legacy.h"
 #include "tl.h"
 
 struct HidService
@@ -9,12 +8,15 @@ public:
 	bool JoystickNotifications;
 	bool outputGyro {false};
 	uint8_t moving = 0xFF;							// Bit array - each bit shows whether one set of 256 measurements had movement
-	uint32_t inactivityTimeout = 600;				// Interval in seconds after which we shutdown module (when connected)
 
 	void Init();
 	void JoystickNotification(int16_t x, int16_t y, int16_t z);
 	void Disconnect();
 	bool EventHandler(hci_event_pckt* Event);
+	void Calibrate();
+	uint32_t SerialiseConfig(uint8_t** buff);
+	uint32_t StoreConfig(uint8_t* buff);
+
 private:
 	enum HIDInfoFlags {RemoteWake = 1, NormallyConnectable = 2};
 	enum Characteristic {ReportMap, HidInformation, ReportJoystick};
@@ -32,7 +34,7 @@ private:
 	struct {float x; float y; float z;} averageMovement;
 
 	// Variables to track whether gyro is static and variations in measurements just noise
-	Pos3D oldPos;
+	Pos3D currPos, oldPos;
 	static constexpr uint32_t compareLimit = 70;	// Difference of current x/y/z from previous position that counts as possible movement
 	static constexpr uint32_t maxChange = 15;		// if there are more than maxChange measurement variations above compareLimit update moving bit array
 	uint32_t countChange[8] = {};					// Store previous sums of 256 measurements potential movement sums
@@ -51,6 +53,9 @@ private:
 
 	uint32_t lastSend = 0;							// For periodic sending of data, even if no movement
 	uint32_t lastPrint = 0;							// For periodic printing out current gyroscope values
+
+	static constexpr int32_t calibrateCount = 200;	// Total number of readings to use when calibrating
+	int32_t calibrateCounter = 0;					// When calibrating offsets keeps count of readings averaged
 
 	struct {
 		uint8_t reg = 0;

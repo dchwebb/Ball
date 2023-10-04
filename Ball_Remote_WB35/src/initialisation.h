@@ -4,4 +4,5 @@
 #define SYSTICK 1000						// 1ms
 void InitHardware();
 void InitClocks();
+void SwitchToHSI();
 void RTCInterrupt(uint32_t seconds);

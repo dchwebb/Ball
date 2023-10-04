@@ -1,3 +1,4 @@
+#include "initialisation.h"
 #include "BleApp.h"
 #include "ble.h"
 #include "BasService.h"
@@ -183,7 +184,7 @@ void BleApp::HciGapGattInit()
 	aci_hal_write_config_data(CONFIG_DATA_IR_OFFSET, CONFIG_DATA_IR_LEN, IdentityRootKey);
 	aci_hal_write_config_data(CONFIG_DATA_ER_OFFSET, CONFIG_DATA_ER_LEN, EncryptionRootKey);
 
-	aci_hal_set_tx_power_level(0, TransmitPower);	// Set TX Power to 0dBm.
+	aci_hal_set_tx_power_level(0, settings.TransmitPower);	// Set TX Power to 0dBm.
 	aci_gatt_init();								// Initialize GATT interface
 
 	// Initialize GAP interface
@@ -257,11 +258,11 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 		if (newStatus == ConnStatus::FastAdv)	{
 			printf("Start Fast Advertising\r\n");
 			wakeAction = WakeAction::LPAdvertising;					// Set action when waking up
-			RTCInterrupt(FastAdvTimeout);							// Trigger RTC interrupt to start low speed advertising
+			RTCInterrupt(settings.fastAdvTimeout);					// Trigger RTC interrupt to start low speed advertising
 		} else {
 			printf("Switch to Low Power Advertising\r\n");
 			wakeAction = WakeAction::Shutdown;						// Set ato shutdown if not connected after LP adv period
-			RTCInterrupt(LPAdvTimeout);
+			RTCInterrupt(settings.lpAdvTimeout);
 		}
 	} else {
 		printf("Start Advertising Failed , result: %d \n", ret);
@@ -280,6 +281,7 @@ void BleApp::RTCWakeUp()
 		UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchLPAdvertising, CFG_SCH_PRIO_0);
 		break;
 	case WakeAction::Shutdown:
+		// RTC interrupt fires to wake up after long sleep inactivity: WakeFromSleep will then immediately trigger shutdown
 		bleApp.sleepState = BleApp::SleepState::WakeToShutdown;
 		break;
 	}
@@ -342,6 +344,17 @@ void BleApp::DisconnectRequest()
 }
 
 
+void BleApp::InactivityTimeout()
+{
+	// When connected and no movement for a short period go to sleep allowing wake up from gyroscope interrupt
+	// Before sleeping, set a longer RTC wakeup interrupt to shutdown system if no movement
+	lowPowerMode = LowPowerMode::Sleep;
+	sleepState = SleepState::RequestSleep;
+	wakeAction = WakeAction::Shutdown;							// Shutdown if movement for significant period
+	RTCInterrupt(settings.inactiveTimeout);						// Trigger RTC to wake up from sleep and shutdown after timeout
+}
+
+
 void BleApp::GoToSleep()
 {
 	bleApp.sleepState = SleepState::CancelAdv;
@@ -349,13 +362,6 @@ void BleApp::GoToSleep()
 		RTCInterrupt(0);					// Cancel advertising timers (if connected interrupt will be used for inactivity shutdown)
 	}
 	UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
-}
-
-
-static void SwitchToHSI()
-{
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_HSI);			// Set HSI as clock source
-	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSI is selected
 }
 
 
@@ -452,24 +458,6 @@ void BleApp::WakeFromSleep()
 }
 
 
-void hci_notify_asynch_evt(void* pdata)
-{
-	UTIL_SEQ_SetTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, CFG_SCH_PRIO_0);
-}
-
-
-void hci_cmd_resp_release(uint32_t flag)
-{
-	UTIL_SEQ_SetEvt(1 << CFG_IDLEEVT_HCI_CMD_EVT_RSP_ID);
-}
-
-
-void hci_cmd_resp_wait(uint32_t timeout)
-{
-	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_HCI_CMD_EVT_RSP_ID);
-}
-
-
 void BleApp::UserEvtRx(void* pPayload)
 {
 	// This will first call the service handlers (hids, bas etc) which try and match on Attribute Handles.
@@ -507,6 +495,42 @@ void BleApp::StatusNotify(HCI_TL_CmdStatus_t status)
 	default:
 		break;
 	}
+}
+
+
+uint32_t BleApp::SerialiseConfig(uint8_t** buff)
+{
+	*buff = reinterpret_cast<uint8_t*>(&settings);
+	return sizeof(settings);
+}
+
+
+uint32_t BleApp::StoreConfig(uint8_t* buff)
+{
+	if (buff != nullptr) {
+		memcpy(&settings, buff, sizeof(settings));
+	}
+
+	return sizeof(settings);
+}
+
+
+
+void hci_notify_asynch_evt(void* pdata)
+{
+	UTIL_SEQ_SetTask(1 << CFG_TASK_HCI_ASYNCH_EVT_ID, CFG_SCH_PRIO_0);
+}
+
+
+void hci_cmd_resp_release(uint32_t flag)
+{
+	UTIL_SEQ_SetEvt(1 << CFG_IDLEEVT_HCI_CMD_EVT_RSP_ID);
+}
+
+
+void hci_cmd_resp_wait(uint32_t timeout)
+{
+	UTIL_SEQ_WaitEvt(1 << CFG_IDLEEVT_HCI_CMD_EVT_RSP_ID);
 }
 
 

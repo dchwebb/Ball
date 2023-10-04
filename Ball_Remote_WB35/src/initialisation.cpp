@@ -62,6 +62,14 @@ void InitClocks()
 }
 
 
+// Used when sleeping to switch from HSE to HSI clock
+void SwitchToHSI()
+{
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, LL_RCC_SYS_CLKSOURCE_HSI);			// Set HSI as clock source
+	while ((RCC->CFGR & RCC_CFGR_SWS) != LL_RCC_SYS_CLKSOURCE_STATUS_HSI);	// Wait until HSI is selected
+}
+
+
 void InitHardware()
 {
 	NVIC_SetPriorityGrouping(0x3);					// Set NVIC Priority grouping to 4

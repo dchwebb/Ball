@@ -9,8 +9,9 @@ extern "C" {
 #include "gyroSPI.h"
 #include "stm32_seq.h"
 #include "BleApp.h"
-#include <HidService.h>
-#include <BasService.h>
+#include "HidService.h"
+#include "BasService.h"
+#include "configManager.h"
 
 
 
@@ -50,14 +51,17 @@ void CDCHandler::ProcessCommand()
 				"Battery: %.2fv  %d%%\r\n"
 				"Wireless Stack: %s\r\n"
 				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
-				"RSSI Value: %d dBm\r\n",
+				"RSSI Value: %d dBm\r\n"
+				"Transmit power: %d\r\n"
+				"Timeouts: Fast Adv: %lu; Adv Shutdown: %lu; Inactivity Shutdown: %lu\r\n",
 				bleApp.connectionStatus == BleApp::ConnStatus::Connected ? "Yes" : "No",
 				bleApp.connectionHandle,
 				basService.GetBatteryLevel(), basService.Level,
 				(bleApp.coprocessorFailure ? "Off" : "Running"),
 				fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
 				fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub,
-				rssi);
+				rssi,
+				bleApp.settings.TransmitPower, bleApp.settings.fastAdvTimeout, bleApp.settings.lpAdvTimeout, bleApp.settings.inactiveTimeout);
 
 		usb->SendString(buf);
 
@@ -66,15 +70,19 @@ void CDCHandler::ProcessCommand()
 
 		usb->SendString("Mountjoy Ball Remote\r\n"
 				"\r\nSupported commands:\r\n"
+				"calibrate       -  Calibrate gyro offsets\r\n"
+				"saveconfig      -  Save current offsets to flash\r\n"
+				"gyroread        -  Returns gyro x, y and z\r\n"
+				"outputgyro      -  Periodically output raw gyro data\r\n"
+				"txpower:x       -  Set transmit power (0-35)\r\n"
+				"fadvto:x        -  Fast advertising timeout (seconds)\r\n"
+				"shutdown:x      -  Shutdown after x seconds of LP advertising\r\n"
+				"inactive:x      -  Shutdown if connected and no activity for x seconds\r\n"
 				"readspi:HH      -  Read gyro register at 0xHH\r\n"
 				"writespi:RR,VV  -  Write value 0xVV to gyro register 0xRR\r\n"
-				"fwversion       -  Read firmware version\r\n"
 				"sleep           -  Enter sleep mode\r\n"
 				"shutdown        -  Enter shutdown mode\r\n"
 				"disconnect      -  Disconnects clients\r\n"
-				"gyroread        -  Returns gyro x, y and z\r\n"
-				"outputgyro      -  Periodically output raw gyro data\r\n"
-				"rssi            -  Get RSSI value\r\n"
 				"\r\n"
 
 #if (USB_DEBUG)
@@ -88,6 +96,39 @@ void CDCHandler::ProcessCommand()
 		USBDebug = true;
 		usb->SendString("Press link button to dump output\r\n");
 #endif
+
+	} else if (cmd.compare(0, 8, "txpower:") == 0) {				// Set transmit power (0-35)
+		const int8_t val = ParseInt(cmd, ':', 0, 35);
+		if (val >= 0) {
+			bleApp.settings.TransmitPower = val;
+		}
+
+	} else if (cmd.compare(0, 7, "fadvto:") == 0) {					// Fast advertising timeout
+		const int8_t val = ParseInt(cmd, ':');
+		if (val >= 0) {
+			bleApp.settings.fastAdvTimeout = val;
+		}
+
+	} else if (cmd.compare(0, 9, "shutdown:") == 0) {				// Shutdown after x seconds of LP advertising
+		const int8_t val = ParseInt(cmd, ':');
+		if (val >= 0) {
+			bleApp.settings.lpAdvTimeout = val;
+		}
+
+	} else if (cmd.compare(0, 9, "inactive:") == 0) {				// Shutdown if connected and no activity for x seconds
+		const int8_t val = ParseInt(cmd, ':');
+		if (val >= 0) {
+			bleApp.settings.inactiveTimeout = val;
+		}
+
+	} else if (cmd.compare("calibrate") == 0) {						// calibrate gyro
+		if (!hidService.JoystickNotifications) {					// If not outputting to BLE client start gyro output
+			gyro.Configure(GyroSPI::SetConfig::ContinousOutput);
+		}
+		hidService.Calibrate();
+
+	} else if (cmd.compare("saveconfig") == 0) {					// Save offsets to flash
+		configManager.SaveConfig();
 
 	} else if (cmd.compare("outputgyro") == 0) {					// Output raw gyro data
 		hidService.outputGyro = !hidService.outputGyro;
@@ -125,26 +166,6 @@ void CDCHandler::ProcessCommand()
 			}
 		} else {
 			usb->SendString("Invalid register\r\n");
-		}
-
-	} else if (cmd.compare("rssi") == 0) {							// RSSI value
-		if (bleApp.connectionStatus != BleApp::ConnStatus::Connected) {
-			printf("Not connected\r\n");
-		} else {
-			int8_t rssi = 0;
-			if (hci_read_rssi(bleApp.connectionHandle, (uint8_t*)&rssi) == 0) {
-				printf("RSSI Value: %d dBm\r\n", rssi);
-			} else {
-				printf("Error reading RSSI Value\r\n");
-			}
-		}
-
-	} else if (cmd.compare("fwversion") == 0) {						// Version of BLE firmware
-		WirelessFwInfo_t fwInfo;
-		if (SHCI_GetWirelessFwInfo(&fwInfo) == 0) {
-			printf("BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n",
-					fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
-					fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub);
 		}
 
 	} else if (cmd.compare("stop") == 0) {							// Enter stop mode
@@ -260,7 +281,7 @@ void CDCHandler::ClassSetupData(usbRequest& req, const uint8_t* data)
 }
 
 
-int32_t CDCHandler::ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low = 0, const int32_t high = 0) {
+int32_t CDCHandler::ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low, const int32_t high) {
 	int32_t val = -1;
 	const int8_t pos = cmd.find(precedingChar);		// locate position of character preceding
 	if (pos >= 0 && std::strspn(&cmd[pos + 1], "0123456789-") > 0) {

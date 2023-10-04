@@ -16,9 +16,20 @@ public:
 	uint16_t connectionHandle = 0xFFFF;									// When disconnected handle is set to 0xFFFF
 	bool coprocessorFailure = false;
 
+	// Settings that can be saved to flash - timeouts in seconds
+	struct Settings {
+		uint32_t fastAdvTimeout = 6;								 	// Period before fast advertising switched to low power
+		uint32_t lpAdvTimeout = 60;									 	// Shutdown timeout if not connected while LP advertising
+		uint32_t inactiveTimeout = 600;									// Shutdown timeout if no activity whilst connected
+		uint8_t  TransmitPower = 16;				 					// PA_Level Power amplifier output level (0-35)
+	} settings;
+
 	void Init();
 	static void DisconnectRequest();
-	void RTCWakeUp();
+	void InactivityTimeout();											// Called from HidService to indicate no movement timeout
+	void RTCWakeUp();													// Handle TRC interrupt setting appropriate next actions
+	uint32_t SerialiseConfig(uint8_t** buff);
+	uint32_t StoreConfig(uint8_t* buff);
 
 private:
 	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
@@ -37,9 +48,6 @@ private:
 	};
 
 	static constexpr std::string_view GapDeviceName = "Ball_Remote";
-	static constexpr uint8_t  TransmitPower = 16;				 		// PA_Level Power amplifier output level (0-35)
-	static constexpr uint32_t FastAdvTimeout = 6;					 	// Period of fast advertising FIXME 6s for testing
-	static constexpr uint32_t LPAdvTimeout = 60;					 	// Shutdown if not connected for a minute
 	static constexpr uint16_t FastAdvIntervalMin = 128;					// Intervals for fast advertising
 	static constexpr uint16_t FastAdvIntervalMax = 160;
 	static constexpr uint16_t LPAdvIntervalMin = 1600;					// Intervals for low power advertising
