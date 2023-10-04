@@ -61,7 +61,7 @@ void CDCHandler::ProcessCommand()
 				fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
 				fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub,
 				rssi,
-				bleApp.settings.TransmitPower, bleApp.settings.fastAdvTimeout, bleApp.settings.lpAdvTimeout, bleApp.settings.inactiveTimeout);
+				bleApp.settings.transmitPower, bleApp.settings.fastAdvTimeout, bleApp.settings.lpAdvTimeout, bleApp.settings.inactiveTimeout);
 
 		usb->SendString(buf);
 
@@ -100,23 +100,23 @@ void CDCHandler::ProcessCommand()
 	} else if (cmd.compare(0, 8, "txpower:") == 0) {				// Set transmit power (0-35)
 		const int8_t val = ParseInt(cmd, ':', 0, 35);
 		if (val >= 0) {
-			bleApp.settings.TransmitPower = val;
+			bleApp.settings.transmitPower = val;
 		}
 
 	} else if (cmd.compare(0, 7, "fadvto:") == 0) {					// Fast advertising timeout
-		const int8_t val = ParseInt(cmd, ':');
+		const int32_t val = ParseInt(cmd, ':');
 		if (val >= 0) {
 			bleApp.settings.fastAdvTimeout = val;
 		}
 
 	} else if (cmd.compare(0, 9, "shutdown:") == 0) {				// Shutdown after x seconds of LP advertising
-		const int8_t val = ParseInt(cmd, ':');
+		const int32_t val = ParseInt(cmd, ':');
 		if (val >= 0) {
 			bleApp.settings.lpAdvTimeout = val;
 		}
 
 	} else if (cmd.compare(0, 9, "inactive:") == 0) {				// Shutdown if connected and no activity for x seconds
-		const int8_t val = ParseInt(cmd, ':');
+		const int32_t val = ParseInt(cmd, ':');
 		if (val >= 0) {
 			bleApp.settings.inactiveTimeout = val;
 		}
@@ -129,12 +129,14 @@ void CDCHandler::ProcessCommand()
 
 	} else if (cmd.compare("saveconfig") == 0) {					// Save offsets to flash
 		configManager.SaveConfig();
+		printf("Saved config\r\n");
 
 	} else if (cmd.compare("outputgyro") == 0) {					// Output raw gyro data
 		hidService.outputGyro = !hidService.outputGyro;
 		if (!hidService.JoystickNotifications) {					// If not outputting to BLE client start gyro output
 			gyro.Configure(GyroSPI::SetConfig::ContinousOutput);
 		}
+		printf("Output %s\r\n", hidService.outputGyro ? "on" : "off");
 
 	} else if (cmd.compare("gyroread") == 0) {						// Trigger a gyroscope read
 		if (!hidService.JoystickNotifications) {

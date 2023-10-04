@@ -24,7 +24,7 @@ void LED::Update()
 	} else if (bleApp.connectionStatus == BleApp::ConnStatus::LPAdv) {
 		state = State::SlowFlash;
 	} else if (bleApp.connectionStatus == BleApp::ConnStatus::Connected) {
-		state = hidService.moving ? State::On : State::FastFlash;
+		state = hidService.moving ? State::On : State::MediumFlash;
 	}
 
 	if (oldState != state) {
@@ -32,12 +32,16 @@ void LED::Update()
 		flashUpdated = SysTickVal;
 		switch (state) {
 		case State::FastFlash:
-			flashOn = 50;
-			flashOff = 600;
+			flashOn = 10;
+			flashOff = 500;
 			break;
 		case State::SlowFlash:
 			flashOn = 10;
 			flashOff = 2000;
+			break;
+		case State::MediumFlash:
+			flashOn = 400;
+			flashOff = 400;
 			break;
 		case State::On:
 			LedOn(true);
@@ -49,7 +53,7 @@ void LED::Update()
 	}
 
 
-	if (state == State::FastFlash || state == State::SlowFlash) {
+	if (state == State::FastFlash || state == State::MediumFlash || state == State::SlowFlash) {
 		if ((lit && SysTickVal > flashUpdated + flashOn) || (!lit && SysTickVal > flashUpdated + flashOff)) {
 			flashUpdated = SysTickVal;
 			LedOn(!lit);

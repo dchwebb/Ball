@@ -28,19 +28,17 @@ void GyroSPI::Configure(SetConfig mode)
 {
 	switch (mode) {
 	case SetConfig::PowerDown:
-		TimerOn(false);
-		WriteCmd(0x22, 0x00);							// CTRL_REG3: Clear Gyroscope Interrupt output pin for wakeup
+		WriteCmd(0x22, 0x00);							// CTRL_REG3: Disable Gyroscope Interrupt and data ready output pins
 		WriteCmd(0x20, 0x00);							// CTRL_REG1: Power down
 		break;
-	case SetConfig::WakeupInterrupt:
-		TimerOn(false);
-		WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+	case SetConfig::WakeupInterrupt:					// FIXME reducing the data rate here fires a wake up interrupt immediately
+		WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 00 (95 Hz); BW = 00 (20 Hz); Power Down = 1 (normal mode); zEn = yEn = xEn = 1 (all axes enabled)
 		WriteCmd(0x22, 0x80);							// CTRL_REG3: Enable Gyroscope Interrupt output pin for wakeup
 		break;
 	case SetConfig::ContinousOutput:
 		WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
-		WriteCmd(0x22, 0x00);							// CTRL_REG3: Clear Gyroscope Interrupt output pin for wakeup
-		TimerOn(true);
+		WriteCmd(0x22, 0x08);							// CTRL_REG3: Output data ready on RDY pin
+		GyroRead();										// Force read to clear interrupt
 		break;
 	}
 }
@@ -128,14 +126,3 @@ void GyroSPI::OutputGyro()
 }
 
 
-void GyroSPI::TimerOn(bool on)
-{
-	// Initiate Timer to output continual readings
-	if (on) {
-		TIM2->CR1 |= TIM_CR1_CEN;
-		NVIC_EnableIRQ(TIM2_IRQn);
-	} else {
-		TIM2->CR1 &= ~TIM_CR1_CEN;
-		NVIC_DisableIRQ(TIM2_IRQn);
-	}
-}

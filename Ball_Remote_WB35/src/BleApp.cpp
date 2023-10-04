@@ -184,7 +184,7 @@ void BleApp::HciGapGattInit()
 	aci_hal_write_config_data(CONFIG_DATA_IR_OFFSET, CONFIG_DATA_IR_LEN, IdentityRootKey);
 	aci_hal_write_config_data(CONFIG_DATA_ER_OFFSET, CONFIG_DATA_ER_LEN, EncryptionRootKey);
 
-	aci_hal_set_tx_power_level(0, settings.TransmitPower);	// Set TX Power to 0dBm.
+	aci_hal_set_tx_power_level(0, settings.transmitPower);	// Set TX Power to 0dBm.
 	aci_gatt_init();								// Initialize GATT interface
 
 	// Initialize GAP interface
@@ -416,7 +416,6 @@ void BleApp::EnterSleepMode()
 		}
 	}
 
-	//RCC->CR &= ~RCC_CR_HSEON;											// Turn off external oscillator
 	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
 	__set_PRIMASK(primask_bit);											// Re-enable interrupts for exiting sleep mode
 	__WFI();															// Activates sleep (wait for interrupts)
@@ -433,12 +432,8 @@ void BleApp::WakeFromSleep()
 		return;
 	}
 
-
-//	RCC->CR |= RCC_CR_HSEON;											// Turn on external oscillator
-//	while ((RCC->CR & RCC_CR_HSERDY) == 0);								// Wait till HSE is ready
 	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);					// 10: PLL selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
-//	SystemCoreClockUpdate();											// Read configured clock speed into SystemCoreClock
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
 

@@ -20,7 +20,6 @@ public:
 	} gyroData;
 
 private:
-	void TimerOn(bool on);						// Starts timer to output continual Gyro readings
 
 	static constexpr uint16_t readGyro = (1 << 7);
 	static constexpr uint16_t incrAddr = (1 << 6);

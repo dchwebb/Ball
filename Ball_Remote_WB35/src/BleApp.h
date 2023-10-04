@@ -21,7 +21,7 @@ public:
 		uint32_t fastAdvTimeout = 6;								 	// Period before fast advertising switched to low power
 		uint32_t lpAdvTimeout = 60;									 	// Shutdown timeout if not connected while LP advertising
 		uint32_t inactiveTimeout = 600;									// Shutdown timeout if no activity whilst connected
-		uint8_t  TransmitPower = 16;				 					// PA_Level Power amplifier output level (0-35)
+		uint8_t  transmitPower = 16;				 					// PA_Level Power amplifier output level (0-35)
 	} settings;
 
 	void Init();
