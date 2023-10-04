@@ -5,6 +5,7 @@
 struct GyroSPI {
 public:
 	enum class SetConfig {PowerDown, WakeupInterrupt, ContinousOutput};
+	enum class Sampling {Fast, Slow} currentSpeed;
 
 	void Setup();
 	uint8_t ReadRegister(uint8_t reg);
@@ -12,6 +13,7 @@ public:
 	void GyroRead();							// Reads Gyro x/y/z values
 	void OutputGyro();							// Reads Gyro values and outputs via HID (called from  interrupt)
 	void Configure(SetConfig mode);
+	void SamplingSpeed(Sampling speed);
 
 	struct {
 		int16_t x;

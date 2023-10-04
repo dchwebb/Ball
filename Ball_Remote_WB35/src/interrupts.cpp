@@ -23,15 +23,12 @@ void EXTI4_IRQHandler() {
 
 
 void EXTI9_5_IRQHandler() {
-
+	// 8 is gyro data ready; 9 is wake up from sleep with gyro interrupt (no additional interrupt handling needed)
 	if ((EXTI->PR1 & EXTI_PR1_PIF8) == EXTI_PR1_PIF8) {			// Gyro data ready
-		EXTI->PR1 = EXTI_PR1_PIF8;								// Clear interrupt
-		//GPIOB->ODR |= GPIO_ODR_OD8;
 		gyro.OutputGyro();
-		//GPIOB->ODR &= ~GPIO_ODR_OD8;
-	} else if ((EXTI->PR1 & EXTI_PR1_PIF9) == EXTI_PR1_PIF9){		// Gyro wake up
-		EXTI->PR1 = EXTI_PR1_PIF9;								// Clear interrupt
 	}
+	EXTI->PR1 = EXTI_PR1_PIF;								// Clear interrupts
+
 }
 
 

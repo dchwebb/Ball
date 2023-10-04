@@ -89,7 +89,7 @@ void InitHardware()
 	InitGPIO();
 	InitADC();
 	InitSPI();
-	InitGyroTimer();
+	//InitGyroTimer();				// Using data ready pin on gyro to trigger read
 }
 
 

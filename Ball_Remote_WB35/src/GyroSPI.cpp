@@ -32,7 +32,7 @@ void GyroSPI::Configure(SetConfig mode)
 		WriteCmd(0x20, 0x00);							// CTRL_REG1: Power down
 		break;
 	case SetConfig::WakeupInterrupt:					// FIXME reducing the data rate here fires a wake up interrupt immediately
-		WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 00 (95 Hz); BW = 00 (20 Hz); Power Down = 1 (normal mode); zEn = yEn = xEn = 1 (all axes enabled)
+		//WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 00 (95 Hz); BW = 00 (20 Hz); Power Down = 1 (normal mode); zEn = yEn = xEn = 1 (all axes enabled)
 		WriteCmd(0x22, 0x80);							// CTRL_REG3: Enable Gyroscope Interrupt output pin for wakeup
 		break;
 	case SetConfig::ContinousOutput:
@@ -43,6 +43,18 @@ void GyroSPI::Configure(SetConfig mode)
 	}
 }
 
+
+void GyroSPI::SamplingSpeed(Sampling speed)
+{
+	if (speed != currentSpeed) {
+		if (speed == Sampling::Slow) {
+			WriteCmd(0x20, 0x4F);							// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+		} else {
+			WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 01 (190 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+		}
+		currentSpeed = speed;
+	}
+}
 
 
 // Writes data to a register

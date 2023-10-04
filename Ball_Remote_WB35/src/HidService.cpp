@@ -222,6 +222,8 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	}
 
 	if (moving) {
+		gyro.SamplingSpeed(GyroSPI::Sampling::Fast);			// Switch gyro to fast sampling
+
 		// If one of the previous 8 change counts registered movement output data less average offset
 		joystickReport.x = std::clamp(x - (int32_t)averageMovement.x, -32768L, 32767L);
 		joystickReport.y = std::clamp(y - (int32_t)averageMovement.y, -32768L, 32767L);
@@ -240,12 +242,14 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 			}
 		} else {
 			// If inactive for a while go to sleep
-			if (noMovementCount > 2) {
+			if (noMovementCount > 1) {
 				noMovementCount = 0;				// Or will go back to sleep as soon as it wakes up
 				bleApp.InactivityTimeout();
 				return;
 			}
 		}
+
+		gyro.SamplingSpeed(GyroSPI::Sampling::Slow);			// Switch gyro to slow sampling
 
 		// If not moving store smoothed movement data to send periodically
 		static constexpr float smooth = 0.999f;
