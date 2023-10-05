@@ -23,7 +23,7 @@ void CDCHandler::ProcessCommand()
 	if (cmd.compare("info") == 0) {		// Print diagnostic information
 
 		int8_t rssi = -127;
-		if (bleApp.deviceConnectionStatus == BleApp::ConnectionStatus::ClientConnected) {
+		if (bleApp.connectionStatus == BleApp::ConnectionStatus::ClientConnected) {
 			hci_read_rssi(bleApp.connectionHandle, (uint8_t*)&rssi);
 		}
 
@@ -31,12 +31,15 @@ void CDCHandler::ProcessCommand()
 		SHCI_GetWirelessFwInfo(&fwInfo);
 
 		sprintf(buf, "\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n"
+				"Connected: %s; handle: %#04x\r\n"
 				"Wireless firmware: %s\r\n"
 				"Offsets: %.1f, %.1f, %.1f\r\n"
 				"Sensitivity: %.1f\r\n"
 				"Current Position (0-4096): %.1f, %.1f, %.1f\r\n"
 				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
 				"RSSI Value: %d dBm\r\n",
+				bleApp.connectionStatus == BleApp::ConnectionStatus::ClientConnected ? "Yes" : "No",
+				bleApp.connectionHandle,
 				bleApp.coprocessorFailure ? "Off" : "Running",
 				hidApp.offset.x, hidApp.offset.y, hidApp.offset.z,
 				hidApp.divider,
@@ -202,9 +205,12 @@ void CDCHandler::ProcessCommand()
 
 	} else if (cmd.compare("outputgyro") == 0) {					// Output raw gyro data
 		hidApp.outputGyro = !hidApp.outputGyro;
+		printf("Gyro Output %s\r\n", hidApp.outputGyro ? "on" : "off");
 
 	} else if (cmd.compare("notifybatt") == 0) {					// Output battery notifications
 		hidApp.outputBattery = !hidApp.outputBattery;
+		printf("Battery Output %s\r\n", hidApp.outputBattery ? "on" : "off");
+
 
 	} else if (cmd.compare("battery") == 0) {						// read battery level
 		UTIL_SEQ_SetTask(1 << CFG_TASK_GetBatteryLevel, CFG_SCH_PRIO_0);

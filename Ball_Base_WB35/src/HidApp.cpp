@@ -132,7 +132,7 @@ void HidApp::ReadGyroRegister()
 
 void HidApp::HIDConnectionNotification()
 {
-	switch (bleApp.deviceConnectionStatus) {
+	switch (bleApp.connectionStatus) {
 
 	case BleApp::ConnectionStatus::ClientConnected:
 		// Reset state of client
@@ -143,14 +143,11 @@ void HidApp::HIDConnectionNotification()
 		hidNotificationCharHandle = 0;
 		hidNotificationDescHandle = 0;
 		hidServiceHandle = 0;
-
-		//bleApp.LedOnOff(true);				// Turn on connection LED
 		break;
 
 	case BleApp::ConnectionStatus::Idle:
 		state = HidState::Idle;
 		action = HidAction::None;
-		//bleApp.LedOnOff(false);				// Turn off connection LED
 		break;
 
 	default:

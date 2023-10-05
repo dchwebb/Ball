@@ -18,9 +18,9 @@ void LED::Update()
 	auto oldState = state;
 	if (bleApp.action == BleApp::RequestAction::ScanConnect || bleApp.action == BleApp::RequestAction::ScanInfo) {
 		state = State::SlowFlash;
-	} else if (bleApp.deviceConnectionStatus == BleApp::ConnectionStatus::Connecting) {
+	} else if (bleApp.connectionStatus == BleApp::ConnectionStatus::Connecting) {
 		state = State::FastFlash;
-	} else if (bleApp.deviceConnectionStatus == BleApp::ConnectionStatus::ClientConnected) {
+	} else if (bleApp.connectionStatus == BleApp::ConnectionStatus::ClientConnected) {
 		state = State::On;
 	} else {
 		state = State::Off;

@@ -68,7 +68,7 @@ void BleApp::Init()
 	UTIL_SEQ_RegTask(1 << CFG_TASK_ConnectRequest, UTIL_SEQ_RFU, ConnectRequest);
 	UTIL_SEQ_RegTask(1 << CFG_TASK_DisconnectRequest, UTIL_SEQ_RFU, DisconnectRequest);
 
-	bleApp.deviceConnectionStatus = ConnectionStatus::Idle;		// Initialization of the BLE App Context
+	bleApp.connectionStatus = ConnectionStatus::Idle;		// Initialization of the BLE App Context
 	aci_hal_set_radio_activity_mask(0x0020);					// Radio mask Activity: Connection event master
 	hidApp.Init();												// Initialize HID Client Application
 }
@@ -102,7 +102,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 						printf("* BLE: GAP General discovery procedure completed\r\n");
 
 						// if a device found, connect to it, device 1 being chosen first if both found
-						if (action == RequestAction::ScanConnect && deviceServerFound && deviceConnectionStatus != BleApp::ConnectionStatus::ClientConnected) {
+						if (action == RequestAction::ScanConnect && deviceServerFound && connectionStatus != BleApp::ConnectionStatus::ClientConnected) {
 							UTIL_SEQ_SetTask(1 << CFG_TASK_ConnectRequest, CFG_SCH_PRIO_0);
 						}
 						action = RequestAction::None;
@@ -138,7 +138,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 			auto* disconnectionEvent = (hci_disconnection_complete_event_rp0*) event_pckt->data;
 			if (disconnectionEvent->Connection_Handle == connectionHandle) {
 				connectionHandle = 0;
-				deviceConnectionStatus = BleApp::ConnectionStatus::Idle;
+				connectionStatus = BleApp::ConnectionStatus::Idle;
 				printf("* BLE: Disconnected from device\r\n");
 				hidApp.HIDConnectionNotification();
 			}
@@ -156,8 +156,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 					// The connection is done
 					auto* connectionCompleteEvent = (hci_le_connection_complete_event_rp0*) metaEvent->data;
 					connectionHandle = connectionCompleteEvent->Connection_Handle;
-					deviceConnectionStatus = BleApp::ConnectionStatus::ClientConnected;
-					//LedFlash(false);						// Turn off connecting flashing
+					connectionStatus = BleApp::ConnectionStatus::ClientConnected;
 
 					// Notify HidApp
 					printf("* BLE: Connected to server\r\n");
@@ -284,7 +283,7 @@ void BleApp::PrintAdvData(std::unique_ptr<AdvertisingReport> ar)
 BleApp::ConnectionStatus BleApp::GetClientConnectionStatus(uint16_t connHandle)
 {
 	if (connectionHandle == connHandle) {
-		return deviceConnectionStatus;
+		return connectionStatus;
 	}
 	return ConnectionStatus::Idle;
 }
@@ -292,7 +291,7 @@ BleApp::ConnectionStatus BleApp::GetClientConnectionStatus(uint16_t connHandle)
 
 void BleApp::ScanInfo()
 {
-	if (bleApp.deviceConnectionStatus == ConnectionStatus::Idle) {
+	if (bleApp.connectionStatus == ConnectionStatus::Idle) {
 		if (bleApp.action == RequestAction::ScanInfo) {
 			aci_gap_terminate_gap_proc(GAP_GENERAL_DISCOVERY_PROC);			// If currently scanning terminate
 			printf("Still scanning ...\n");
@@ -308,7 +307,7 @@ void BleApp::ScanInfo()
 
 void BleApp::GetHidReportMap(uint8_t* address)			// FIXME: need to handle random/public address type
 {
-	if (bleApp.deviceConnectionStatus == ConnectionStatus::Idle) {
+	if (bleApp.connectionStatus == ConnectionStatus::Idle) {
 		bleApp.action = RequestAction::GetReportMap;
 		memcpy(&deviceAddress, address, bleAddrSize);
 		UTIL_SEQ_SetTask(1 << CFG_TASK_ConnectRequest, CFG_SCH_PRIO_0);
@@ -322,7 +321,6 @@ void BleApp::SwitchConnectState()
 {
 	// Called from connect button interrupt (or CDC console)
 	if (hidApp.state != HidApp::HidState::ClientConnected)	{
-		//bleApp.LedFlash(true);							// Turn on connection LED - will flash until connected
 		bleApp.action = RequestAction::ScanConnect;
 		UTIL_SEQ_SetTask(1 << CFG_TASK_ScanRequest, CFG_SCH_PRIO_0);
 	} else {
@@ -398,7 +396,7 @@ void BleApp::HciGapGattInit()
 
 void BleApp::ScanRequest()
 {
-	if (bleApp.deviceConnectionStatus != ConnectionStatus::ClientConnected) {
+	if (bleApp.connectionStatus != ConnectionStatus::ClientConnected) {
 		bleApp.deviceServerFound = false;
 		tBleStatus result = aci_gap_start_general_discovery_proc(SCAN_P, SCAN_L, GAP_PUBLIC_ADDR, 1);
 		if (result == BLE_STATUS_SUCCESS) {
@@ -414,7 +412,7 @@ void BleApp::ConnectRequest()
 {
 	printf("* BLE: Create connection to server\r\n");
 
-	if (bleApp.deviceConnectionStatus != ConnectionStatus::ClientConnected) {
+	if (bleApp.connectionStatus != ConnectionStatus::ClientConnected) {
 		tBleStatus result = aci_gap_create_connection(SCAN_P,
 				SCAN_L,
 				(uint8_t)bleApp.deviceAddressType,				// Peer address type & address
@@ -428,9 +426,9 @@ void BleApp::ConnectRequest()
 				CONN_L2);
 
 		if (result == BLE_STATUS_SUCCESS) {
-			bleApp.deviceConnectionStatus = ConnectionStatus::Connecting;
+			bleApp.connectionStatus = ConnectionStatus::Connecting;
 		} else {
-			bleApp.deviceConnectionStatus = ConnectionStatus::Idle;
+			bleApp.connectionStatus = ConnectionStatus::Idle;
 		}
 	}
 }
@@ -462,36 +460,6 @@ uint8_t* BleApp::GetBdAddress()
 	bd_addr_udn[5] = (uint8_t)((company_id & 0x00FF0000) >> 16 );
 	return bd_addr_udn;
 }
-
-
-//void BleApp::LedOnOff(bool on)
-//{
-//	if (on) {
-//		GPIOA->ODR |= GPIO_ODR_OD3;				// Turn on connection LED
-//		ledState = true;
-//	} else {
-//		GPIOA->ODR &= ~GPIO_ODR_OD3;			// Turn off connection LED
-//		ledState = false;
-//	}
-//}
-//
-//
-//void BleApp::LedFlash(bool startStop)
-//{
-//	LedOnOff(startStop);
-//	ledFlashTime = SysTickVal;
-//	ledFlashing = startStop;
-//}
-//
-//
-//void BleApp::LedFlash()
-//{
-//	// Called periodically to manage flash state
-//	if (ledFlashing && SysTickVal - ledFlashTime > 200) {
-//		LedOnOff(!ledState);
-//		ledFlashTime = SysTickVal;
-//	}
-//}
 
 
 void BleApp::UserEvtRx(void* pPayload)
