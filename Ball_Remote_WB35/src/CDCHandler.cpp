@@ -53,15 +53,17 @@ void CDCHandler::ProcessCommand()
 				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
 				"RSSI Value: %d dBm\r\n"
 				"Transmit power: %d\r\n"
-				"Timeouts: Fast Adv: %lu; Adv Shutdown: %lu; Inactivity Shutdown: %lu\r\n",
+				"Timeouts: Fast Adv: %lu; Adv Shutdown: %lu; Inactivity Shutdown: %lu\r\n"
+				"Battery shutdown percent: %d%%\r\n",
 				bleApp.connectionStatus == BleApp::ConnStatus::Connected ? "Yes" : "No",
 				bleApp.connectionHandle,
-				basService.GetBatteryLevel(), basService.Level,
+				basService.GetBatteryLevel(), basService.level,
 				(bleApp.coprocessorFailure ? "Off" : "Running"),
 				fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
 				fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub,
 				rssi,
-				bleApp.settings.transmitPower, bleApp.settings.fastAdvTimeout, bleApp.settings.lpAdvTimeout, bleApp.settings.inactiveTimeout);
+				bleApp.settings.transmitPower, bleApp.settings.fastAdvTimeout, bleApp.settings.lpAdvTimeout, bleApp.settings.inactiveTimeout,
+				basService.settings.shutdownLevel);
 
 		usb->SendString(buf);
 
@@ -78,6 +80,7 @@ void CDCHandler::ProcessCommand()
 				"fadvto:x        -  Fast advertising timeout (seconds)\r\n"
 				"shutdown:x      -  Shutdown after x seconds of LP advertising\r\n"
 				"inactive:x      -  Shutdown if connected and no activity for x seconds\r\n"
+				"batterylow:x    -  Shutdown when battery below this percentage\r\n"
 				"readspi:HH      -  Read gyro register at 0xHH\r\n"
 				"writespi:RR,VV  -  Write value 0xVV to gyro register 0xRR\r\n"
 				"sleep           -  Enter sleep mode\r\n"
@@ -102,24 +105,35 @@ void CDCHandler::ProcessCommand()
 		if (val >= 0) {
 			bleApp.settings.transmitPower = val;
 		}
+		config.SaveConfig();
 
 	} else if (cmd.compare(0, 7, "fadvto:") == 0) {					// Fast advertising timeout
 		const int32_t val = ParseInt(cmd, ':');
 		if (val >= 0) {
 			bleApp.settings.fastAdvTimeout = val;
 		}
+		config.SaveConfig();
 
 	} else if (cmd.compare(0, 9, "shutdown:") == 0) {				// Shutdown after x seconds of LP advertising
 		const int32_t val = ParseInt(cmd, ':');
 		if (val >= 0) {
 			bleApp.settings.lpAdvTimeout = val;
 		}
+		config.SaveConfig();
 
 	} else if (cmd.compare(0, 9, "inactive:") == 0) {				// Shutdown if connected and no activity for x seconds
 		const int32_t val = ParseInt(cmd, ':');
 		if (val >= 0) {
 			bleApp.settings.inactiveTimeout = val;
 		}
+		config.SaveConfig();
+
+	} else if (cmd.compare(0, 11, "batterylow:") == 0) {			// Shutdown if battery percent falls too low
+		const int32_t val = ParseInt(cmd, ':', 1, 100);
+		if (val >= 0) {
+			basService.settings.shutdownLevel = val;
+		}
+		config.SaveConfig();
 
 	} else if (cmd.compare("calibrate") == 0) {						// calibrate gyro
 		if (!hidService.JoystickNotifications) {					// If not outputting to BLE client start gyro output
@@ -128,7 +142,7 @@ void CDCHandler::ProcessCommand()
 		hidService.Calibrate();
 
 	} else if (cmd.compare("saveconfig") == 0) {					// Save offsets to flash
-		configManager.SaveConfig();
+		config.SaveConfig();
 		printf("Saved config\r\n");
 
 	} else if (cmd.compare("outputgyro") == 0) {					// Output raw gyro data

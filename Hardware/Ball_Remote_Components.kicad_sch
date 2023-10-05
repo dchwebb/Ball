@@ -5470,7 +5470,7 @@
     (property "Reference" "Y2" (at 46.355 92.71 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "32.768MHz" (at 43.815 86.36 0)
+    (property "Value" "32.768kHz" (at 43.815 86.36 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Crystal:Crystal_SMD_2012-2Pin_2.0x1.2mm" (at 46.99 90.17 0)

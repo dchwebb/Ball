@@ -426,7 +426,7 @@ void BleApp::EnterSleepMode()
 
 void BleApp::WakeFromSleep()
 {
-	if (sleepState == SleepState::WakeToShutdown) {						// If no activity for a long time sleeping RTC wake up to shutdown
+	if (sleepState == SleepState::WakeToShutdown) {						// If no activity during sleep, RTC interrupt will wake up to shutdown
 		lowPowerMode = LowPowerMode::Shutdown;
 		EnterSleepMode();
 		return;

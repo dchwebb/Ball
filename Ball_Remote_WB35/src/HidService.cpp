@@ -3,6 +3,7 @@
 #include "gyroSPI.h"
 #include "stm32_seq.h"
 #include "BleApp.h"
+#include "configManager.h"
 #include <algorithm>
 
 
@@ -239,6 +240,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 				if (!hidService.JoystickNotifications) {					// If not outputting to BLE client start gyro output
 					gyro.Configure(GyroSPI::SetConfig::PowerDown);
 				}
+				config.SaveConfig();
 			}
 		} else {
 			// If inactive for a while go to sleep
@@ -247,9 +249,9 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 				bleApp.InactivityTimeout();
 				return;
 			}
+			gyro.SamplingSpeed(GyroSPI::Sampling::Slow);			// Switch gyro to slow sampling
 		}
 
-		gyro.SamplingSpeed(GyroSPI::Sampling::Slow);			// Switch gyro to slow sampling
 
 		// If not moving store smoothed movement data to send periodically
 		static constexpr float smooth = 0.999f;
@@ -283,9 +285,9 @@ void HidService::Disconnect() {
 
 bool HidService::EventHandler(hci_event_pckt* event_pckt)
 {
-	aci_gatt_attribute_modified_event_rp0* attribute_modified;
-	aci_gatt_write_permit_req_event_rp0*   write_perm_req;
-	aci_gatt_read_permit_req_event_rp0*    read_req;
+	aci_gatt_attribute_modified_event_rp0* attrModifiedEvt;
+	aci_gatt_write_permit_req_event_rp0*   writeRequestEvt;
+	aci_gatt_read_permit_req_event_rp0*    readRequestEvt;
 
 	bool handled = false;
 
@@ -294,12 +296,12 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 	switch (blecore_evt->ecode) {
 
 	case ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE:
-		attribute_modified = (aci_gatt_attribute_modified_event_rp0*)blecore_evt->data;
+		attrModifiedEvt = (aci_gatt_attribute_modified_event_rp0*)blecore_evt->data;
 
-		if (attribute_modified->Attr_Handle == (hidService.reportJoystickHandle + DescriptorOffset)) {
+		if (attrModifiedEvt->Attr_Handle == (hidService.reportJoystickHandle + DescriptorOffset)) {
 			handled = true;
 
-			hidService.JoystickNotifications = (attribute_modified->Attr_Data[0] == 1);
+			hidService.JoystickNotifications = (attrModifiedEvt->Attr_Data[0] == 1);
 			if (hidService.JoystickNotifications) {
 				gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Start Gyroscope readings
 			} else {
@@ -307,18 +309,18 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 			}
 		}
 
-		if (attribute_modified->Attr_Handle == (hidService.hidControlPointHandle + ValueOffset)) {
+		if (attrModifiedEvt->Attr_Handle == (hidService.hidControlPointHandle + ValueOffset)) {
 			handled = true;
-			uint16_t write_data = (attribute_modified->Attr_Data[1] << 8) | attribute_modified->Attr_Data[0];
+			uint16_t write_data = (attrModifiedEvt->Attr_Data[1] << 8) | attrModifiedEvt->Attr_Data[0];
 			hidService.ControlPointWrite(write_data);
 		}
 
-		if (attribute_modified->Attr_Handle == (hidService.gyroCommandHandle + ValueOffset)) {
+		if (attrModifiedEvt->Attr_Handle == (hidService.gyroCommandHandle + ValueOffset)) {
 			// Provide mechanism to read and write gyro registers
 			// If one byte sent then the value of that register can be read; two bytes to write to a register
-			gyroRegister.reg = attribute_modified->Attr_Data[0];					// Store register number
-			if (attribute_modified->Attr_Data_Length == 2) {						// writing value
-				gyroRegister.val = attribute_modified->Attr_Data[1];
+			gyroRegister.reg = attrModifiedEvt->Attr_Data[0];					// Store register number
+			if (attrModifiedEvt->Attr_Data_Length == 2) {						// writing value
+				gyroRegister.val = attrModifiedEvt->Attr_Data[1];
 				gyro.WriteCmd(gyroRegister.reg, gyroRegister.val);
 			} else if (gyroRegister.reg >= 0x0F && gyroRegister.reg <= 0x38) {		// reading register
 				gyroRegister.val = gyro.ReadRegister(gyroRegister.reg);
@@ -330,36 +332,36 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 		break;
 
 	case ACI_GATT_READ_PERMIT_REQ_VSEVT_CODE:
-		read_req = (aci_gatt_read_permit_req_event_rp0*)blecore_evt->data;
+		readRequestEvt = (aci_gatt_read_permit_req_event_rp0*)blecore_evt->data;
 
-		if (read_req->Attribute_Handle == (hidService.reportMapHandle + ValueOffset)) {
+		if (readRequestEvt->Attribute_Handle == (hidService.reportMapHandle + ValueOffset)) {
 			handled = true;
-			aci_gatt_allow_read(read_req->Connection_Handle);
+			aci_gatt_allow_read(readRequestEvt->Connection_Handle);
 		}
-		if (read_req->Attribute_Handle == (hidService.reportJoystickHandle + ValueOffset)) {
-			aci_gatt_allow_read(read_req->Connection_Handle);
+		if (readRequestEvt->Attribute_Handle == (hidService.reportJoystickHandle + ValueOffset)) {
+			aci_gatt_allow_read(readRequestEvt->Connection_Handle);
 			handled = true;
 			gyro.GyroRead();
 			JoystickNotification(gyro.gyroData.x, gyro.gyroData.y, gyro.gyroData.z);
 		}
-		if (read_req->Attribute_Handle == (hidService.hidInformationHandle + ValueOffset)) {
+		if (readRequestEvt->Attribute_Handle == (hidService.hidInformationHandle + ValueOffset)) {
 			handled = true;
-			aci_gatt_allow_read(read_req->Connection_Handle);
+			aci_gatt_allow_read(readRequestEvt->Connection_Handle);
 		}
-		if (read_req->Attribute_Handle == (hidService.gyroRegisterValHandle + ValueOffset)) {
+		if (readRequestEvt->Attribute_Handle == (hidService.gyroRegisterValHandle + ValueOffset)) {
 			handled = true;
-			aci_gatt_allow_read(read_req->Connection_Handle);
+			aci_gatt_allow_read(readRequestEvt->Connection_Handle);
 			UTIL_SEQ_SetTask(1 << CFG_TASK_GyroNotification, CFG_SCH_PRIO_0);
 		}
 		break;
 
 	case ACI_ATT_EXEC_WRITE_RESP_VSEVT_CODE:
-		write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
+		writeRequestEvt = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
 		break;
 
 	case ACI_GATT_WRITE_PERMIT_REQ_VSEVT_CODE:
-		write_perm_req = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
-		if (write_perm_req->Attribute_Handle == (hidService.hidControlPointHandle + ValueOffset)) {
+		writeRequestEvt = (aci_gatt_write_permit_req_event_rp0*)blecore_evt->data;
+		if (writeRequestEvt->Attribute_Handle == (hidService.hidControlPointHandle + ValueOffset)) {
 			handled = true;
 		}
 
@@ -372,8 +374,6 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 
 	return handled;
 }
-
-
 
 
 uint32_t HidService::SerialiseConfig(uint8_t** buff)

@@ -1,4 +1,5 @@
-#include <BasService.h>
+#include "BasService.h"
+#include "BleApp.h"
 #include "ble.h"
 #include "stm32_seq.h"
 #include <algorithm>
@@ -52,7 +53,7 @@ void BasService::UpdateBatteryChar()
 			basService.batteryLevelHandle,
 			0,
 			2,													// Size of battery report
-			(uint8_t*)&basService.Level);
+			(uint8_t*)&basService.level);
 }
 
 
@@ -63,7 +64,7 @@ float BasService::GetBatteryLevel()
 	// ADC 4096 / 2.8V = 1462; calculated to scale by 1.73 (values corrected by measurement)
 
 	float voltage = (static_cast<float>(ADC1->DR) / 1381.0f) * 1.73f;
-	Level = static_cast<uint8_t>(std::clamp((voltage - 3.2f) * 91.0f, 0.0f, 100.0f));		// convert voltage to 0 - 100 range for 1.8V - 4.3V
+	level = static_cast<uint8_t>(std::clamp((voltage - 3.2f) * 91.0f, 0.0f, 100.0f));		// convert voltage to 0 - 100 range for 1.8V - 4.3V
 	return voltage;
 }
 
@@ -74,10 +75,17 @@ void BasService::TimedRead()
 	if (lastRead + 5000 < SysTickVal) {
 		lastRead = SysTickVal;
 
-		uint8_t oldLevel = Level;
+		uint8_t oldLevel = level;
 		GetBatteryLevel();
 
-		if (Level != oldLevel || lastSent + 10000 < SysTickVal) {				// FIXME - force a resend of battery every 10 seconds (make longer in production)
+		if (level < settings.shutdownLevel) {
+			printf("Shutting down\n");
+			bleApp.lowPowerMode = BleApp::LowPowerMode::Shutdown;
+			bleApp.sleepState = BleApp::SleepState::RequestSleep;
+			return;
+		}
+
+		if (level != oldLevel || lastSent + 10000 < SysTickVal) {				// Force a resend of battery every 10 seconds (make longer in production)
 			UTIL_SEQ_SetTask(1 << CFG_TASK_BatteryNotification, CFG_SCH_PRIO_0);
 			lastSent = SysTickVal;
 		}
@@ -122,3 +130,19 @@ bool BasService::EventHandler(hci_event_pckt* event_pckt)
 }
 
 
+
+uint32_t BasService::SerialiseConfig(uint8_t** buff)
+{
+	*buff = reinterpret_cast<uint8_t*>(&settings);
+	return sizeof(settings);
+}
+
+
+uint32_t BasService::StoreConfig(uint8_t* buff)
+{
+	if (buff != nullptr) {
+		memcpy(&settings, buff, sizeof(settings));
+	}
+
+	return sizeof(settings);
+}

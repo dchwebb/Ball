@@ -1,16 +1,24 @@
 #include "configManager.h"
-#include "HidService.h"
 #include "BleApp.h"
+#include "HidService.h"
+#include "BasService.h"
 #include <cmath>
 #include <cstring>
 
-Config configManager;
+Config config;
 
 // called whenever a config setting is changed to schedule a save after waiting to see if any more changes are being made
 void Config::ScheduleSave()
 {
 	scheduleSave = true;
 	saveBooked = SysTickVal;
+}
+
+void Config::CheckSave()
+{
+	if (scheduleSave && SysTickVal > saveBooked + 60000) {			// this equates to around 60 seconds between saves
+		SaveConfig();
+	}
 }
 
 
@@ -22,14 +30,14 @@ bool Config::SaveConfig(bool eraseOnly)
 
 	uint32_t cfgSize = SetConfig();
 
-	__disable_irq();					// Disable Interrupts
-	FlashUnlock();						// Unlock Flash memory for writing
-	FLASH->SR = FLASH_ALL_ERRORS;		// Clear error flags in Status Register
+	__disable_irq();								// Disable Interrupts
+	FlashUnlock();									// Unlock Flash memory for writing
+	FLASH->SR = FLASH_ALL_ERRORS;					// Clear error flags in Status Register
 
 	// Check if flash needs erasing
 	for (uint32_t i = 0; i < BufferSize / 4; ++i) {
 		if (flashConfigAddr[i] != 0xFFFFFFFF) {
-			FlashErasePage(flashConfigPage - 1);			// Erase page
+			FlashErasePage(flashConfigPage - 1);	// Erase page
 			break;
 		}
 	}
@@ -38,8 +46,10 @@ bool Config::SaveConfig(bool eraseOnly)
 		result = FlashProgram(flashConfigAddr, reinterpret_cast<uint32_t*>(&configBuffer), cfgSize);
 	}
 
-	FlashLock();						// Lock Flash
-	__enable_irq(); 					// Enable Interrupts
+	FlashLock();									// Lock Flash
+	__enable_irq(); 								// Enable Interrupts
+
+	printf(result ? "Config Saved\r\n" : "Error saving config\r\n");
 
 	return result;
 }
@@ -65,6 +75,9 @@ uint32_t Config::SetConfig()
 	memcpy(&configBuffer[configPos], cfgBuffer, configSize);
 	configPos += configSize;
 
+	configSize = basService.SerialiseConfig(&cfgBuffer);			// BAS settings
+	memcpy(&configBuffer[configPos], cfgBuffer, configSize);
+	configPos += configSize;
 
 	// Footer
 	strncpy(reinterpret_cast<char*>(&configBuffer[configPos]), "END", 4);
@@ -80,13 +93,11 @@ void Config::RestoreConfig()
 
 	// Check for config start and version number
 	if (strcmp((char*)flashConfig, "CFG") == 0 && flashConfig[4] == configVersion) {
-		uint32_t configPos = 8;											// Position in buffer to store data
+		uint32_t configPos = 8;											// Position in config buffer
 
-		// BLE Settings
-		configPos += bleApp.StoreConfig(&flashConfig[configPos]);
-
-		// HID Settings
-		configPos += hidService.StoreConfig(&flashConfig[configPos]);
+		configPos += bleApp.StoreConfig(&flashConfig[configPos]);		// BLE Settings
+		configPos += hidService.StoreConfig(&flashConfig[configPos]);	// HID Settings
+		configPos += basService.StoreConfig(&flashConfig[configPos]);	// BAS Settings
 	}
 }
 
