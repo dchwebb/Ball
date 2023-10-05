@@ -107,12 +107,13 @@ extern "C" {
 #else
 #define ALIGN(n)             __attribute__((aligned(n)))
 #endif
-
+/*
 #undef PAUSE
 #define PAUSE( t )           M_BEGIN \
                                volatile int _i; \
                                for ( _i = t; _i > 0; _i -- ); \
                              M_END
+*/
 #undef DIVF
 #define DIVF( x, y )         ((x)/(y))
 

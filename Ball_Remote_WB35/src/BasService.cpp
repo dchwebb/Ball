@@ -78,14 +78,16 @@ void BasService::TimedRead()
 		uint8_t oldLevel = level;
 		GetBatteryLevel();
 
-		if (level < settings.shutdownLevel) {
+		// Check if last two battery readings are below shutdown threshold
+		if (level < settings.shutdownLevel && oldLevel < settings.shutdownLevel) {
 			printf("Shutting down\n");
 			bleApp.lowPowerMode = BleApp::LowPowerMode::Shutdown;
 			bleApp.sleepState = BleApp::SleepState::RequestSleep;
 			return;
 		}
 
-		if (level != oldLevel || lastSent + 10000 < SysTickVal) {				// Force a resend of battery every 10 seconds (make longer in production)
+		// Force a resend of battery every 10 seconds
+		if (level != oldLevel || lastSent + 10000 < SysTickVal) {
 			UTIL_SEQ_SetTask(1 << CFG_TASK_BatteryNotification, CFG_SCH_PRIO_0);
 			lastSent = SysTickVal;
 		}

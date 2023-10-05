@@ -6,7 +6,7 @@ extern "C" {
 #include "stm32_seq.h"
 #include "ble_hci_le.h"
 }
-#include "app_ble.h"
+#include <BleApp.h>
 #include <HidApp.h>
 #include "configManager.h"
 

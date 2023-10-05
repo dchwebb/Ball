@@ -1,8 +1,9 @@
+#include <BleApp.h>
 #include "initialisation.h"
 #include "app_entry.h"
-#include "app_ble.h"
 #include "USB.h"
 #include "configManager.h"
+#include "led.h"
 
 // FIXME - LED keeps flashing if trying to connect with no remote module available
 
@@ -25,7 +26,7 @@ int main()
 			RunPendingTasks();
 		}
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
-		bleApp.LedFlash();			// Check if connection LED needs to be flashed
+		led.Update();				// Check if connection LED needs to be flashed
 	}
 }
 

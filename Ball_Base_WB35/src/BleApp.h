@@ -18,9 +18,9 @@ struct AdvertisingReport {
 
 struct BleApp {
 public:
-	enum class ConnectionStatus {Idle, ClientConnected, Connecting};
+	enum class ConnectionStatus {Idle, ClientConnected, Connecting} deviceConnectionStatus {ConnectionStatus::Idle};
+	enum class RequestAction {None, ScanConnect, ScanInfo, GetReportMap} action {RequestAction::None};
 
-	ConnectionStatus deviceConnectionStatus;
 	uint16_t connectionHandle;			// handle of the current active connection; When disconnected handle = 0xFFFF
 	static constexpr uint8_t bleAddrSize = 6;
 	bool coprocessorFailure = false;
@@ -37,7 +37,7 @@ public:
 	void LedFlash();													// Called periodically to check flash state
 
 private:
-	enum class RequestAction {None, ScanConnect, ScanInfo, GetReportMap} action = RequestAction::None;
+
 	enum class IOCapability : uint8_t {DisplayOnly = 0, DisplayYesNo = 1, KeyboardOnly = 2, NoIO = 3, KeyboardDisplay = 4};
 	enum class GapAddress : uint8_t {Public = 0, StaticRandom = 1, ResolvablePrivate = 2, NonResolvablePrivate = 3} ;
 	enum class SecureSupport : uint8_t {NotSupported = 0, Optional = 1, Mandatory = 2};

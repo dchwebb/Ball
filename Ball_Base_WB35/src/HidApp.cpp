@@ -1,8 +1,8 @@
+#include <BleApp.h>
 #include <HidApp.h>
 #include "app_common.h"
 #include "ble.h"
 #include "stm32_seq.h"
-#include "app_ble.h"
 #include "usb.h"
 #include <Algorithm>
 
@@ -144,13 +144,13 @@ void HidApp::HIDConnectionNotification()
 		hidNotificationDescHandle = 0;
 		hidServiceHandle = 0;
 
-		bleApp.LedOnOff(true);				// Turn on connection LED
+		//bleApp.LedOnOff(true);				// Turn on connection LED
 		break;
 
 	case BleApp::ConnectionStatus::Idle:
 		state = HidState::Idle;
 		action = HidAction::None;
-		bleApp.LedOnOff(false);				// Turn off connection LED
+		//bleApp.LedOnOff(false);				// Turn off connection LED
 		break;
 
 	default:
