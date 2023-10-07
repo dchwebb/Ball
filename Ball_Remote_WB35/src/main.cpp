@@ -9,9 +9,8 @@
 #include "configManager.h"
 
 /* TODO
- * Add flash config saving
- * Apply dynamic offset to joystick notifications
- *
+ * Remove last SPI read
+ * Soft button shutdown
  */
 
 volatile uint32_t SysTickVal;

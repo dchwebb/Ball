@@ -1,5 +1,6 @@
-#include "BleApp.h"
 #include "led.h"
+#include "BleApp.h"
+#include "HidApp.h"
 
 LED led;
 
@@ -16,12 +17,17 @@ void LED::LedOn(bool on){
 void LED::Update()
 {
 	auto oldState = state;
-	if (bleApp.action == BleApp::RequestAction::ScanConnect || bleApp.action == BleApp::RequestAction::ScanInfo) {
-		state = State::SlowFlash;
-	} else if (bleApp.connectionStatus == BleApp::ConnectionStatus::Connecting) {
+	if (bleApp.connectionStatus == BleApp::ConnectionStatus::Connecting) {
 		state = State::FastFlash;
 	} else if (bleApp.connectionStatus == BleApp::ConnectionStatus::ClientConnected) {
-		state = State::On;
+		// Check if low battery
+		if (hidApp.batteryLevel <= hidApp.settings.batteryWarning) {
+			state = State::LowBattery;
+		} else {
+			state = State::On;
+		}
+	} else if (bleApp.action == BleApp::RequestAction::ScanConnect || bleApp.action == BleApp::RequestAction::ScanInfo) {
+		state = State::SlowFlash;
 	} else {
 		state = State::Off;
 	}
@@ -38,21 +44,20 @@ void LED::Update()
 			flashOn = 600;
 			flashOff = 600;
 			break;
-		case State::MediumFlash:
-			flashOn = 400;
-			flashOff = 400;
+		case State::LowBattery:
+			flashOn = 1000;
+			flashOff = 100;
 			break;
 		case State::On:
-			LedOn(true);
 			break;
 		case State::Off:
-			LedOn(false);
 			break;
 		}
+		LedOn(state != State::Off);
 	}
 
 
-	if (state == State::FastFlash || state == State::MediumFlash || state == State::SlowFlash) {
+	if (state == State::FastFlash || state == State::SlowFlash || state == State::LowBattery) {
 		if ((lit && SysTickVal > flashUpdated + flashOn) || (!lit && SysTickVal > flashUpdated + flashOff)) {
 			flashUpdated = SysTickVal;
 			LedOn(!lit);

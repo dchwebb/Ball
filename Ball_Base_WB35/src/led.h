@@ -5,7 +5,7 @@ class LED {
 public:
 	void Update();
 private:
-	enum class State {Off, FastFlash, MediumFlash, SlowFlash, On} state {State::Off};
+	enum class State {Off, FastFlash, SlowFlash, On, LowBattery} state {State::Off};
 	void LedOn(bool on);
 
 	uint32_t flashTimer = 0;

@@ -33,16 +33,16 @@ void CDCHandler::ProcessCommand()
 		sprintf(buf, "\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n"
 				"Connected: %s; handle: %#04x\r\n"
 				"Wireless firmware: %s\r\n"
-				"Offsets: %.1f, %.1f, %.1f\r\n"
-				"Sensitivity: %.1f\r\n"
+				"Sensitivity: %f\r\n"
+				"Battery warning at %d%%; Update interval %lds\r\n"
 				"Current Position (0-4096): %.1f, %.1f, %.1f\r\n"
 				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
 				"RSSI Value: %d dBm\r\n",
 				bleApp.connectionStatus == BleApp::ConnectionStatus::ClientConnected ? "Yes" : "No",
 				bleApp.connectionHandle,
 				bleApp.coprocessorFailure ? "Off" : "Running",
-				hidApp.offset.x, hidApp.offset.y, hidApp.offset.z,
-				hidApp.divider,
+				hidApp.settings.scaleMult,
+				hidApp.settings.batteryWarning, hidApp.settings.batteryInterval,
 				hidApp.position3D.x, hidApp.position3D.y, hidApp.position3D.z,
 				fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
 				fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub,
@@ -59,17 +59,15 @@ void CDCHandler::ProcessCommand()
 				"scan               -  List BLE devices\r\n"
 				"connect            -  Connect to HID BLE device\r\n"
 				"disconnect         -  Disconnect to HID BLE device\r\n"
-				"hidmap:x12         -  Print HID report map at 12 hex digit device address\r\n"
-				"sensitivity:x      -  Amount to divide raw gyro data\r\n"
+				"sensitivity:x      -  Amount to scale down raw gyro data\r\n"
+				"lowbatt:x          -  Flash LED when remote battery percent below x\r\n"
+				"battinterval:x     -  Interval (seconds) to wake remote for battery check\r\n"
 				"readgyro:HH        -  Read Gyro register\r\n"
 				"writegyro:RR,VV    -  Write value 0xVV to gyro register 0xRR\r\n"
-				"offset:x=?         -  X/Y/Z offset (more negative if falling)\r\n"
-				"calibrate          -  Recenter and calibrate gyro offsets\r\n"
 				"recenter           -  Recenter all channels\r\n"
-				"outputgyro         -  Periodically output raw gyro data\r\n"
-				"notifybatt         -  Display battery notifications on/off\r\n"
-				"fwversion          -  Read firmware version\r\n"
+				"output             -  Periodically output gyro and battery data\r\n"
 				"battery            -  Get Battery Level\r\n"
+				"hidmap:x12         -  Print HID report map at 12 hex digit device address\r\n"
 				"saveconfig         -  Save current offsets to flash\r\n"
 				"\r\n"
 
@@ -152,26 +150,32 @@ void CDCHandler::ProcessCommand()
 		bleApp.DisconnectRequest();
 
 	} else if (cmd.compare("saveconfig") == 0) {					// Save offsets to flash
-		configManager.SaveConfig();
-
-	} else if (cmd.compare("fwversion") == 0) {						// Version of BLE firmware
-		WirelessFwInfo_t fwInfo;
-		if (SHCI_GetWirelessFwInfo(&fwInfo) == 0) {
-			printf("BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n",
-					fwInfo.VersionMajor, fwInfo.VersionMinor, fwInfo.VersionSub, fwInfo.VersionBranch,
-					fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub);
-		}
+		config.SaveConfig();
 
 	} else if (cmd.compare(0, 12, "sensitivity:") == 0) {			// Set sensitivity
-		uint16_t div;
-		auto res = std::from_chars(cmd.data() + cmd.find(":") + 1, cmd.data() + cmd.size(), div, 10);
+		const float val = ParseFloat(cmd, ':');
 
-		if (res.ec == std::errc()) {
-			hidApp.divider = div;
-			printf("Divider set to: %d\r\n", div);
+		if (val > 0.0f) {
+			hidApp.settings.scaleMult = val;
+			printf("Scaler set to: %f\r\n", val);
 		} else {
 			printf("Invalid value\r\n");
 		}
+		config.SaveConfig();
+
+	} else if (cmd.compare(0, 8, "lowbatt:") == 0) {				// Remote battery percent at which warning LED flashes
+		const int8_t val = ParseInt(cmd, ':', 1, 99);
+		if (val >= 0) {
+			hidApp.settings.batteryWarning = val;
+		}
+		config.SaveConfig();
+
+	} else if (cmd.compare(0, 13, "battinterval:") == 0) {			// Interval in seconds to wake remote for battery update
+		const int32_t val = ParseInt(cmd, ':');
+		if (val >= 0) {
+			hidApp.settings.batteryInterval = val;
+		}
+		config.SaveConfig();
 
 	} else if (cmd.compare("recenter") == 0) {						// Recenter all channels to mid point
 		hidApp.position3D.x = 2047.0f;
@@ -179,38 +183,9 @@ void CDCHandler::ProcessCommand()
 		hidApp.position3D.z = 2047.0f;
 		printf("All channels recentered\r\n");
 
-	} else if (cmd.compare(0, 7, "offset:") == 0) {					// Set x offset for raw calibration data
-		int16_t offset;
-		auto res = std::from_chars(cmd.data() + cmd.find("=") + 1, cmd.data() + cmd.size(), offset, 10);
-
-		if (res.ec == std::errc()) {
-			if (cmd.compare(7, 1, "x") == 0) {
-				hidApp.offset.x = offset;
-			} else if (cmd.compare(7, 1, "y") == 0) {
-				hidApp.offset.y = offset;
-			} else if (cmd.compare(7, 1, "z") == 0) {
-				hidApp.offset.z = offset;
-			}
-			printf("Offset set to: %d\r\n", offset);
-		} else {
-			printf("Invalid value\r\n");
-		}
-
-	} else if (cmd.compare("calibrate") == 0) {						// recenter and calibrate gyro
-		if (hidApp.state != HidApp::HidState::ClientConnected) {
-			printf("Must be connected before calibrating\r\n");
-		} else {
-			hidApp.Calibrate();
-		}
-
-	} else if (cmd.compare("outputgyro") == 0) {					// Output raw gyro data
+	} else if (cmd.compare("output") == 0) {					// Output raw gyro data
 		hidApp.outputGyro = !hidApp.outputGyro;
 		printf("Gyro Output %s\r\n", hidApp.outputGyro ? "on" : "off");
-
-	} else if (cmd.compare("notifybatt") == 0) {					// Output battery notifications
-		hidApp.outputBattery = !hidApp.outputBattery;
-		printf("Battery Output %s\r\n", hidApp.outputBattery ? "on" : "off");
-
 
 	} else if (cmd.compare("battery") == 0) {						// read battery level
 		UTIL_SEQ_SetTask(1 << CFG_TASK_GetBatteryLevel, CFG_SCH_PRIO_0);
@@ -310,7 +285,7 @@ void CDCHandler::ClassSetupData(usbRequest& req, const uint8_t* data)
 }
 
 
-int32_t CDCHandler::ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low = 0, const int32_t high = 0) {
+int32_t CDCHandler::ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low, const int32_t high) {
 	int32_t val = -1;
 	const int8_t pos = cmd.find(precedingChar);		// locate position of character preceding
 	if (pos >= 0 && std::strspn(&cmd[pos + 1], "0123456789-") > 0) {
@@ -324,7 +299,7 @@ int32_t CDCHandler::ParseInt(const std::string_view cmd, const char precedingCha
 }
 
 
-float CDCHandler::ParseFloat(const std::string_view cmd, const char precedingChar, const float low = 0.0f, const float high = 0.0f) {
+float CDCHandler::ParseFloat(const std::string_view cmd, const char precedingChar, const float low, const float high) {
 	float val = -1.0f;
 	const int8_t pos = cmd.find(precedingChar);		// locate position of character preceding
 	if (pos >= 0 && std::strspn(&cmd[pos + 1], "0123456789.") > 0) {

@@ -18,11 +18,14 @@ public:
 		float z = 2047.0;
 	} position3D;
 
-	Pos3D offset = {0.0f, 0.0f, 0.0f};				// Calibrated adjustment for gyroscope offsets and drift
-	float divider = 600.0f;							// Divider for raw gyroscope data (increase for more sensitivity)
-	bool outputGyro = false;						// Set to true to output gyro data periodically
-	bool outputBattery = false;						// Set to true to output battery level when received
+	bool outputGyro = false;						// Set to true to output gyro data periodically and all battery notifications
 	uint8_t batteryLevel = 0;						// Battery level as notified by remote unit
+
+	struct Settings {
+		float scaleMult = 0.0017f;					// Scale down raw gyroscope data (decrease for more sensitivity)
+		uint32_t batteryInterval = 600;				// Request a battery update every x seconds (where remote is in sleep mode)
+		uint8_t batteryWarning = 10;				// Percentage at which battery warning is triggered (flashing LED)
+	} settings;
 
 	// Used to read and write gyro registers
 	uint16_t gyroCommand = 0;						// If reading a register set to a single byte value; if writing set register and value
@@ -30,9 +33,9 @@ public:
 
 	void Init();
 	void HIDConnectionNotification();
-	void Calibrate();
 	void GetReportMap();
 	static void GetBatteryLevel();
+	void CheckBattery();
 	static void GyroCommand();
 	static void ReadGyroRegister();
 	uint32_t SerialiseConfig(uint8_t** buff);
@@ -58,11 +61,8 @@ private:
 	uint16_t gyroRegNotificationCharHandle;			// Gyroscope register read/write handle
 	uint16_t gyroRegNotificationDescHandle;			// Gyroscope register read/write handle
 
-	static constexpr float calibFilter = 0.9999f;	// 1 pole filter co-efficient for smoothing long-term drift adjustments
-	static constexpr int32_t calibrateCount = 200;	// Total number of readings to use when calibrating
-	int32_t calibrateCounter = 0;					// When calibrating offsets keeps count of readings averaged
-	float calibX, calibY, calibZ;					// Temporary totals used during calibration
 	uint32_t lastPrint = 0;							// For perdiodic printing of gyro output
+	uint32_t lastBatteryCheck = 0;					// SysTick of last battery update
 
 	static SVCCTL_EvtAckStatus_t HIDEventHandler(void *Event);
 	static void HIDServiceDiscovery();

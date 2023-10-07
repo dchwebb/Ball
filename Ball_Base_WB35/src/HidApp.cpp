@@ -19,64 +19,19 @@ void HidApp::Init(void)
 }
 
 
-void HidApp::Calibrate()
-{
-	printf("Starting calibration\r\n");
-	position3D.x = 2047.0f;
-	position3D.y = 2047.0f;
-	position3D.z = 2047.0f;
-	calibX = 0.0f;
-	calibY = 0.0f;
-	calibZ = 0.0f;
-	calibrateCounter = calibrateCount;
-}
-
-
 void HidApp::HidNotification(int16_t* payload, uint8_t len)
 {
 	// Convert raw HID data from signed 16 bit int to float
 	Pos3D hidData {(float)payload[0], (float)payload[1], (float)payload[2]};
 
-	// If no offset configured perform calibration
-	if (calibrateCounter == 0 && offset.x == 0 && offset.y == 0 && offset.z == 0) {
-		Calibrate();
-	}
+	// Scale down and clamp to 12 bit value
+	position3D.x = std::clamp((hidData.x * settings.scaleMult) + position3D.x, 0.0f, 4095.0f);
+	position3D.y = std::clamp((hidData.y * settings.scaleMult) + position3D.y, 0.0f, 4095.0f);
+	position3D.z = std::clamp((hidData.z * settings.scaleMult) + position3D.z, 0.0f, 4095.0f);
 
-	if (calibrateCounter == 0) {
-
-		// Adjust calibration offsets on the fly
-		if (abs(hidData.x - offset.x) < 50 && abs(hidData.y - offset.y) < 50 && abs(hidData.z - offset.z) < 50) {
-			offset.x = calibFilter * offset.x + (1.0f - calibFilter) * hidData.x;
-			offset.y = calibFilter * offset.y + (1.0f - calibFilter) * hidData.y;
-			offset.z = calibFilter * offset.z + (1.0f - calibFilter) * hidData.z;
-		}
-
-		// Remote offset, scale down and clamp to 12 bit value
-		position3D.x = std::clamp(((hidData.x - offset.x) / divider) + position3D.x, 0.0f, 4095.0f);
-		position3D.y = std::clamp(((hidData.y - offset.y) / divider) + position3D.y, 0.0f, 4095.0f);
-		position3D.z = std::clamp(((hidData.z - offset.z) / divider) + position3D.z, 0.0f, 4095.0f);
-
-	} else {
-		calibX += hidData.x;
-		calibY += hidData.y;
-		calibZ += hidData.z;
-
-		float div = (calibrateCount - calibrateCounter) + 1;
-
-		if (calibrateCounter % 20 == 0) {
-			printf("%ld: x: %.1f y: %.1f z: %.1f\r\n", (int32_t)div, calibX / div, calibY / div, calibZ / div);
-		}
-
-		if (--calibrateCounter == 0) {
-			offset.x = calibX / calibrateCount;
-			offset.y = calibY / calibrateCount;
-			offset.z = calibZ / calibrateCount;
-			printf("New Offsets x: %.1f y: %.1f z: %.1f\r\n", offset.x, offset.y, offset.z);
-		}
-	}
 
 	if (outputGyro && (SysTickVal - lastPrint > 400)) {
-		printf("Pos: %.1f/%.1f/%.1f;  offset %.1f/%.1f/%.1f;  raw: %.1f/%.1f/%.1f \r\n", position3D.x, position3D.y, position3D.z, offset.x, offset.y, offset.z, hidData.x, hidData.y, hidData.z);
+		printf("Pos: %.1f/%.1f/%.1f;  Gyro: %.1f/%.1f/%.1f \r\n", position3D.x, position3D.y, position3D.z, hidData.x, hidData.y, hidData.z);
 		lastPrint = SysTickVal;
 	}
 
@@ -84,16 +39,6 @@ void HidApp::HidNotification(int16_t* payload, uint8_t len)
 	TIM2->CCR2 = static_cast<int16_t>(position3D.y);
 	TIM2->CCR3 = static_cast<int16_t>(position3D.z);
 
-}
-
-
-void HidApp::GetBatteryLevel()
-{
-	if (hidApp.state == HidApp::HidState::ClientConnected) {
-		printf("Get Battery Level\n");
-		hidApp.action = HidApp::HidAction::BatteryLevel;
-		aci_gatt_read_char_value(hidApp.connHandle, hidApp.batteryNotificationCharHandle);
-	}
 }
 
 
@@ -143,6 +88,8 @@ void HidApp::HIDConnectionNotification()
 		hidNotificationCharHandle = 0;
 		hidNotificationDescHandle = 0;
 		hidServiceHandle = 0;
+
+		batteryLevel = 0;
 		break;
 
 	case BleApp::ConnectionStatus::Idle:
@@ -376,19 +323,39 @@ SVCCTL_EvtAckStatus_t HidApp::HIDEventHandler(void *Event)
 }
 
 
-void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
+void HidApp::GetBatteryLevel()
 {
-	usb.cdc.PrintString("* Report Map:\r\n%s\r\n", usb.cdc.HexToString(data, len, true));
+	if (hidApp.state == HidApp::HidState::ClientConnected) {
+		printf("Get Battery Level\n");
+		hidApp.lastBatteryCheck = SysTickVal;
+		hidApp.action = HidApp::HidAction::BatteryLevel;
+		aci_gatt_read_char_value(hidApp.connHandle, hidApp.batteryNotificationCharHandle);
+	}
 }
-
 
 void HidApp::BatteryNotification(uint8_t* payload, uint8_t len)
 {
 	batteryLevel = payload[0];
 
-	if (outputBattery) {
+	if (outputGyro) {
 		printf("* Battery Notification: Battery: %d%%\n", batteryLevel);
 	}
+}
+
+
+void HidApp::CheckBattery()
+{
+	// Run periodically to check battery level while Remote is sleeping (only start checking after first battery notification received)
+	if (hidApp.state == HidApp::HidState::ClientConnected && batteryLevel > 0
+			&& SysTickVal - lastBatteryCheck > (settings.batteryInterval * 1000)) {
+		GetBatteryLevel();
+	}
+}
+
+
+void HidApp::PrintReportMap(uint8_t* data, uint8_t len)
+{
+	usb.cdc.PrintString("* Report Map:\r\n%s\r\n", usb.cdc.HexToString(data, len, true));
 }
 
 
@@ -475,16 +442,16 @@ void HidApp::HIDServiceDiscovery()
 
 uint32_t HidApp::SerialiseConfig(uint8_t** buff)
 {
-	*buff = reinterpret_cast<uint8_t*>(&offset);
-	return sizeof(offset);
+	*buff = reinterpret_cast<uint8_t*>(&settings);
+	return sizeof(settings);
 }
 
 
 uint32_t HidApp::StoreConfig(uint8_t* buff)
 {
 	if (buff != nullptr) {
-		memcpy(&offset, buff, sizeof(offset));
+		memcpy(&settings, buff, sizeof(settings));
 	}
 
-	return sizeof(offset);
+	return sizeof(settings);
 }

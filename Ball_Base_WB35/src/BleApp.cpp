@@ -167,6 +167,8 @@ void BleApp::ServiceControlCallback(void* pckt)
 					} else {
 						hidApp.action = HidApp::HidAction::Connect;
 					}
+					action = RequestAction::None;
+
 					result = aci_gatt_disc_all_primary_services(connectionHandle);
 
 					if (result == BLE_STATUS_SUCCESS) {

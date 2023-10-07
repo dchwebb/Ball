@@ -21,7 +21,7 @@ public:
 	void PrintString(const char* format, ...);
 	char* HexToString(const uint8_t* v, uint32_t len, const bool spaces = false);
 	char* HexToString(const uint16_t v);
-	int32_t ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low, const int32_t high);
+	int32_t ParseInt(const std::string_view cmd, const char precedingChar, const int32_t low = 0, const int32_t high = 0);
 
 	bool cmdPending = false;
 	static constexpr uint32_t maxCmdLen = 40;
@@ -46,7 +46,7 @@ private:
 
 	static const uint8_t Descriptor[];
 
-	float ParseFloat(const std::string_view cmd, const char precedingChar, float low, float high);
+	float ParseFloat(const std::string_view cmd, const char precedingChar, float low = 0.0f, float high = 0.0f);
 
 	// State machine for multi-stage commands
 	enum class serialState {pending, dfuConfirm, calibConfirm, cancelAudioTest};

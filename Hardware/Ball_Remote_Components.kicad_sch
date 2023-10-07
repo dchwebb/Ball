@@ -2981,8 +2981,8 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid d924ceda-d46e-4585-8cd6-2255d1316552)
   )
-  (text "v1 Errata:\n-IMU MOSI and MISO signals switched (see STM32F429 Discovery schematic)\n-Connect PB9 (marked as 'I2C_SDA') to Gyroscope interrupt G_INT\n-Connect PB8 (marked as 'I2C_CLK') to Gyroscope ready G_RDY\n- PA0 and PA2 are only pins that can wake from shutdown - attach to button? Gyro?\n"
-    (at 184.15 177.8 0)
+  (text "v1 Errata:\n-IMU MOSI and MISO signals switched (see STM32F429 Discovery schematic)\n-Connect PB9 (marked as 'I2C_SDA') to Gyroscope interrupt G_INT\n-Connect PB8 (marked as 'I2C_CLK') to Gyroscope ready G_RDY\n- PA0 and PA2 are only pins that can wake from shutdown - attach to  Gyro?\n- Mosfet Q1 source and drain reversed"
+    (at 199.39 179.07 0)
     (effects (font (size 1.27 1.27)) (justify left bottom) (href "#1"))
     (uuid e8dc0829-d8b6-4f9c-90ad-2b2870971bd5)
   )

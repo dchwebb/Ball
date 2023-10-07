@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cstring>
 
-Config configManager;
+Config config;
 
 // called whenever a config setting is changed to schedule a save after waiting to see if any more changes are being made
 void Config::ScheduleSave()
@@ -55,7 +55,7 @@ uint32_t Config::SetConfig()
 
 	uint8_t* cfgBuffer = nullptr;
 
-	// Calibration offsets settings
+	// HID settings
 	configSize = hidApp.SerialiseConfig(&cfgBuffer);
 	memcpy(&configBuffer[configPos], cfgBuffer, configSize);
 	configPos += configSize;
