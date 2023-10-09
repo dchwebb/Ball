@@ -7,7 +7,6 @@ static void InitRTC();
 static void InitGPIO();
 static void InitADC();
 static void InitSPI();
-static void InitGyroTimer();
 
 
 uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference
@@ -89,7 +88,6 @@ void InitHardware()
 	InitGPIO();
 	InitADC();
 	InitSPI();
-	//InitGyroTimer();				// Using data ready pin on gyro to trigger read
 }
 
 

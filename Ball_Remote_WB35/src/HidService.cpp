@@ -189,8 +189,8 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	currPos = {x, y, z};
 
 	// First time running or calibrating set average movement
-	if (averageMovement.x + averageMovement.y + averageMovement.z == 0 || calibrateCounter == calibrateCount) {
-		averageMovement = {(float)x, (float)y, (float)z};
+	if (avOffset.x + avOffset.y + avOffset.z == 0 || calibrateCounter == calibrateCount) {
+		avOffset = {(float)x, (float)y, (float)z};
 	}
 
 	// Check for movement in blocks of 256 measurements with a threshold in each block to ignore noise
@@ -215,7 +215,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 
 
 	if (outputGyro && SysTickVal - lastPrint > 300) {	// Periodically print position to console
-		printf("Current: %d, %d, %d; Average: %.1f, %.1f, %.1f\r\n", x, y, z, averageMovement.x, averageMovement.y, averageMovement.z);
+		printf("Current: %d, %d, %d; Average: %.1f, %.1f, %.1f\r\n", x, y, z, avOffset.x, avOffset.y, avOffset.z);
 		lastPrint = SysTickVal;
 	}
 
@@ -223,9 +223,9 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 		gyro.SamplingSpeed(GyroSPI::Sampling::Fast);				// Switch gyro to fast sampling
 
 		// If one of the previous 8 change counts registered movement output data less average offset
-		joystickReport.x = std::clamp(x - (int32_t)averageMovement.x, -32768L, 32767L);
-		joystickReport.y = std::clamp(y - (int32_t)averageMovement.y, -32768L, 32767L);
-		joystickReport.z = std::clamp(z - (int32_t)averageMovement.z, -32768L, 32767L);
+		joystickReport = {(int16_t)std::clamp(x - (int32_t)avOffset.x, -32768L, 32767L),
+						  (int16_t)std::clamp(y - (int32_t)avOffset.y, -32768L, 32767L),
+						  (int16_t)std::clamp(z - (int32_t)avOffset.z, -32768L, 32767L)};
 
 		UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
 	} else {
@@ -233,15 +233,14 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 		if (calibrateCounter) {
 			--calibrateCounter;
 			if (calibrateCounter == 0) {
-				printf("Calibration complete. Offsets: %.1f, %.1f, %.1f\r\n", averageMovement.x, averageMovement.y, averageMovement.z);
+				printf("Calibration complete. Offsets: %.1f, %.1f, %.1f\r\n", avOffset.x, avOffset.y, avOffset.z);
 				if (!hidService.JoystickNotifications) {
 					gyro.Configure(GyroSPI::SetConfig::PowerDown);			// If not outputting to BLE client stop gyro output
 				}
 				config.SaveConfig();
 			}
 		} else {
-			// If inactive for a while go to sleep
-			if (noMovementCnt > 2) {
+			if (noMovementCnt >= 2) {								// If inactive for a while trigger sleep
 				noMovementCnt = 0;
 				bleApp.InactivityTimeout();
 				return;
@@ -249,19 +248,12 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 			gyro.SamplingSpeed(GyroSPI::Sampling::Slow);			// Switch gyro to slow sampling
 		}
 
-
-		// If not moving store smoothed movement data to send periodically
+		// If not moving store smoothed offsets
 		static constexpr float smooth = 0.999f;
-		averageMovement.x = (smooth * averageMovement.x) + (1.0f - smooth) * (float)x;
-		averageMovement.y = (smooth * averageMovement.y) + (1.0f - smooth) * (float)y;
-		averageMovement.z = (smooth * averageMovement.z) + (1.0f - smooth) * (float)z;
+		avOffset = {(smooth * avOffset.x) + (1.0f - smooth) * (float)x,
+				    (smooth * avOffset.y) + (1.0f - smooth) * (float)y,
+				    (smooth * avOffset.z) + (1.0f - smooth) * (float)z};
 
-		if (SysTickVal - lastSend > 10000) {
-			joystickReport = {0, 0, 0};
-
-			UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
-			lastSend = SysTickVal;
-		}
 	}
 }
 
@@ -373,16 +365,16 @@ bool HidService::EventHandler(hci_event_pckt* event_pckt)
 
 uint32_t HidService::SerialiseConfig(uint8_t** buff)
 {
-	*buff = reinterpret_cast<uint8_t*>(&averageMovement);
-	return sizeof(averageMovement);
+	*buff = reinterpret_cast<uint8_t*>(&avOffset);
+	return sizeof(avOffset);
 }
 
 
 uint32_t HidService::StoreConfig(uint8_t* buff)
 {
 	if (buff != nullptr) {
-		memcpy(&averageMovement, buff, sizeof(averageMovement));
+		memcpy(&avOffset, buff, sizeof(avOffset));
 	}
 
-	return sizeof(averageMovement);
+	return sizeof(avOffset);
 }

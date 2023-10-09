@@ -377,6 +377,10 @@ void BleApp::EnterSleepMode()
 		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 	}
 
+//	 if (UTIL_SEQ_IsEvtPend()) {
+//		 int susp = 1;
+//	 }
+
 	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
 		usb.Disable();
 		__disable_irq();												// Disable interrupts
@@ -442,8 +446,12 @@ void BleApp::WakeFromSleep()
 	}
 
 	if (connectionStatus == ConnStatus::Connected) {
-		RTCInterrupt(0);												// Cancel shutdown timeout
-		gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Turn Gyroscope back on
+//		if (bleApp.motionWakeup) {
+			RTCInterrupt(0);												// Cancel shutdown timeout
+			gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Turn Gyroscope back on
+//		} else {
+//			sleepState = SleepState::RequestSleep;
+//		}
 	} else {
 		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 		EnableAdvertising(ConnStatus::FastAdv);

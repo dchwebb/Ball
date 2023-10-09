@@ -32,7 +32,7 @@ private:
 	} hidInformation;
 
 	struct Pos3D {int16_t x; int16_t y; int16_t z;} joystickReport;
-	struct {float x; float y; float z;} averageMovement;
+	struct {float x; float y; float z;} avOffset;
 
 	// Variables to track whether gyro is static and variations in measurements just noise
 	Pos3D currPos, oldPos;
