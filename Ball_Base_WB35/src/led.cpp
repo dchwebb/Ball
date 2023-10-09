@@ -21,7 +21,7 @@ void LED::Update()
 		state = State::FastFlash;
 	} else if (bleApp.connectionStatus == BleApp::ConnectionStatus::ClientConnected) {
 		// Check if low battery
-		if (hidApp.batteryLevel <= hidApp.settings.batteryWarning) {
+		if (hidApp.batteryLevel > 0 && hidApp.batteryLevel <= hidApp.settings.batteryWarning) {
 			state = State::LowBattery;
 		} else {
 			state = State::On;

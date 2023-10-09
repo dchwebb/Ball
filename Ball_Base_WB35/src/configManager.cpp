@@ -1,7 +1,8 @@
-#include <HidApp.h>
 #include "configManager.h"
+#include "HidApp.h"
 #include <cmath>
 #include <cstring>
+#include <cstdio>
 
 Config config;
 
@@ -39,6 +40,8 @@ bool Config::SaveConfig(bool eraseOnly)
 
 	FlashLock();						// Lock Flash
 	__enable_irq(); 					// Enable Interrupts
+
+	printf(result ? "Config Saved\r\n" : "Error saving config\r\n");
 
 	return result;
 }

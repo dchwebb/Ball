@@ -7,11 +7,7 @@ GyroSPI gyro;		// For use with ST L3GD20
 
 void GyroSPI::Setup()
 {
-	//WriteCmd(0x20, 0x6F);									// CTRL_REG1: DR = 01 (200 Hz ODR); BW = 10 (50 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
-//	WriteCmd(0x20, 0x8F);									// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
-//	WriteCmd(0x24, 0x16);									// CTRL_REG5: Enable HP filter: BOOT | FIFO_EN | -- | HPen = 1 | INT1_Sel1 | INT1_Sel0 | Out_Sel1 | Out_Sel0
-
-//	WriteCmd(0x22, 0x80);									// CTRL_REG3: Enable Interrupt output pin
+	// Configure wake up on movement registers
 	WriteCmd(0x30, 0x2A);									// INT1_CFG: Enable Interrupts on X/Y/Z high
 	WriteCmd(0x32, 0x07);									// INT1_THS_XH: Set X high threshold to 1792
 	WriteCmd(0x34, 0x07);									// INT1_THS_YH: Set Y high threshold to 1792
@@ -28,17 +24,16 @@ void GyroSPI::Configure(SetConfig mode)
 {
 	switch (mode) {
 	case SetConfig::PowerDown:
-		WriteCmd(0x22, 0x00);							// CTRL_REG3: Disable Gyroscope Interrupt and data ready output pins
-		WriteCmd(0x20, 0x00);							// CTRL_REG1: Power down
+		WriteCmd(0x22, 0x00);								// CTRL_REG3: Disable Gyroscope Interrupt and data ready output pins
+		WriteCmd(0x20, 0x00);								// CTRL_REG1: Power down
 		break;
-	case SetConfig::WakeupInterrupt:					// FIXME reducing the data rate here fires a wake up interrupt immediately
-		//WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 00 (95 Hz); BW = 00 (20 Hz); Power Down = 1 (normal mode); zEn = yEn = xEn = 1 (all axes enabled)
-		WriteCmd(0x22, 0x80);							// CTRL_REG3: Enable Gyroscope Interrupt output pin for wakeup
+	case SetConfig::WakeupInterrupt:						// Called before sleeping to wake on gyro movement
+		WriteCmd(0x22, 0x80);								// CTRL_REG3: Enable Gyroscope Interrupt output pin for wakeup
 		break;
 	case SetConfig::ContinousOutput:
-		WriteCmd(0x20, 0x8F);							// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
-		WriteCmd(0x22, 0x08);							// CTRL_REG3: Output data ready on RDY pin
-		GyroRead();										// Force read to clear interrupt
+		WriteCmd(0x20, 0x8F);								// CTRL_REG1: DR = 10 (380 Hz ODR); BW = 00 (20 Hz bandwidth); PD = 1 (normal mode); Zen = Yen = Xen = 1 (all axes enabled)
+		WriteCmd(0x22, 0x08);								// CTRL_REG3: Output data ready on RDY pin
+		GyroRead();											// Force read to clear interrupt
 		break;
 	}
 }
@@ -64,14 +59,14 @@ void GyroSPI::WriteCmd(uint8_t reg, uint8_t val)
 	// MS bit: 0 = address remains unchanged in multiple read/write commands
 	if (!busy) {
 		busy =  true;
-		SPI1->CR2 |= SPI_CR2_DS;								// Set data size to 16 bit
-		GPIOA->ODR &= ~GPIO_ODR_OD15;							// Set CS low
+		SPI1->CR2 |= SPI_CR2_DS;							// Set data size to 16 bit
+		GPIOA->ODR &= ~GPIO_ODR_OD15;						// Set CS low
 
 		SPI1->DR = (reg << 8) | val;
 		while ((SPI1->SR & SPI_SR_BSY) != 0) {}
 
-		GPIOA->ODR |= GPIO_ODR_OD15;							// Set CS high
-		SPI1->CR2 &= ~SPI_CR2_DS;								// Set data size to 8 bit
+		GPIOA->ODR |= GPIO_ODR_OD15;						// Set CS high
+		SPI1->CR2 &= ~SPI_CR2_DS;							// Set data size to 8 bit
 		busy =  false;
 	}
 }
@@ -81,17 +76,17 @@ uint8_t GyroSPI::ReadRegister(uint8_t reg)
 {
 	if (!busy) {
 		busy =  true;
-		GPIOA->ODR &= ~GPIO_ODR_OD15;							// Set CS low
+		GPIOA->ODR &= ~GPIO_ODR_OD15;						// Set CS low
 
-		*spi8BitWrite = readGyro | reg; 						// set RW bit to 1 to indicate read
-		ClearReadBuffer();										// Clear RX buffer while data is sending
-		*spi8BitWrite = 0;										// Dummy write to trigger read - add to FIFO
+		*spi8BitWrite = readGyro | reg; 					// set RW bit to 1 to indicate read
+		ClearReadBuffer();									// Clear RX buffer while data is sending
+		*spi8BitWrite = 0;									// Dummy write to trigger read - add to FIFO
 
 		while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
-		[[maybe_unused]] volatile uint8_t dummy = SPI1->DR;		// Clear dummy read
+		[[maybe_unused]] volatile uint8_t dummy = SPI1->DR;	// Clear dummy read
 
-		while ((SPI1->SR & SPI_SR_RXNE) == 0) {}				// Wait for RX data to be ready
-		GPIOA->ODR |= GPIO_ODR_OD15;							// Set CS high
+		while ((SPI1->SR & SPI_SR_RXNE) == 0) {}			// Wait for RX data to be ready
+		GPIOA->ODR |= GPIO_ODR_OD15;						// Set CS high
 
 		busy =  false;
 	}
@@ -106,21 +101,21 @@ void GyroSPI::GyroRead()
 		busy =  true;
 		uint8_t gyroBuffer[6];
 
-		GPIOA->ODR &= ~GPIO_ODR_OD15;							// Set CS low
-		*spi8BitWrite = readGyro | incrAddr | dataRegStart;		// Send instruction to trigger reads
-		ClearReadBuffer();										// Clear RX buffer while data is sending
-		*spi8BitWrite = 0;										// Add dummy write to FIFO to trigger first read
+		GPIOA->ODR &= ~GPIO_ODR_OD15;						// Set CS low
+		*spi8BitWrite = readGyro | incrAddr | dataRegStart;	// Send instruction to trigger reads
+		ClearReadBuffer();									// Clear RX buffer while data is sending
+		*spi8BitWrite = 0;									// Add dummy write to FIFO to trigger first read
 
 		while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
-		[[maybe_unused]] volatile uint8_t dummy = SPI1->DR;		// Clear dummy read
+		[[maybe_unused]] volatile uint8_t dummy = SPI1->DR;	// Clear dummy read
 
 		for (uint8_t i = 0; i < 6; ++i) {
-			*spi8BitWrite = 0;									// Dummy write to trigger next read
+			*spi8BitWrite = 0;								// Dummy write to trigger next read
 			while ((SPI1->SR & SPI_SR_RXNE) == 0) {}
 			gyroBuffer[i] = SPI1->DR;
 		}
 
-		GPIOA->ODR |= GPIO_ODR_OD15;							// Set CS high
+		GPIOA->ODR |= GPIO_ODR_OD15;						// Set CS high
 		busy =  false;
 
 		uint16_t* buff16bit = (uint16_t*)gyroBuffer;

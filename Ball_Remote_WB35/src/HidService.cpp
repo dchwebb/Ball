@@ -186,34 +186,31 @@ void HidService::Calibrate()
 void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 {
 	oldPos = currPos;
-	currPos.x = x;
-	currPos.y = y;
-	currPos.z = z;
+	currPos = {x, y, z};
 
 	// First time running or calibrating set average movement
 	if (averageMovement.x + averageMovement.y + averageMovement.z == 0 || calibrateCounter == calibrateCount) {
-		averageMovement.x = (float)x;
-		averageMovement.y = (float)y;
-		averageMovement.z = (float)z;
+		averageMovement = {(float)x, (float)y, (float)z};
 	}
 
-	// Check if potentially moving
+	// Check for movement in blocks of 256 measurements with a threshold in each block to ignore noise
 	if (abs(oldPos.x - x) > compareLimit || abs(oldPos.y - y) > compareLimit || abs(oldPos.z - z) > compareLimit) {
 		++countChange[changeArrCounter];
 	}
 	if (++changeBitCounter == 0) {						// store potential movement counts in 8 blocks of 256 readings
 		if (++changeArrCounter > 7) {
 			changeArrCounter = 0;
-			if (!moving) {								// Store long-term count of non-motion to enable sleep
-				++noMovementCount;
-			}
+		}
+		if (!moving) {
+			++noMovementCnt;							// Once not moving increment count to check when to enable sleep
 		}
 		countChange[changeArrCounter] = 0;
-		moving &= ~(1 << changeArrCounter);				// Clear the moving bit for the current movement count
+		moving &= ~(1 << changeArrCounter);				// Clear the moving bit for the next set of movement counts
 	}
 	if (countChange[changeArrCounter] > maxChange) {
 		moving |= (1 << changeArrCounter);				// Set the moving bit for this value
-		noMovementCount = 0;
+		lastMovement = RTC->TR;
+		noMovementCnt = 0;
 	}
 
 
@@ -223,7 +220,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	}
 
 	if (moving) {
-		gyro.SamplingSpeed(GyroSPI::Sampling::Fast);			// Switch gyro to fast sampling
+		gyro.SamplingSpeed(GyroSPI::Sampling::Fast);				// Switch gyro to fast sampling
 
 		// If one of the previous 8 change counts registered movement output data less average offset
 		joystickReport.x = std::clamp(x - (int32_t)averageMovement.x, -32768L, 32767L);
@@ -237,15 +234,15 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 			--calibrateCounter;
 			if (calibrateCounter == 0) {
 				printf("Calibration complete. Offsets: %.1f, %.1f, %.1f\r\n", averageMovement.x, averageMovement.y, averageMovement.z);
-				if (!hidService.JoystickNotifications) {					// If not outputting to BLE client start gyro output
-					gyro.Configure(GyroSPI::SetConfig::PowerDown);
+				if (!hidService.JoystickNotifications) {
+					gyro.Configure(GyroSPI::SetConfig::PowerDown);			// If not outputting to BLE client stop gyro output
 				}
 				config.SaveConfig();
 			}
 		} else {
 			// If inactive for a while go to sleep
-			if (noMovementCount > 1) {
-				noMovementCount = 0;				// Or will go back to sleep as soon as it wakes up
+			if (noMovementCnt >= 2) {
+				noMovementCnt = 0;
 				bleApp.InactivityTimeout();
 				return;
 			}
@@ -260,9 +257,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 		averageMovement.z = (smooth * averageMovement.z) + (1.0f - smooth) * (float)z;
 
 		if (SysTickVal - lastSend > 10000) {
-			joystickReport.x = 0;
-			joystickReport.y = 0;
-			joystickReport.z = 0;
+			joystickReport = {0, 0, 0};
 
 			UTIL_SEQ_SetTask(1 << CFG_TASK_JoystickNotification, CFG_SCH_PRIO_0);
 			lastSend = SysTickVal;

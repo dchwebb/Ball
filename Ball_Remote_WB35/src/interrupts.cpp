@@ -16,7 +16,7 @@ void EXTI4_IRQHandler() {
 	// Connect Button pressed (used for sleeping/wakeup)
 	EXTI->PR1 = EXTI_PR1_PIF4;
 	if (bleApp.sleepState == BleApp::SleepState::Awake) {
-		bleApp.lowPowerMode = BleApp::LowPowerMode::Sleep;
+		bleApp.lowPowerMode = BleApp::LowPowerMode::Shutdown;
 		bleApp.sleepState = BleApp::SleepState::RequestSleep;
 	}
 }

@@ -9,8 +9,7 @@
 #include "configManager.h"
 
 /* TODO
- * Remove last SPI read
- * Soft button shutdown
+  *
  */
 
 volatile uint32_t SysTickVal;
