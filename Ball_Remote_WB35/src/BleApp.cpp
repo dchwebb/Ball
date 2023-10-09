@@ -98,7 +98,6 @@ void BleApp::ServiceControlCallback(hci_event_pckt* event_pckt)
 			connectionHandle = 0xFFFF;
 			connectionStatus = ConnStatus::Idle;
 			hidService.Disconnect();
-
 			printf("\r\n\r** Client Disconnected\n");
 
 			EnableAdvertising(ConnStatus::FastAdv);			// Restart advertising
@@ -271,23 +270,6 @@ void BleApp::EnableAdvertising(const ConnStatus newStatus)
 }
 
 
-void BleApp::RTCWakeUp()
-{
-	// Manage RTC timer interrupts
-	RTCInterrupt(0);						// Clear RTC wakeup interrupt
-
-	switch (wakeAction) {
-	case WakeAction::LPAdvertising:
-		UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchLPAdvertising, CFG_SCH_PRIO_0);
-		break;
-	case WakeAction::Shutdown:
-		// RTC interrupt fires to wake up after long sleep inactivity: WakeFromSleep will then immediately trigger shutdown
-		bleApp.sleepState = BleApp::SleepState::WakeToShutdown;
-		break;
-	}
-}
-
-
 uint8_t* BleApp::GetBdAddress()
 {
 	const uint32_t udn = LL_FLASH_GetUDN();
@@ -355,6 +337,23 @@ void BleApp::InactivityTimeout()
 }
 
 
+void BleApp::RTCWakeUp()
+{
+	// Manage RTC timer interrupts
+	RTCInterrupt(0);						// Clear RTC wakeup interrupt
+
+	switch (wakeAction) {
+	case WakeAction::LPAdvertising:
+		UTIL_SEQ_SetTask(1 << CFG_TASK_SwitchLPAdvertising, CFG_SCH_PRIO_0);
+		break;
+	case WakeAction::Shutdown:
+		// RTC interrupt fires to wake up after long sleep inactivity: WakeFromSleep will then immediately trigger shutdown
+		bleApp.sleepState = BleApp::SleepState::WakeToShutdown;
+		break;
+	}
+}
+
+
 void BleApp::GoToSleep()
 {
 	bleApp.sleepState = SleepState::CancelAdv;
@@ -370,6 +369,7 @@ void BleApp::EnterSleepMode()
 	const uint32_t primask_bit = __get_PRIMASK();
 
 	led.Update();														// Force LED to switch off
+	bleApp.motionWakeup = false;										// Will be set if gyro motion wakes from sleep
 
 	if (bleApp.lowPowerMode != LowPowerMode::Shutdown) {
 		gyro.Configure(GyroSPI::SetConfig::WakeupInterrupt);			// Enable Gyroscope Interrupt output pin for wakeup

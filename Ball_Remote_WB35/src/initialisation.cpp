@@ -288,20 +288,6 @@ static void InitSysTick()
 }
 
 
-//	Setup Timer 2 on an interrupt to trigger gyro output
-void InitGyroTimer()
-{
-	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;			// Enable Timer 3
-	TIM2->PSC = 31;									// Set prescaler
-	TIM2->ARR = 1999; 								// Set auto reload register - Clk / PSC + 1 / ARR + 1 = 64Mhz / 32 / 2000 = 1kHz
-
-	TIM2->DIER |= TIM_DIER_UIE;						// DMA/interrupt enable register
-	TIM2->EGR |= TIM_EGR_UG;						// Re-initializes counter and generates update of registers
-
-	NVIC_SetPriority(TIM2_IRQn, 2);					// Lower is higher priority
-}
-
-
 void Init_Smps()
 {
 	//  To use the SMPS an inductor and capacitor need to be fitted (not on current hardware revision) Datasheet p27

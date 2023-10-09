@@ -241,7 +241,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 			}
 		} else {
 			// If inactive for a while go to sleep
-			if (noMovementCnt >= 2) {
+			if (noMovementCnt > 2) {
 				noMovementCnt = 0;
 				bleApp.InactivityTimeout();
 				return;

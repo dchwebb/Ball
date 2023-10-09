@@ -404,6 +404,7 @@ void BleApp::ScanRequest()
 		if (result == BLE_STATUS_SUCCESS) {
 			printf("* BLE: Start general discovery\r\n");
 		} else {
+			bleApp.action = RequestAction::None;
 			printf("* BLE: aci_gap_start_general_discovery_proc, Failed \r\n");
 		}
 	}

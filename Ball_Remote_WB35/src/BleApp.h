@@ -15,6 +15,7 @@ public:
 
 	uint16_t connectionHandle = 0xFFFF;									// When disconnected handle is set to 0xFFFF
 	bool coprocessorFailure = false;
+	bool motionWakeup = false;											// Set when sleeping and woken up with motion detected
 
 	// Settings that can be saved to flash - timeouts in seconds
 	struct Settings {
