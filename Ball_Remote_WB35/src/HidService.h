@@ -8,7 +8,6 @@ public:
 	bool JoystickNotifications;
 	bool outputGyro {false};
 	uint8_t moving = 0xFF;							// Bit array - each bit shows whether one set of 256 measurements had movement
-	uint32_t lastMovement = 0;						// Capture when last moved to check for inactivity shutdown
 
 	void Init();
 	void JoystickNotification(int16_t x, int16_t y, int16_t z);

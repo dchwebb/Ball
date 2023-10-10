@@ -9,7 +9,7 @@ struct BleApp {
 public:
 	enum class ConnStatus {Idle, FastAdv, LPAdv, Scan, Connected} connectionStatus {ConnStatus::Idle};
 	enum class SleepState {Awake, RequestSleep, CancelAdv, GoToSleep, WakeToShutdown} sleepState {SleepState::Awake};
-	enum class LowPowerMode {Sleep, Stop, Shutdown} lowPowerMode;		// Specify low power mode when sleep requested
+	enum class LowPowerMode {Sleep, Shutdown} lowPowerMode;		// Specify low power mode when sleep requested
 	enum class WakeAction {LPAdvertising, Shutdown} wakeAction;			// Action to carry out when waking up from RTC interrupt
 	static constexpr uint8_t bdAddrSize = 6;
 
@@ -19,9 +19,9 @@ public:
 
 	// Settings that can be saved to flash - timeouts in seconds
 	struct Settings {
-		uint32_t fastAdvTimeout = 6;								 	// Period before fast advertising switched to low power
-		uint32_t lpAdvTimeout = 60;									 	// Shutdown timeout if not connected while LP advertising
-		uint32_t inactiveTimeout = 600;									// Shutdown timeout if no activity whilst connected
+		uint32_t fastAdvTimeout = 30;								 	// Period before fast advertising switched to low power (secs)
+		uint32_t lpAdvTimeout = 60;									 	// Shutdown timeout if not connected while LP advertising (secs)
+		uint32_t inactiveTimeout = 600;									// Shutdown timeout if no activity whilst connected (secs)
 		uint8_t  transmitPower = 16;				 					// PA_Level Power amplifier output level (0-35)
 	} settings;
 

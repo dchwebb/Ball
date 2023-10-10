@@ -62,7 +62,7 @@
  * for a CC/CS event, In that case, the notification TL_BLE_HCI_ToNot() is called to indicate
  * to the application a HCI command did not receive its command event within 30s (Default HCI Timeout).
  */
-#define CFG_TLBLE_EVT_QUEUE_LENGTH 5
+#define CFG_TLBLE_EVT_QUEUE_LENGTH 10
 /**
  * This parameter should be set to fit most events received by the HCI layer. It defines the buffer size of each element
  * allocated in the queue of received events and can be used to optimize the amount of RAM allocated by the Memory Manager.
@@ -75,96 +75,6 @@
 #define CFG_TLBLE_MOST_EVENT_PAYLOAD_SIZE 255   /**< Set to 255 with the memory manager and the mailbox */
 
 #define TL_BLE_EVENT_FRAME_SIZE ( TL_EVT_HDR_SIZE + CFG_TLBLE_MOST_EVENT_PAYLOAD_SIZE )
-
-
-
-/******************************************************************************
- * RTC interface
- ******************************************************************************/
-//#define HAL_RTCEx_WakeUpTimerIRQHandler(...)  HW_TS_RTC_Wakeup_Handler( )
-
-/******************************************************************************
- * Timer Server
- ******************************************************************************/
-/**
- *  CFG_RTC_WUCKSEL_DIVIDER:  This sets the RTCCLK divider to the wakeup timer.
- *  The lower is the value, the better is the power consumption and the accuracy of the timerserver
- *  The higher is the value, the finest is the granularity
- *
- *  CFG_RTC_ASYNCH_PRESCALER: This sets the asynchronous prescaler of the RTC. It should as high as possible ( to output
- *  clock as low as possible) but the output clock should be equal or higher frequency compare to the clock feeding
- *  the wakeup timer. A lower clock speed would impact the accuracy of the timer server.
- *
- *  CFG_RTC_SYNCH_PRESCALER: This sets the synchronous prescaler of the RTC.
- *  When the 1Hz calendar clock is required, it shall be sets according to other settings
- *  When the 1Hz calendar clock is not needed, CFG_RTC_SYNCH_PRESCALER should be set to 0x7FFF (MAX VALUE)
- *
- *  CFG_RTCCLK_DIVIDER_CONF:
- *  Shall be set to either 0,2,4,8,16
- *  When set to either 2,4,8,16, the 1Hhz calendar is supported
- *  When set to 0, the user sets its own configuration
- *
- *  The following settings are computed with LSI as input to the RTC
- */
-
-#define CFG_RTCCLK_DIVIDER_CONF 0
-
-#if (CFG_RTCCLK_DIVIDER_CONF == 0)
-/**
- * Custom configuration
- * It does not support 1Hz calendar
- * It divides the RTC CLK by 16
- */
-
-#define CFG_RTCCLK_DIV  (16)
-#define CFG_RTC_WUCKSEL_DIVIDER (0)
-#define CFG_RTC_ASYNCH_PRESCALER (0x0F)
-#define CFG_RTC_SYNCH_PRESCALER (0x7FFF)
-
-#else
-
-#if (CFG_RTCCLK_DIVIDER_CONF == 2)
-/**
- * It divides the RTC CLK by 2
- */
-#define CFG_RTC_WUCKSEL_DIVIDER (3)
-#endif
-
-#if (CFG_RTCCLK_DIVIDER_CONF == 4)
-/**
- * It divides the RTC CLK by 4
- */
-#define CFG_RTC_WUCKSEL_DIVIDER (2)
-#endif
-
-#if (CFG_RTCCLK_DIVIDER_CONF == 8)
-/**
- * It divides the RTC CLK by 8
- */
-#define CFG_RTC_WUCKSEL_DIVIDER (1)
-#endif
-
-#if (CFG_RTCCLK_DIVIDER_CONF == 16)
-/**
- * It divides the RTC CLK by 16
- */
-#define CFG_RTC_WUCKSEL_DIVIDER (0)
-#endif
-
-#define CFG_RTCCLK_DIV              CFG_RTCCLK_DIVIDER_CONF
-#define CFG_RTC_ASYNCH_PRESCALER    (CFG_RTCCLK_DIV - 1)
-#define CFG_RTC_SYNCH_PRESCALER     (DIVR( LSE_VALUE, (CFG_RTC_ASYNCH_PRESCALER+1) ) - 1 )
-
-#endif
-
-/** tick timer value in us */
-#define CFG_TS_TICK_VAL           DIVR( (CFG_RTCCLK_DIV * 1000000), LSE_VALUE )
-
-typedef enum
-{
-	CFG_TIM_PROC_ID_ISR,
-} CFG_TimProcID_t;
-
 
 
 /******************************************************************************

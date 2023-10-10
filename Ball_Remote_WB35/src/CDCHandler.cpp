@@ -53,7 +53,7 @@ void CDCHandler::ProcessCommand()
 				"BLE firmware version: %d.%d.%d.%d; FUS version: %d.%d.%d\r\n"
 				"RSSI Value: %d dBm\r\n"
 				"Transmit power: %d\r\n"
-				"Timeouts: Fast Adv: %lu; Adv Shutdown: %lu; Inactivity Shutdown: %lu\r\n"
+				"Timeouts: Fast Adv: %lus; Adv Shutdown: %lus; Inactivity Shutdown: %lus\r\n"
 				"Battery shutdown percent: %d%%\r\n",
 				bleApp.connectionStatus == BleApp::ConnStatus::Connected ? "Yes" : "No",
 				bleApp.connectionHandle,
@@ -99,6 +99,12 @@ void CDCHandler::ProcessCommand()
 		USBDebug = true;
 		usb->SendString("Press link button to dump output\r\n");
 #endif
+
+	} else if (cmd.compare("datalen") == 0) {						// Testing connection info
+		uint16_t txOctets, maxTxTime;
+		hci_le_read_suggested_default_data_length(&txOctets, &maxTxTime);
+		printf("Octets: %d; TxTime %d\r\n", txOctets, maxTxTime);
+
 
 	} else if (cmd.compare(0, 8, "txpower:") == 0) {				// Set transmit power (0-35)
 		const int8_t val = ParseInt(cmd, ':', 0, 35);
@@ -183,11 +189,6 @@ void CDCHandler::ProcessCommand()
 		} else {
 			usb->SendString("Invalid register\r\n");
 		}
-
-	} else if (cmd.compare("stop") == 0) {							// Enter stop mode
-		usb->SendString("Going into stop mode\n");
-		bleApp.lowPowerMode = BleApp::LowPowerMode::Stop;
-		bleApp.sleepState = BleApp::SleepState::RequestSleep;
 
 	} else if (cmd.compare("sleep") == 0) {							// Enter sleep mode
 		usb->SendString("Going to sleep\n");

@@ -375,17 +375,14 @@ void BleApp::EnterSleepMode()
 	led.Update();														// Force LED to switch off
 	bleApp.motionWakeup = false;										// Will be set if gyro motion wakes from sleep
 
-	if (bleApp.lowPowerMode != LowPowerMode::Shutdown) {
+	if (bleApp.lowPowerMode == LowPowerMode::Sleep) {
 		gyro.Configure(GyroSPI::SetConfig::WakeupInterrupt);			// Enable Gyroscope Interrupt output pin for wakeup
 	} else {
 		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
-	}
-
-	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
 		usb.Disable();
 	}
-	__disable_irq();												// Disable interrupts
 
+	__disable_irq();													// Disable interrupts
 
 	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
 
@@ -407,11 +404,7 @@ void BleApp::EnterSleepMode()
 		SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;								// SLEEPDEEP must be set for STOP, STANDBY or SHUTDOWN modes
 	}
 
-	if (bleApp.lowPowerMode == LowPowerMode::Stop) {
-		MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_STOP1);			// CPU1: 000: Stop0 mode, 001: Stop1 mode, 010: Stop2 mode, 011: Standby mode, 1xx: Shutdown mode
-		//MODIFY_REG(PWR->C2CR1, PWR_C2CR1_LPMS, LL_PWR_MODE_STANDBY);	// CPU2 low power mode: note this doesn't do anything in most cases as CPU2
-
-	} else if (bleApp.lowPowerMode == LowPowerMode::Shutdown){
+	if (bleApp.lowPowerMode == LowPowerMode::Shutdown){
 		MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_SHUTDOWN);
 		MODIFY_REG(PWR->C2CR1, PWR_C2CR1_LPMS, LL_PWR_MODE_SHUTDOWN);
 
@@ -447,7 +440,7 @@ void BleApp::WakeFromSleep()
 	}
 
 	if (connectionStatus == ConnStatus::Connected) {
-		if (bleApp.motionWakeup) {
+		if (bleApp.motionWakeup) {										// Set in gyro motion interrupt
 			RTCInterrupt(0);											// Cancel shutdown timeout only if waking up with movement
 		}
 		gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Turn Gyroscope back on

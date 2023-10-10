@@ -209,7 +209,6 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 	}
 	if (countChange[changeArrCounter] > maxChange) {
 		moving |= (1 << changeArrCounter);				// Set the moving bit for this value
-		lastMovement = RTC->TR;
 		noMovementCnt = 0;
 	}
 
@@ -235,7 +234,7 @@ void HidService::JoystickNotification(int16_t x, int16_t y, int16_t z)
 			if (calibrateCounter == 0) {
 				printf("Calibration complete. Offsets: %.1f, %.1f, %.1f\r\n", avOffset.x, avOffset.y, avOffset.z);
 				if (!hidService.JoystickNotifications) {
-					gyro.Configure(GyroSPI::SetConfig::PowerDown);			// If not outputting to BLE client stop gyro output
+					gyro.Configure(GyroSPI::SetConfig::PowerDown);	// If not outputting to BLE client stop gyro output
 				}
 				config.SaveConfig();
 			}
