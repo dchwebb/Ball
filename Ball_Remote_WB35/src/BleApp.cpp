@@ -333,7 +333,11 @@ void BleApp::InactivityTimeout()
 	lowPowerMode = LowPowerMode::Sleep;
 	sleepState = SleepState::RequestSleep;
 	wakeAction = WakeAction::Shutdown;							// Shutdown if movement for significant period
-	RTCInterrupt(settings.inactiveTimeout);						// Trigger RTC to wake up from sleep and shutdown after timeout
+
+	// If not waking because motion detected, the shutdown timer will be already set
+	if ((RTC->CR & RTC_CR_WUTE) == 0) {
+		RTCInterrupt(settings.inactiveTimeout);					// Trigger RTC to wake up from sleep and shutdown after timeout
+	}
 }
 
 
@@ -377,14 +381,11 @@ void BleApp::EnterSleepMode()
 		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 	}
 
-//	 if (UTIL_SEQ_IsEvtPend()) {
-//		 int susp = 1;
-//	 }
-
 	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
 		usb.Disable();
-		__disable_irq();												// Disable interrupts
 	}
+	__disable_irq();												// Disable interrupts
+
 
 	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
 
@@ -446,12 +447,10 @@ void BleApp::WakeFromSleep()
 	}
 
 	if (connectionStatus == ConnStatus::Connected) {
-//		if (bleApp.motionWakeup) {
-			RTCInterrupt(0);												// Cancel shutdown timeout
-			gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Turn Gyroscope back on
-//		} else {
-//			sleepState = SleepState::RequestSleep;
-//		}
+		if (bleApp.motionWakeup) {
+			RTCInterrupt(0);											// Cancel shutdown timeout only if waking up with movement
+		}
+		gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Turn Gyroscope back on
 	} else {
 		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 		EnableAdvertising(ConnStatus::FastAdv);

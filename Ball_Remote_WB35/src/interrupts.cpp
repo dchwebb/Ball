@@ -27,7 +27,7 @@ void EXTI9_5_IRQHandler() {
 	if ((EXTI->PR1 & EXTI_PR1_PIF8) == EXTI_PR1_PIF8) {			// Gyro data ready
 		gyro.OutputGyro();
 	}
-	if ((EXTI->PR1 & EXTI_PR1_PIF8) == EXTI_PR1_PIF8) {			// Gyro motion wakeup
+	if ((EXTI->PR1 & EXTI_PR1_PIF9) == EXTI_PR1_PIF9) {			// Gyro motion wakeup
 		bleApp.motionWakeup = true;
 	}
 	EXTI->PR1 = EXTI_PR1_PIF;								// Clear interrupts
