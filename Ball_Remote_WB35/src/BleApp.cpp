@@ -383,6 +383,7 @@ void BleApp::EnterSleepMode()
 	}
 
 	__disable_irq();													// Disable interrupts
+	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
 
 	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
 
@@ -396,22 +397,16 @@ void BleApp::EnterSleepMode()
 	}
 	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
-	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
-
-	// See p153 for LP modes entry and wake up
-	RCC->CFGR |= RCC_CFGR_STOPWUCK;										// HSI16 selected as wakeup from stop clock and CSS backup clock
-	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
-		SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;								// SLEEPDEEP must be set for STOP, STANDBY or SHUTDOWN modes
-	}
-
 	if (bleApp.lowPowerMode == LowPowerMode::Shutdown){
+		RCC->CR &= ~RCC_CR_HSEON;										// Turn off external oscillator
+		RCC->BDCR &= ~RCC_BDCR_LSEON;									// Turn off low speed external oscillator
+
+		SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;								// SLEEPDEEP must be set for STOP, STANDBY or SHUTDOWN modes
+
 		MODIFY_REG(PWR->CR1, PWR_CR1_LPMS, LL_PWR_MODE_SHUTDOWN);
 		MODIFY_REG(PWR->C2CR1, PWR_C2CR1_LPMS, LL_PWR_MODE_SHUTDOWN);
 
 		EXTI->C2IMR2 = 0;												// Clear all wake up interrupts on CPU2
-		for (int x = 0; x < 1000000; ++x) {								// Force a delay as otherwise something was using 4mA
-			__attribute__((unused)) volatile int y = 1;
-		}
 	}
 
 	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
@@ -431,17 +426,11 @@ void BleApp::WakeFromSleep()
 	}
 
 	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
-
 	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);					// 10: PLL selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
-
 	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
-
-	if (bleApp.lowPowerMode != LowPowerMode::Sleep) {
-		usb.InitUSB();
-	}
 
 	if (connectionStatus == ConnStatus::Connected) {
 //		if (bleApp.motionWakeup) {										// Set in gyro motion interrupt

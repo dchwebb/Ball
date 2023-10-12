@@ -139,6 +139,7 @@ void BleApp::ServiceControlCallback(void* pckt)
 			if (disconnectionEvent->Connection_Handle == connectionHandle) {
 				connectionHandle = 0;
 				connectionStatus = BleApp::ConnectionStatus::Idle;
+				action = RequestAction::None;
 				printf("* BLE: Disconnected from device\r\n");
 				hidApp.HIDConnectionNotification();
 			}
@@ -319,18 +320,6 @@ void BleApp::GetHidReportMap(uint8_t* address)			// FIXME: need to handle random
 }
 
 
-void BleApp::SwitchConnectState()
-{
-	// Called from connect button interrupt (or CDC console)
-	if (hidApp.state != HidApp::HidState::ClientConnected)	{
-		bleApp.action = RequestAction::ScanConnect;
-		UTIL_SEQ_SetTask(1 << CFG_TASK_ScanRequest, CFG_SCH_PRIO_0);
-	} else {
-		UTIL_SEQ_SetTask(1 << CFG_TASK_DisconnectRequest, CFG_SCH_PRIO_0);
-	}
-}
-
-
 void BleApp::HciGapGattInit()
 {
 	const char *deviceName = "MJOY_CL";
@@ -392,6 +381,18 @@ void BleApp::HciGapGattInit()
 	// Initialize whitelist
 	if (Security.bondingMode) {
 		aci_gap_configure_whitelist();
+	}
+}
+
+
+void BleApp::SwitchConnectState()
+{
+	// Called from connect button interrupt (or CDC console)
+	if (hidApp.state != HidApp::HidState::ClientConnected)	{
+		bleApp.action = RequestAction::ScanConnect;
+		UTIL_SEQ_SetTask(1 << CFG_TASK_ScanRequest, CFG_SCH_PRIO_0);
+	} else {
+		UTIL_SEQ_SetTask(1 << CFG_TASK_DisconnectRequest, CFG_SCH_PRIO_0);
 	}
 }
 
