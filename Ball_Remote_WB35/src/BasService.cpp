@@ -71,11 +71,11 @@ float BasService::GetBatteryLevel()
 
 void BasService::TimedRead()
 {
-	// Called in main loop - checks battery level every 5 seconds and updates characteristic if required
-	if (lastRead + 5000 < SysTickVal) {
+	// Called in main loop - checks battery level every 2 seconds and updates characteristic if required
+	if (lastRead + 2000 < SysTickVal) {
 		lastRead = SysTickVal;
 
-		uint8_t oldLevel = level;
+		const uint8_t oldLevel = level;
 		GetBatteryLevel();
 
 		// Check if last two battery readings are below shutdown threshold
