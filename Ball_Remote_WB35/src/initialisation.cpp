@@ -38,11 +38,11 @@ void InitClocks()
 	RCC->BDCR |= RCC_BDCR_LSEON;					// Turn on low speed external oscillator
 	while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0);		// Wait till LSE is ready
 
-	// Activate PLL: HSE = 32MHz / 4(M) * 32(N) / 4(R) = 64MHz
+	// Activate PLL: HSE = 32MHz / 4(M) * 32(N) / 8(R) = 32MHz
 	RCC->PLLCFGR |= LL_RCC_PLLSOURCE_HSE;			// Set PLL source to HSE
 	RCC->PLLCFGR |= LL_RCC_PLLM_DIV_4;				// Set PLL M divider to 4
 	MODIFY_REG(RCC->PLLCFGR, RCC_PLLCFGR_PLLN, 32 << RCC_PLLCFGR_PLLN_Pos);		// Set PLL N multiplier to 32
-	RCC->PLLCFGR |= LL_RCC_PLLR_DIV_4;				// Set PLL R divider to 4
+	RCC->PLLCFGR |= LL_RCC_PLLR_DIV_8;				// Set PLL R divider to 8
 	RCC->PLLCFGR |= RCC_PLLCFGR_PLLREN;				// Enable PLL R Clock
 
 	RCC->CR |= RCC_CR_PLLON;						// Turn on PLL
@@ -55,7 +55,7 @@ void InitClocks()
 	RCC->CFGR |= RCC_CFGR_SW;						// 11: PLL selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until PLL is selected
 
-	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
+	//RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
 
 	RCC->CSR |= RCC_CSR_RFWKPSEL;					// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
 	SystemCoreClockUpdate();						// Read configured clock speed into SystemCoreClock (system clock frequency)
@@ -120,7 +120,7 @@ static void InitSPI()
 //	SPI1->CR2 |= SPI_CR2_SSOE;						// NSS (CS) output enable
 //	SPI1->CR2 |= SPI_CR2_NSSP;						// Pulse Chip select line on communication
 
-	SPI1->CR1 |= 0b011 << SPI_CR1_BR_Pos;			// 011: fPCLK/16 = 64Mhz/16 = 4MB/s APB2 clock currently 64MHz (FIXME this should be slower in final version)
+	SPI1->CR1 |= 0b011 << SPI_CR1_BR_Pos;			// 011: fPCLK/16 = 32MHz/16 = 4MB/s APB2 clock currently 32MHz
 	SPI1->CR1 |= SPI_CR1_SPE;
 }
 
@@ -134,7 +134,7 @@ static void InitADC()
 	RCC->AHB2ENR |= RCC_AHB2ENR_ADCEN;				// Enable ADC
 	RCC->CCIPR |= RCC_CCIPR_ADCSEL;					// 00: None; 01: PLLSAI1 R clock; 10: PLL P clock; 11: System clock
 
-	ADC1_COMMON->CCR |= ADC_CCR_PRESC_1;			// 0010: input ADC clock divided by 4
+	ADC1_COMMON->CCR |= ADC_CCR_PRESC_0;			// 0010: input ADC clock divided by 2
 
 	ADC1->CR &= ~ADC_CR_DEEPPWD;					// Deep power down: 0: ADC not in deep-power down	1: ADC in deep-power-down (default reset state)
 	ADC1->CR |= ADC_CR_ADVREGEN;					// Enable ADC internal voltage regulator
@@ -252,7 +252,7 @@ static void InitRTC()
 
 void RTCInterrupt(uint32_t seconds)
 {
-	// Pass seconds = 0 to disable
+	// Dynamically configure the RTC wakeup interrupt: Pass seconds = 0 to disable
 
 	RTC->WPR = 0xCAU;								// Disable the write protection for RTC registers - see p.919
 	RTC->WPR = 0x53U;
