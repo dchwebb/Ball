@@ -22,7 +22,7 @@ void HidApp::Init(void)
 void HidApp::HidNotification(int16_t* payload, uint8_t len)
 {
 	// Convert raw HID data from signed 16 bit int to float
-	Pos3D hidData {(float)payload[0], (float)payload[1], (float)payload[2]};
+	Pos3D hidData {(float)(settings.invertX * payload[0]), (float)(settings.invertY * payload[1]), (float)(settings.invertZ * payload[2])};
 
 	// Scale down and clamp to 12 bit value
 	position3D.x = std::clamp((hidData.x * settings.scaleMult) + position3D.x, 0.0f, 4095.0f);
@@ -346,7 +346,7 @@ void HidApp::BatteryNotification(uint8_t* payload, uint8_t len)
 void HidApp::CheckBattery()
 {
 	// Run periodically to check battery level while Remote is sleeping (only start checking after first battery notification received)
-	if (hidApp.state == HidApp::HidState::ClientConnected && batteryLevel > 0
+	if (hidApp.state == HidApp::HidState::ClientConnected && batteryLevel > 0 && settings.batteryInterval > 0
 			&& SysTickVal - lastBatteryCheck > (settings.batteryInterval * 1000)) {
 		GetBatteryLevel();
 	}

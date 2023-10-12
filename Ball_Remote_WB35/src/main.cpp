@@ -9,7 +9,9 @@
 #include "configManager.h"
 
 /* TODO
-  *
+ * Test USB wake up and sleep
+ * Test sleep clock settings
+ *
  */
 
 volatile uint32_t SysTickVal;
@@ -21,7 +23,7 @@ int main(void)
 	config.RestoreConfig();
 	gyro.Setup();					// Setup address and settings for gyroscope
 	APPE_Init();					// Initialise low level BLE functions and schedule start of BLE
-	usb.InitUSB();
+//	usb.InitUSB();
 
 
 	while (1) {

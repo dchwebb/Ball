@@ -32,6 +32,7 @@ void CDCHandler::ProcessCommand()
 
 		sprintf(buf, "\r\nMountjoy Ball v1.0 - Current Settings:\r\n\r\n"
 				"Connected: %s; handle: %#04x\r\n"
+				"Last battery reading %d%%\r\n"
 				"Wireless firmware: %s\r\n"
 				"Sensitivity: %f\r\n"
 				"Battery warning at %d%%; Update interval %lds\r\n"
@@ -40,6 +41,7 @@ void CDCHandler::ProcessCommand()
 				"RSSI Value: %d dBm\r\n",
 				bleApp.connectionStatus == BleApp::ConnectionStatus::ClientConnected ? "Yes" : "No",
 				bleApp.connectionHandle,
+				hidApp.batteryLevel,
 				bleApp.coprocessorFailure ? "Off" : "Running",
 				hidApp.settings.scaleMult,
 				hidApp.settings.batteryWarning, hidApp.settings.batteryInterval,

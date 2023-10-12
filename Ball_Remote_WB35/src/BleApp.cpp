@@ -430,8 +430,12 @@ void BleApp::WakeFromSleep()
 		return;
 	}
 
+	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
+
 	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);					// 10: PLL selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
+
+	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
 
@@ -440,10 +444,13 @@ void BleApp::WakeFromSleep()
 	}
 
 	if (connectionStatus == ConnStatus::Connected) {
-		if (bleApp.motionWakeup) {										// Set in gyro motion interrupt
+//		if (bleApp.motionWakeup) {										// Set in gyro motion interrupt
 			RTCInterrupt(0);											// Cancel shutdown timeout only if waking up with movement
-		}
-		gyro.Configure(GyroSPI::SetConfig::ContinousOutput);			// Turn Gyroscope back on
+			gyro.Configure(GyroSPI::SetConfig::ContinousOutput);		// Turn Gyroscope back on
+//		} else {
+//			sleepState = SleepState::RequestSleep;
+//			return;
+//		}
 	} else {
 		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 		EnableAdvertising(ConnStatus::FastAdv);

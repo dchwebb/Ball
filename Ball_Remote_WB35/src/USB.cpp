@@ -308,7 +308,6 @@ void USBMain::InitUSB()
 	GPIOA->AFR[1] |= ((0xA << GPIO_AFRH_AFSEL11_Pos) | (0xA << GPIO_AFRH_AFSEL12_Pos));
 
 	PWR->CR2 |= PWR_CR2_USV;							// To determine if USB power is valid
-
 	while (LL_HSEM_1StepLock(HSEM, 5)) {};				// Lock semaphore 5 (See AN5289 p.25)
 	RCC->CRRCR |= RCC_CRRCR_HSI48ON;					// Enable Internal High Speed oscillator for USB
 	while ((RCC->CRRCR & RCC_CRRCR_HSI48RDY) == 0);		// Wait till internal USB oscillator is ready

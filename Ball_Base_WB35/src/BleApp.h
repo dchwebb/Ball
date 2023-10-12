@@ -86,6 +86,16 @@ private:
 		uint32_t fixedPin = 111111;										// Fixed pin for pairing process if Use_Fixed_Pin = 1
 	} Security;
 
+	// Connection settings
+	static constexpr uint16_t leScanInterval = 500.0f / 0.625f;		// ms: Interval between LE scans
+	static constexpr uint16_t leScanWindow = 500.0f / 0.625f;		// ms: Duration of LE scan
+	static constexpr uint16_t connIntervalMin = 7.5f / 1.25f;		// ms: Minimum connection event interval
+	static constexpr uint16_t connIntervalMax = 20.0f / 1.25f;		// ms: Maximum connection event interval
+	static constexpr uint16_t connLatency = 0;						// Max peripheral latency in number of connection events
+	static constexpr uint16_t supervisionTimeout = 500;				// N * 10 ms: Supervision timeout for the LE Link
+	static constexpr uint16_t minimumCELength = 10.0f / 0.625f;		// 10ms Minimum time needed for the LE connection
+	static constexpr uint16_t maximumCELength = 10.0f / 0.625f;		// 10ms Maximum time needed for the LE connection
+
 
 	static void ScanRequest();
 	static void ConnectRequest();

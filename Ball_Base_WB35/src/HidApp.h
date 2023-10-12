@@ -25,6 +25,9 @@ public:
 		float scaleMult = 0.0017f;					// Scale down raw gyroscope data (decrease for more sensitivity)
 		uint32_t batteryInterval = 600;				// Request a battery update every x seconds (where remote is in sleep mode)
 		uint8_t batteryWarning = 10;				// Percentage at which battery warning is triggered (flashing LED)
+		int8_t invertX = 1;
+		int8_t invertY = 1;
+		int8_t invertZ = -1;
 	} settings;
 
 	// Used to read and write gyro registers

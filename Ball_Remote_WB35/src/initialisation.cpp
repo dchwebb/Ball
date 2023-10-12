@@ -48,8 +48,9 @@ void InitClocks()
 	RCC->CR |= RCC_CR_PLLON;						// Turn on PLL
 	while ((RCC->CR & RCC_CR_PLLRDY) == 0);			// Wait till PLL is ready
 
-	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, 3);	// Increase Flash latency to 3 Wait States (see manual p.77)
-	while ((FLASH->ACR & FLASH_ACR_LATENCY) != 3);
+	// Increase Flash latency to 3 Wait States (see manual p.77)
+	MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY, FLASH_ACR_LATENCY_3WS);
+	while ((FLASH->ACR & FLASH_ACR_LATENCY) != FLASH_ACR_LATENCY_3WS);
 
 	RCC->CFGR |= RCC_CFGR_SW;						// 11: PLL selected as system clock
 	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);		// Wait until PLL is selected
