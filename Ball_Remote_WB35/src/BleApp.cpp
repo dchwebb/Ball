@@ -383,19 +383,22 @@ void BleApp::EnterSleepMode()
 	}
 
 	__disable_irq();													// Disable interrupts
-	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
 
-	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
+	if (bleApp.lowPowerMode == LowPowerMode::Shutdown || bleApp.settings.sleepUsesHSI) {
+		SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
 
-	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
-		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Shutdown mode
-			LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
+		while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
+
+		if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
+			if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Shutdown mode
+				LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
+				SwitchToHSI();
+			}
+		} else {
 			SwitchToHSI();
 		}
-	} else {
-		SwitchToHSI();
+		LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 	}
-	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
 	if (bleApp.lowPowerMode == LowPowerMode::Shutdown){
 		RCC->CR &= ~RCC_CR_HSEON;										// Turn off external oscillator
@@ -425,21 +428,23 @@ void BleApp::WakeFromSleep()
 		return;
 	}
 
-	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
-	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);					// 10: PLL selected as system clock
-	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
-	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
+	if (bleApp.settings.sleepUsesHSI) {
+		while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
+		MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);					// 10: PLL selected as system clock
+		while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
+		LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
+	}
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
 
 	if (connectionStatus == ConnStatus::Connected) {
-//		if (bleApp.motionWakeup) {										// Set in gyro motion interrupt
+		if (bleApp.motionWakeup || bleApp.settings.sleepUsesHSI) {						// Set in gyro motion interrupt
 			RTCInterrupt(0);											// Cancel shutdown timeout only if waking up with movement
 			gyro.Configure(GyroSPI::SetConfig::ContinousOutput);		// Turn Gyroscope back on
-//		} else {
-//			sleepState = SleepState::RequestSleep;
-//			return;
-//		}
+		} else {
+			sleepState = SleepState::RequestSleep;
+			return;
+		}
 	} else {
 		gyro.Configure(GyroSPI::SetConfig::PowerDown);					// Power down Gyroscope
 		EnableAdvertising(ConnStatus::FastAdv);

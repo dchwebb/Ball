@@ -23,6 +23,7 @@ public:
 		uint32_t lpAdvTimeout = 60;									 	// Shutdown timeout if not connected while LP advertising (secs)
 		uint32_t inactiveTimeout = 600;									// Shutdown timeout if no activity whilst connected (secs)
 		uint8_t  transmitPower = 16;				 					// PA_Level Power amplifier output level (0-35)
+		bool     sleepUsesHSI = false;									// Switch to HSI when sleeping which uses lower power but can cause issues waking up
 	} settings;
 
 	void Init();

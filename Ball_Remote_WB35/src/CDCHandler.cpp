@@ -54,7 +54,9 @@ void CDCHandler::ProcessCommand()
 				"RSSI Value: %d dBm\r\n"
 				"Transmit power: %d\r\n"
 				"Timeouts: Fast Adv: %lus; Adv Shutdown: %lus; Inactivity Shutdown: %lus\r\n"
-				"Battery shutdown percent: %d%%\r\n",
+				"Battery shutdown percent: %d%%\r\n"
+				"Sleep: %s\r\n"
+				"\r\n",
 				bleApp.connectionStatus == BleApp::ConnStatus::Connected ? "Yes" : "No",
 				bleApp.connectionHandle,
 				basService.GetBatteryLevel(), basService.level,
@@ -63,7 +65,8 @@ void CDCHandler::ProcessCommand()
 				fwInfo.FusVersionMajor, fwInfo.FusVersionMinor, fwInfo.FusVersionSub,
 				rssi,
 				bleApp.settings.transmitPower, bleApp.settings.fastAdvTimeout, bleApp.settings.lpAdvTimeout, bleApp.settings.inactiveTimeout,
-				basService.settings.shutdownLevel);
+				basService.settings.shutdownLevel,
+				bleApp.settings.sleepUsesHSI ? "HSI" : "HSE");
 
 		usb->SendString(buf);
 
@@ -100,11 +103,10 @@ void CDCHandler::ProcessCommand()
 		usb->SendString("Press link button to dump output\r\n");
 #endif
 
-	} else if (cmd.compare("datalen") == 0) {						// Testing connection info
-		uint16_t txOctets, maxTxTime;
-		hci_le_read_suggested_default_data_length(&txOctets, &maxTxTime);
-		printf("Octets: %d; TxTime %d\r\n", txOctets, maxTxTime);
-
+	} else if (cmd.compare("sleeposc") == 0) {						// Sleep oscillator mode
+		bleApp.settings.sleepUsesHSI = !bleApp.settings.sleepUsesHSI;
+		printf("Sleep oscillator: %s\r\n", bleApp.settings.sleepUsesHSI ? "HSI" : "HSE");
+		config.SaveConfig();
 
 	} else if (cmd.compare(0, 8, "txpower:") == 0) {				// Set transmit power (0-35)
 		const int8_t val = ParseInt(cmd, ':', 0, 35);
