@@ -17,7 +17,7 @@ The 3-D sensing is carried out on an L3GD20 MEMS gyroscope from STM. This commun
 
 The USB charging port on the remote is also used for serial communication with a host computer for testing and configuration.
 
-![Image](https://raw.githubusercontent.com/dchwebb/Ball/main/pictures/ball_remote_closed.jpg "icon")
+![Image](https://raw.githubusercontent.com/dchwebb/Ball/main/pictures/ball_remote_open.jpg "icon")
 
 The prototype Remote unit was fitted to a black sphere requisitioned from a child's toy.
 
