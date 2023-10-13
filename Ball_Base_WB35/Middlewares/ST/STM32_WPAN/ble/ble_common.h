@@ -31,8 +31,6 @@ extern "C" {
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "ble_conf.h"
-
 
 /* Event types copied from MW Legacy file*/
 #include "tl.h"

@@ -1,7 +1,14 @@
 #pragma once
 
 #include "hw.h"
-#include "hw_if.h"
+#include "stm32wbxx_ll_exti.h"
+#include "stm32wbxx_ll_rcc.h"
+#include "stm32wbxx_ll_ipcc.h"
+#include "stm32wbxx_ll_bus.h"
+#include "stm32wbxx_ll_pwr.h"
+
+#define BLE_CFG_SVC_MAX_NBR_CB                                                 7
+#define BLE_CFG_CLT_MAX_NBR_CB                                                 1
 
 /******************************************************************************
  * Application Config
@@ -16,9 +23,19 @@
 #define CONN_L1   (CONN_L(10))
 #define CONN_L2   (CONN_L(10))
 
-/******************************************************************************
- * BLE Stack
- ******************************************************************************/
+/** BLE stack Options flags:
+ * (bit 0): 1: LL only; 0: LL + host
+ * (bit 1): 1: no service change desc; 0: with service change desc.
+ * (bit 2): 1: device name Read-Only; 0: device name R/W
+ * (bit 7): 1: LE Power Class 1; 0: LE Power Class 2-3
+*/
+#define CFG_BLE_OPTIONS  (SHCI_C2_BLE_INIT_OPTIONS_LL_HOST | SHCI_C2_BLE_INIT_OPTIONS_WITH_SVC_CHANGE_DESC | SHCI_C2_BLE_INIT_OPTIONS_DEVICE_NAME_RW | SHCI_C2_BLE_INIT_OPTIONS_NO_EXT_ADV | SHCI_C2_BLE_INIT_OPTIONS_NO_CS_ALGO2 | SHCI_C2_BLE_INIT_OPTIONS_FULL_GATTDB_NVM | SHCI_C2_BLE_INIT_OPTIONS_GATT_CACHING_NOTUSED | SHCI_C2_BLE_INIT_OPTIONS_POWER_CLASS_2_3)
+
+/** BLE stack Options_extension flags:
+ * (bit 0): 1: appearance Writable; 0: appearance Read-Only
+ * (bit 1): 1: Enhanced ATT supported; 0: Enhanced ATT not supported
+ */
+#define CFG_BLE_OPTIONS_EXT  (SHCI_C2_BLE_INIT_OPTIONS_APPEARANCE_READONLY | SHCI_C2_BLE_INIT_OPTIONS_ENHANCED_ATT_NOTSUPPORTED)
 
 // Maximum number of simultaneous connections that the device will support (1 to 8)
 #define CFG_BLE_NUM_LINK            2
@@ -45,48 +62,6 @@
 
 // Number of allocated memory blocks. Parameter is overwritten by CPU2 with hardcoded optimal value when CFG_BLE_OPTIONS is set to 1
 #define CFG_BLE_MBLOCK_COUNT            (BLE_MBLOCKS_CALC(CFG_BLE_PREPARE_WRITE_LIST_SIZE, CFG_BLE_MAX_ATT_MTU, CFG_BLE_NUM_LINK))
-
-
-
-
-
-/**
- * BLE stack Options flags to be configured with:
- * - SHCI_C2_BLE_INIT_OPTIONS_LL_ONLY
- * - SHCI_C2_BLE_INIT_OPTIONS_LL_HOST
- * - SHCI_C2_BLE_INIT_OPTIONS_NO_SVC_CHANGE_DESC
- * - SHCI_C2_BLE_INIT_OPTIONS_WITH_SVC_CHANGE_DESC
- * - SHCI_C2_BLE_INIT_OPTIONS_DEVICE_NAME_RO
- * - SHCI_C2_BLE_INIT_OPTIONS_DEVICE_NAME_RW
- * - SHCI_C2_BLE_INIT_OPTIONS_POWER_CLASS_1
- * - SHCI_C2_BLE_INIT_OPTIONS_POWER_CLASS_2_3
- * which are used to set following configuration bits:
- * (bit 0): 1: LL only
- *          0: LL + host
- * (bit 1): 1: no service change desc.
- *          0: with service change desc.
- * (bit 2): 1: device name Read-Only
- *          0: device name R/W
- * (bit 7): 1: LE Power Class 1
- *          0: LE Power Class 2-3
- * other bits: reserved (shall be set to 0)
- */
-#define CFG_BLE_OPTIONS  (SHCI_C2_BLE_INIT_OPTIONS_LL_HOST | SHCI_C2_BLE_INIT_OPTIONS_WITH_SVC_CHANGE_DESC | SHCI_C2_BLE_INIT_OPTIONS_DEVICE_NAME_RW | SHCI_C2_BLE_INIT_OPTIONS_NO_EXT_ADV | SHCI_C2_BLE_INIT_OPTIONS_NO_CS_ALGO2 | SHCI_C2_BLE_INIT_OPTIONS_FULL_GATTDB_NVM | SHCI_C2_BLE_INIT_OPTIONS_GATT_CACHING_NOTUSED | SHCI_C2_BLE_INIT_OPTIONS_POWER_CLASS_2_3)
-
-/**
- * BLE stack Options_extension flags to be configured with:
- * - SHCI_C2_BLE_INIT_OPTIONS_APPEARANCE_WRITABLE
- * - SHCI_C2_BLE_INIT_OPTIONS_APPEARANCE_READONLY
- * - SHCI_C2_BLE_INIT_OPTIONS_ENHANCED_ATT_SUPPORTED
- * - SHCI_C2_BLE_INIT_OPTIONS_ENHANCED_ATT_NOTSUPPORTED
- * which are used to set following configuration bits:
- * (bit 0): 1: appearance Writable
- *          0: appearance Read-Only
- * (bit 1): 1: Enhanced ATT supported
- *          0: Enhanced ATT not supported
- * other bits: reserved (shall be set to 0)
- */
-#define CFG_BLE_OPTIONS_EXT  (SHCI_C2_BLE_INIT_OPTIONS_APPEARANCE_READONLY | SHCI_C2_BLE_INIT_OPTIONS_ENHANCED_ATT_NOTSUPPORTED)
 
 
 
@@ -121,21 +96,15 @@
 
 #define TL_BLE_EVENT_FRAME_SIZE ( TL_EVT_HDR_SIZE + CFG_TLBLE_MOST_EVENT_PAYLOAD_SIZE )
 
-#define CFG_TS_TICK_VAL           DIVR( (CFG_RTCCLK_DIV * 1000000), LSE_VALUE )			// tick timer value in us
-
-
 
 
 /******************************************************************************
  * Scheduler
  ******************************************************************************/
-
-/**
- * These are the lists of task id registered to the scheduler
- * Each task id shall be in the range [0:31]
- * This mechanism allows to implement a generic code in the API TL_BLE_HCI_StatusNot() to comply with
- * the requirement that a HCI/ACI command shall never be sent if there is already one pending
- */
+// These are the lists of task id registered to the scheduler
+// Each task id shall be in the range [0:31]
+// This mechanism allows to implement a generic code in the API TL_BLE_HCI_StatusNot() to comply with
+// the requirement that a HCI/ACI command shall never be sent if there is already one pending
 
 // Tasks that may send an ACI/HCI command
 typedef enum

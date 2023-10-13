@@ -4,7 +4,6 @@ extern "C" {
 #endif
 
 #define HAL_MODULE_ENABLED
-//#define HAL_RTC_MODULE_ENABLED
 #define HAL_CORTEX_MODULE_ENABLED
 
 #if !defined  (HSE_VALUE)
@@ -16,7 +15,6 @@ extern "C" {
 #endif
 
 #include "stm32wbxx_hal_cortex.h"
-//#include "stm32wbxx_hal_rtc.h"
 
 #define assert_param(expr) ((void)0U)
 
