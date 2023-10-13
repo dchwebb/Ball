@@ -30,7 +30,7 @@ The base unit also features an STM32WB35. This receives the 3 dimensional gyrosc
 
 The STM32WB does not contain any DACs so the gyroscope XYZ data is supplied as PWM data which is filtered and scaled to 0-5V. Three LEDs display the current level of each CV output. An additional blue LED showing BLE connection status is positioned behind a PCB Bluetooth 'window' - ie shines through the FR4 with no solder mask or copper.
 
-[Schematic](https://raw.githubusercontent.com/dchwebb/Ball/main/ball_ball_schematic.pdf)
+[Schematic](https://raw.githubusercontent.com/dchwebb/Ball/main/ball_base_schematic.pdf)
 
 Antennas and Matching Network
 -----------------------------
