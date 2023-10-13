@@ -7,4 +7,4 @@ extern volatile uint32_t SysTickVal;
 
 void InitPWMTimer();
 void InitHardware();
-void SystemClock_Config();
+void InitClocks();

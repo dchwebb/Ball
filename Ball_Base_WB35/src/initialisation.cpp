@@ -8,7 +8,7 @@ static void InitGPIO();
 
 uint8_t hse_tuning = 19;		// Random guess based on Nucleo setting - doesn't seem to make much difference to current connection failure
 
-void SystemClock_Config()
+void InitClocks()
 {
 	FLASH->ACR |= FLASH_ACR_PRFTEN;					// Flash prefetch enable
 	FLASH->SR &= ~FLASH_SR_OPERR;					// Clear Flash Option Validity flag
@@ -50,6 +50,9 @@ void SystemClock_Config()
 	RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
 
 	RCC->CSR |= RCC_CSR_RFWKPSEL;					// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
+
+	FLASH->ACR |= FLASH_ACR_ICEN; 					// Enable instruction cache
+	FLASH->ACR |= FLASH_ACR_DCEN;					// Enable data cache
 }
 
 

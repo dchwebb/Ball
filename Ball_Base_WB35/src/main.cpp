@@ -13,7 +13,7 @@ extern uint32_t SystemCoreClock;
 
 int main()
 {
-	SystemClock_Config();			// Set system clocks
+	InitClocks();					// Set system clocks
 	SystemCoreClockUpdate();		// Read configured clock speed into SystemCoreClock (system clock frequency)
 
 	InitHardware();					// Initialise HSEM, IPCC, RTC, EXTI
@@ -28,7 +28,7 @@ int main()
 		}
 		usb.cdc.ProcessCommand();	// Check for incoming CDC commands
 		led.Update();				// Check if connection LED needs to be flashed
-		hidApp.CheckBattery();	// Run a periodic check to get battery level from remote if sleeping
+		hidApp.CheckBattery();		// Run a periodic check to get battery level from remote if sleeping
 	}
 }
 
