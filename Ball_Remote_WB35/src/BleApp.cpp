@@ -360,11 +360,14 @@ void BleApp::RTCWakeUp()
 
 void BleApp::GoToSleep()
 {
-	bleApp.sleepState = SleepState::CancelAdv;
-	if (bleApp.connectionStatus != ConnStatus::Connected) {
+	if (bleApp.connectionStatus == ConnStatus::Connected) {
+		bleApp.sleepState = SleepState::GoToSleep;
+		UTIL_SEQ_SetTask(1 << CFG_TASK_EnterSleepMode, CFG_SCH_PRIO_0);
+	} else {
 		RTCInterrupt(0);					// Cancel advertising timers (if connected interrupt will be used for inactivity shutdown)
+		bleApp.sleepState = SleepState::CancelAdv;
+		UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
 	}
-	UTIL_SEQ_SetTask(1 << CFG_TASK_CancelAdvertising, CFG_SCH_PRIO_0);
 }
 
 
@@ -375,6 +378,9 @@ void BleApp::EnterSleepMode()
 	led.Update();														// Force LED to switch off
 	bleApp.motionWakeup = false;										// Will be set if gyro motion wakes from sleep
 
+	__disable_irq();													// Disable interrupts
+	SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
+
 	if (bleApp.lowPowerMode == LowPowerMode::Sleep) {
 		gyro.Configure(GyroSPI::SetConfig::WakeupInterrupt);			// Enable Gyroscope Interrupt output pin for wakeup
 	} else {
@@ -382,23 +388,17 @@ void BleApp::EnterSleepMode()
 		usb.Disable();
 	}
 
-	__disable_irq();													// Disable interrupts
+	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
 
-	if (bleApp.lowPowerMode == LowPowerMode::Shutdown || bleApp.settings.sleepUsesHSI) {
-		SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;							// Disable Systick interrupt
-
-		while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
-
-		if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
-			if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Shutdown mode
-				LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
-				SwitchToHSI();
-			}
-		} else {
+	if (!LL_HSEM_1StepLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID)) {		// Lock the Stop mode entry semaphore
+		if (LL_PWR_IsActiveFlag_C2DS() || LL_PWR_IsActiveFlag_C2SB()) {	// PWR->EXTSCR: C2DS = CPU2 in deep sleep; C2SBF = System has been in Shutdown mode
+			LL_HSEM_ReleaseLock(HSEM, CFG_HW_ENTRY_STOP_MODE_SEMID, 0);	// Release ENTRY_STOP_MODE semaphore
 			SwitchToHSI();
 		}
-		LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
+	} else {
+		SwitchToHSI();
 	}
+	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
 	if (bleApp.lowPowerMode == LowPowerMode::Shutdown){
 		RCC->CR &= ~RCC_CR_HSEON;										// Turn off external oscillator
@@ -411,6 +411,7 @@ void BleApp::EnterSleepMode()
 
 		EXTI->C2IMR2 = 0;												// Clear all wake up interrupts on CPU2
 	}
+
 
 	PWR->SCR |= PWR_SCR_CWUF;											// Clear all wake up flags
 	__set_PRIMASK(primask_bit);											// Re-enable interrupts for exiting sleep mode
@@ -428,17 +429,15 @@ void BleApp::WakeFromSleep()
 		return;
 	}
 
-	if (bleApp.settings.sleepUsesHSI) {
-		while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
-		MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);					// 10: PLL selected as system clock
-		while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
-		LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
-	}
+	while (LL_HSEM_1StepLock(HSEM, CFG_HW_RCC_SEMID));					// Lock the RCC semaphore
+	MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW);					// 10: PLL selected as system clock
+	while ((RCC->CFGR & RCC_CFGR_SWS) == 0);							// Wait until HSE is selected
+	LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);						// Release RCC semaphore
 
 	SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;							// Restart Systick interrupt
 
 	if (connectionStatus == ConnStatus::Connected) {
-		if (bleApp.motionWakeup || bleApp.settings.sleepUsesHSI) {						// Set in gyro motion interrupt
+		if (bleApp.motionWakeup) {						// Set in gyro motion interrupt		 || bleApp.settings.sleepUsesHSI
 			RTCInterrupt(0);											// Cancel shutdown timeout only if waking up with movement
 			gyro.Configure(GyroSPI::SetConfig::ContinousOutput);		// Turn Gyroscope back on
 		} else {

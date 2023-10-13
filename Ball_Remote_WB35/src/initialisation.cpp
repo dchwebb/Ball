@@ -57,7 +57,7 @@ void InitClocks()
 
 	//RCC->EXTCFGR |= RCC_EXTCFGR_C2HPRE_3;			// 1000: CPU2 HPrescaler: SYSCLK divided by 2
 
-	RCC->CSR |= RCC_CSR_RFWKPSEL;					// RF system wakeup clock source selection: 11: HSE oscillator clock divided by 1024 used as RF system wakeup clock
+	RCC->CSR |= RCC_CSR_RFWKPSEL;					// RF system wakeup clock source selection: 01: LSE; *11: HSE / 1024
 	SystemCoreClockUpdate();						// Read configured clock speed into SystemCoreClock (system clock frequency)
 }
 
