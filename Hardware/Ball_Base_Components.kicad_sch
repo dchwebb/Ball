@@ -3083,7 +3083,7 @@
     (uuid 1f791249-e85e-48ae-a089-0ab1a1479e2b)
   )
   (text "Errata: Change Blue LED_Z Resistor from 1k to 1.5k\nChange Green LED_Y from 1k to 560"
-    (at 222.25 199.39 0)
+    (at 212.09 203.2 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 735dfbd3-0248-4520-b5fe-a7484b708750)
   )

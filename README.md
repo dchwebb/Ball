@@ -15,11 +15,11 @@ The remote unit is designed around an STM32WB35 and powered from a Li-Po battery
 
 The 3-D sensing is carried out on an L3GD20 MEMS gyroscope from STM. This communicates with the MCU via full-duplex SPI. Initial prototyping was carried out using I2C on an Adafruit module and the pins for connecting to the module are fitted to the prototype board. The pins exposing the gyroscope ready and interrupt were bodged into the design via the (now unused) I2C pins. This allows waking from sleep mode via motion detection and readings to be taken from the gyroscope as soon as the ready interrupt fires.
 
-The USB charging port on the remote is also used for serial communication with a host computer for testing and configuration.
-
 ![Image](https://raw.githubusercontent.com/dchwebb/Ball/main/pictures/ball_remote_open.jpg "icon")
 
 The prototype Remote unit was fitted to a black sphere requisitioned from a child's toy.
+
+[Schematic](https://raw.githubusercontent.com/dchwebb/Ball/main/ball_remote_schematic.pdf)
 
 Base Unit
 ---------
@@ -29,6 +29,8 @@ Base Unit
 The base unit also features an STM32WB35. This receives the 3 dimensional gyroscope data from the remote unit over BLE using the HID Joystick specification. (Theoretically this should mean the unit could also support other BLE game controllers but this has not been tested.)
 
 The STM32WB does not contain any DACs so the gyroscope XYZ data is supplied as PWM data which is filtered and scaled to 0-5V. Three LEDs display the current level of each CV output. An additional blue LED showing BLE connection status is positioned behind a PCB Bluetooth 'window' - ie shines through the FR4 with no solder mask or copper.
+
+[Schematic](https://raw.githubusercontent.com/dchwebb/Ball/main/ball_ball_schematic.pdf)
 
 Antennas and Matching Network
 -----------------------------
